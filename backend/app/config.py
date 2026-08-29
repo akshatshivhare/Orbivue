@@ -1,10 +1,11 @@
 import os
+import re
 from pathlib import Path
 
 from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-load_dotenv(PROJECT_ROOT / ".env")
+load_dotenv(PROJECT_ROOT / ".env", override=False)
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_ANALYSIS_MODEL = os.getenv("GEMINI_ANALYSIS_MODEL", "gemini-3.6-flash")
@@ -18,11 +19,21 @@ DEFAULT_ALLOWED_ORIGINS = [
 
 
 def _normalize_origin(origin: str) -> str:
-    return origin.strip().rstrip("/")
+    cleaned_origin = origin.strip().strip("\"'")
+
+    markdown_link_match = re.fullmatch(r"\[([^\]]+)\]\([^)]+\)", cleaned_origin)
+    if markdown_link_match:
+        cleaned_origin = markdown_link_match.group(1).strip()
+
+    return cleaned_origin.rstrip("/")
 
 
 def _parse_allowed_origins(raw_origins: str | None) -> list[str]:
-    origins = raw_origins.split(",") if raw_origins else DEFAULT_ALLOWED_ORIGINS
+    cleaned_origins = raw_origins.strip() if raw_origins else ""
+    if cleaned_origins.startswith("[") and cleaned_origins.endswith("]"):
+        cleaned_origins = cleaned_origins[1:-1]
+
+    origins = cleaned_origins.split(",") if cleaned_origins else DEFAULT_ALLOWED_ORIGINS
     normalized_origins: list[str] = []
 
     for origin in origins:
