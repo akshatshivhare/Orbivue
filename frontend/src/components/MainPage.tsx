@@ -8,6 +8,7 @@ import {
   Sparkles,
   Trees,
 } from "lucide-react";
+import { apiUrl } from "../config/api";
 import { ChatWorkspace } from "./ChatWorkspace";
 import { WorkspaceHeader } from "./WorkspaceHeader";
 import { WorkspaceSidebar } from "./WorkspaceSidebar";
@@ -52,8 +53,8 @@ const actionCards = [
 
 const MAX_ANALYSIS_IMAGE_SIDE = 1280;
 const ANALYSIS_IMAGE_QUALITY = 0.86;
-const SINGLE_ANALYSIS_ENDPOINT = "http://127.0.0.1:8000/api/analyze";
-const CHANGE_ANALYSIS_ENDPOINT = "http://127.0.0.1:8000/api/change-analyze";
+const SINGLE_ANALYSIS_ENDPOINT = apiUrl("/api/analyze");
+const CHANGE_ANALYSIS_ENDPOINT = apiUrl("/api/change-analyze");
 
 type MainPageProps = {
   userName?: string;
