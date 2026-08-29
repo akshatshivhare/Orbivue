@@ -24,3 +24,4 @@ app.include_router(general_router)
 @app.on_event("startup")
 async def log_config_status() -> None:
     print("[SatQuery Config] Gemini API key loaded:", gemini_api_key_loaded())
+    print("[SatQuery Config] Allowed origins:", ALLOWED_ORIGINS)
