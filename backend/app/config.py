@@ -1,3 +1,5 @@
+from pathlib import Path
+from dotenv import load_dotenv
 import os
 import re
 from pathlib import Path
@@ -7,6 +9,7 @@ from dotenv import load_dotenv
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(PROJECT_ROOT / ".env", override=False)
 
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_ANALYSIS_MODEL = os.getenv("GEMINI_ANALYSIS_MODEL", "gemini-3.6-flash")
 GEMINI_THINKING_LEVEL = os.getenv("GEMINI_THINKING_LEVEL", "minimal")
@@ -14,6 +17,7 @@ VISION_PROVIDER = os.getenv("VISION_PROVIDER", "gemini").strip().casefold()
 ANALYSIS_PROVIDER = os.getenv("ANALYSIS_PROVIDER", VISION_PROVIDER).strip().casefold()
 GROUNDING_PROVIDER = os.getenv("GROUNDING_PROVIDER", VISION_PROVIDER).strip().casefold()
 TEMPORAL_PROVIDER = os.getenv("TEMPORAL_PROVIDER", VISION_PROVIDER).strip().casefold()
+CROSS_MODAL_PROVIDER = os.getenv("CROSS_MODAL_PROVIDER", "orbivue").strip().casefold()
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_VISION_MODEL = os.getenv(
     "OPENROUTER_VISION_MODEL",
@@ -25,6 +29,8 @@ ORBIVUE_GROUNDING_API_URL = os.getenv("ORBIVUE_GROUNDING_API_URL", "").strip().r
 ORBIVUE_GROUNDING_API_KEY = os.getenv("ORBIVUE_GROUNDING_API_KEY")
 ORBIVUE_TEMPORAL_API_URL = os.getenv("ORBIVUE_TEMPORAL_API_URL", "").strip().rstrip("/")
 ORBIVUE_TEMPORAL_API_KEY = os.getenv("ORBIVUE_TEMPORAL_API_KEY")
+ORBIVUE_CROSS_MODAL_API_URL = os.getenv("ORBIVUE_CROSS_MODAL_API_URL", "").strip().rstrip("/")
+ORBIVUE_CROSS_MODAL_API_KEY = os.getenv("ORBIVUE_CROSS_MODAL_API_KEY")
 
 DEFAULT_ALLOWED_ORIGINS = [
     "https://orbivue.vercel.app",

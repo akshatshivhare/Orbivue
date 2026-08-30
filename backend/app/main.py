@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import (
     ALLOWED_ORIGINS,
     ANALYSIS_PROVIDER,
+    CROSS_MODAL_PROVIDER,
     GROUNDING_PROVIDER,
     TEMPORAL_PROVIDER,
     VISION_PROVIDER,
@@ -11,6 +12,7 @@ from .config import (
 )
 from .routes.analyze import router as analyze_router
 from .routes.change_analysis import router as change_analysis_router
+from .routes.cross_modal import router as cross_modal_router
 from .routes.general import router as general_router
 
 app = FastAPI(title="SatQuery AI Backend", version="0.1.0")
@@ -25,6 +27,7 @@ app.add_middleware(
 
 app.include_router(analyze_router)
 app.include_router(change_analysis_router)
+app.include_router(cross_modal_router)
 app.include_router(general_router)
 
 
@@ -36,3 +39,4 @@ async def log_config_status() -> None:
     print("[SatQuery Provider] analysis provider:", ANALYSIS_PROVIDER)
     print("[SatQuery Provider] grounding provider:", GROUNDING_PROVIDER)
     print("[SatQuery Provider] temporal provider:", TEMPORAL_PROVIDER)
+    print("[SatQuery Provider] cross-modal provider:", CROSS_MODAL_PROVIDER)
