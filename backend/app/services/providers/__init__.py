@@ -23,7 +23,7 @@ class VisionProvider(Protocol):
         ...
 
 
-_providers: dict[str, VisionProvider] = {}
+_providers: dict[tuple[ProviderTask, str], VisionProvider] = {}
 
 
 def _provider_name_for_task(task: ProviderTask) -> str:
@@ -34,16 +34,28 @@ def _provider_name_for_task(task: ProviderTask) -> str:
     return TEMPORAL_PROVIDER
 
 
-def _create_provider(provider_name: str) -> VisionProvider:
+def _create_provider(provider_name: str, task: ProviderTask) -> VisionProvider:
     if provider_name == "openrouter":
         from .openrouter_provider import OpenRouterVisionProvider
 
         return OpenRouterVisionProvider()
 
     if provider_name == "orbivue":
-        from .orbivue_analysis_provider import OrbiVueVisionProvider
+        if task == "analysis":
+            from .orbivue_analysis_provider import OrbiVueVisionProvider
 
-        return OrbiVueVisionProvider()
+            return OrbiVueVisionProvider()
+
+        if task == "grounding":
+            from .orbivue_grounding_provider import OrbiVueGroundingProvider
+
+            return OrbiVueGroundingProvider()
+
+        raise GeminiAnalysisError(
+            "OrbiVue provider is not supported for temporal requests yet.",
+            error_type="unsupported_provider",
+            user_message="OrbiVue provider is not supported for temporal requests yet.",
+        )
 
     if provider_name == "gemini":
         from .gemini_provider import GeminiVisionProvider
@@ -59,19 +71,14 @@ def _create_provider(provider_name: str) -> VisionProvider:
 
 def get_vision_provider(task: ProviderTask = "analysis") -> VisionProvider:
     provider_name = _provider_name_for_task(task)
+    provider_key = (task, provider_name)
 
-    if provider_name == "orbivue" and task != "analysis":
-        raise GeminiAnalysisError(
-            f"OrbiVue provider is not supported for {task} requests yet.",
-            error_type="unsupported_provider",
-            user_message=f"OrbiVue provider is not supported for {task} requests yet.",
-        )
+    if provider_key not in _providers:
+        _providers[provider_key] = _create_provider(provider_name, task)
+        print("[SatQuery Provider] vision provider:", _providers[provider_key].name)
+        print("[SatQuery Provider] task:", task)
 
-    if provider_name not in _providers:
-        _providers[provider_name] = _create_provider(provider_name)
-        print("[SatQuery Provider] vision provider:", _providers[provider_name].name)
-
-    return _providers[provider_name]
+    return _providers[provider_key]
 
 
 def get_analysis_provider() -> VisionProvider:

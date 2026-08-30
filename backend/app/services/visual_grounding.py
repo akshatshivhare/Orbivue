@@ -128,6 +128,21 @@ def _normalize_provider_grounding_boxes(
 
     normalized_boxes: list[GroundingBox] = []
     for index, item in enumerate(candidate_boxes):
+        if isinstance(item, list):
+            normalized_box = _normalize_coordinate_box(
+                raw_box=item,
+                coordinate_order=coordinate_order,
+                image_size=image_size,
+            )
+            if normalized_box is not None:
+                normalized_boxes.append(
+                    {
+                        "label": f"object {index + 1}",
+                        "box": normalized_box,
+                    }
+                )
+            continue
+
         if not isinstance(item, dict):
             continue
 
@@ -164,6 +179,61 @@ def _normalize_provider_grounding_boxes(
         )
 
     return normalized_boxes
+
+
+def _provider_final_answer(raw_response: Any) -> str | None:
+    if not isinstance(raw_response, dict):
+        return None
+
+    final_answer = raw_response.get("final_answer")
+    if isinstance(final_answer, str) and final_answer.strip():
+        return final_answer.strip()
+
+    return None
+
+
+def _is_orbivue_grounding_payload(raw_response: Any) -> bool:
+    return isinstance(raw_response, dict) and raw_response.get("mode") == "grounding" and isinstance(
+        raw_response.get("bounding_boxes"),
+        list,
+    )
+
+
+def _orbivue_grounding_boxes(raw_response: dict[str, Any]) -> list[list[float]]:
+    raw_boxes = raw_response.get("bounding_boxes")
+    if not isinstance(raw_boxes, list):
+        return []
+
+    boxes: list[list[float]] = []
+    for item in raw_boxes:
+        if not isinstance(item, list) or len(item) != 4:
+            continue
+
+        try:
+            ymin, xmin, ymax, xmax = [float(value) for value in item]
+        except (TypeError, ValueError):
+            continue
+
+        if 0 <= ymin < ymax <= 1 and 0 <= xmin < xmax <= 1:
+            boxes.append([ymin, xmin, ymax, xmax])
+
+    return boxes
+
+
+def _log_orbivue_grounding_box_debug(raw_boxes: list[list[float]]) -> None:
+    print("[SatQuery Grounding] box count:", _box_count_label(len(raw_boxes)))
+
+    if not raw_boxes:
+        print("[SatQuery Grounding] raw provider box:", [])
+        print("[SatQuery Grounding] normalized 0-1 box:", [])
+        print("[SatQuery Grounding] label:", "")
+        return
+
+    for index, box in enumerate(raw_boxes):
+        label = f"region {index + 1}"
+        print("[SatQuery Grounding] raw provider box:", box)
+        print("[SatQuery Grounding] normalized 0-1 box:", box)
+        print("[SatQuery Grounding] label:", label)
 
 
 def _box_count_label(box_count: int) -> str:
@@ -275,11 +345,24 @@ def ground_image_with_gemini(image_path: str, user_query: str) -> GroundingRespo
             "bounding_boxes": [],
         }
 
+    if provider.name == "OrbiVue Grounding" and _is_orbivue_grounding_payload(raw_boxes):
+        provider_final_answer = _provider_final_answer(raw_boxes)
+        orbivue_boxes = _orbivue_grounding_boxes(raw_boxes)
+        print("[SatQuery Grounding] normalization latency:", f"{time.perf_counter() - normalization_started_at:.3f}s")
+        _log_orbivue_grounding_box_debug(orbivue_boxes)
+        print("[SatQuery Grounding] total latency:", f"{time.perf_counter() - total_started_at:.3f}s")
+        return {
+            "mode": "grounding",
+            "final_answer": provider_final_answer or "I could not confidently locate the requested object.",
+            "bounding_boxes": orbivue_boxes,
+        }
+
     normalized_boxes = _normalize_provider_grounding_boxes(
         raw_boxes,
         coordinate_order=provider.coordinate_order,
         image_size=image_size,
     )
+    provider_final_answer = _provider_final_answer(raw_boxes)
     print("[SatQuery Grounding] normalization latency:", f"{time.perf_counter() - normalization_started_at:.3f}s")
     _log_grounding_box_debug(raw_boxes, normalized_boxes)
 
@@ -287,13 +370,13 @@ def ground_image_with_gemini(image_path: str, user_query: str) -> GroundingRespo
         print("[SatQuery Grounding] total latency:", f"{time.perf_counter() - total_started_at:.3f}s")
         return {
             "mode": "grounding",
-            "final_answer": "I could not confidently locate the requested object.",
+            "final_answer": provider_final_answer or "I could not confidently locate the requested object.",
             "bounding_boxes": [],
         }
 
     first_label = normalized_boxes[0]["label"]
-    final_answer = f"The {first_label} is highlighted in the image."
-    if len(normalized_boxes) > 1:
+    final_answer = provider_final_answer or f"The {first_label} is highlighted in the image."
+    if provider_final_answer is None and len(normalized_boxes) > 1:
         final_answer = f"Highlighted {len(normalized_boxes)} matching regions in the image."
 
     print("[SatQuery Grounding] total latency:", f"{time.perf_counter() - total_started_at:.3f}s")

@@ -21,6 +21,8 @@ OPENROUTER_VISION_MODEL = os.getenv(
 )
 ORBIVUE_API_URL = os.getenv("ORBIVUE_API_URL", "").strip().rstrip("/")
 ORBIVUE_API_KEY = os.getenv("ORBIVUE_API_KEY")
+ORBIVUE_GROUNDING_API_URL = os.getenv("ORBIVUE_GROUNDING_API_URL", "").strip().rstrip("/")
+ORBIVUE_GROUNDING_API_KEY = os.getenv("ORBIVUE_GROUNDING_API_KEY")
 
 DEFAULT_ALLOWED_ORIGINS = [
     "https://orbivue.vercel.app",
