@@ -689,7 +689,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
 
   return (
     <main
-      className={`main-page fixed inset-0 overflow-hidden bg-[#f8f4ec] text-[#10233a] ${
+      className={`main-page fixed inset-0 overflow-hidden bg-[#061b22] text-[#10233a] ${
         isWorkspaceMode ? "workspace-mode" : "landing-shell"
       }`}
     >
@@ -743,14 +743,14 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
               />
             </section>
           ) : (
-            <section className="main-content relative flex min-h-0 flex-1 flex-col px-7 pb-6 pt-2">
-              <div className="main-hero max-w-[720px]">
-                <div className="inline-flex items-center gap-2 rounded-xl bg-[#e8f4eb] px-4 py-2 text-sm font-semibold text-[#0b6048]">
-                  <Sparkles size={16} />
+            <section className="main-content relative flex min-h-0 flex-1 flex-col px-6 pb-5 pt-1.5">
+              <div className="main-hero max-w-[650px]">
+                <div className="inline-flex items-center gap-2 rounded-xl bg-[#e8f4eb] px-3.5 py-1.5 text-[0.82rem] font-semibold text-[#0b6048]">
+                  <Sparkles size={15} />
                   Welcome to ORBiVUE
                 </div>
 
-                <h1 className="mt-4 text-[2.85rem] font-black leading-[1.03] tracking-normal text-[#10233a]">
+                <h1 className="mt-3 text-[2.35rem] font-black leading-[1.04] tracking-normal text-[#10233a]">
                   Ask Earth anything.
                   <br />
                   Understand <span className="text-[#0b7b5b]">change</span>
@@ -758,7 +758,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                   with <span className="text-[#0b7b5b]">intelligence.</span>
                 </h1>
 
-                <p className="mt-3 max-w-[560px] text-base leading-7 text-[#1f426a]">
+                <p className="mt-2.5 max-w-[520px] text-[0.92rem] leading-6 text-[#1f426a]">
                   OrbiVue combines multi-sensor data, AI models, and historical comparison to help you analyze
                   changes, monitor the environment, and make confident decisions instantly.
                 </p>
@@ -787,20 +787,20 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                 isWorkspaceMode={false}
               />
 
-              <div className="main-card-grid mt-5 grid max-w-[900px] grid-cols-4 gap-4">
+              <div className="main-card-grid mt-4 grid max-w-[840px] grid-cols-4 gap-3.5">
                 {actionCards.map((card) => {
                   const Icon = card.icon;
                   return (
                     <article
                       key={card.title}
-                      className="main-action-card min-h-[148px] rounded-2xl border border-[#d8d8d2] bg-white/86 p-4 shadow-sm backdrop-blur-sm"
+                      className="main-action-card min-h-[128px] rounded-2xl border border-[#d8d8d2] bg-white/86 p-3.5 shadow-sm backdrop-blur-sm"
                     >
-                      <span className={`flex h-11 w-11 items-center justify-center rounded-full ${card.color}`}>
-                        <Icon size={23} strokeWidth={1.8} />
+                      <span className={`flex h-10 w-10 items-center justify-center rounded-full ${card.color}`}>
+                        <Icon size={21} strokeWidth={1.8} />
                       </span>
-                      <h2 className="mt-3 text-base font-extrabold text-[#141b28]">{card.title}</h2>
-                      <p className="mt-1.5 text-[0.82rem] leading-5 text-[#1f426a]">{card.description}</p>
-                      <ArrowRight className="mt-2 text-[#1f426a]" size={21} />
+                      <h2 className="mt-2.5 text-[0.92rem] font-extrabold text-[#141b28]">{card.title}</h2>
+                      <p className="mt-1 text-[0.78rem] leading-[1.18rem] text-[#1f426a]">{card.description}</p>
+                      <ArrowRight className="mt-1.5 text-[#1f426a]" size={19} />
                     </article>
                   );
                 })}

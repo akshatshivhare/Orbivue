@@ -44,7 +44,7 @@ export function WorkspaceSidebar({
       />
       <aside
         className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-[#d8ddd7] bg-[#fbf8f0]/96 py-5 text-[#0f2d46] shadow-[20px_0_60px_rgba(16,35,58,0.12)] transition-[width,transform,padding] duration-300 lg:static lg:translate-x-0 lg:shadow-none ${
-          isCollapsed ? "lg:w-[72px] lg:px-3" : "lg:w-[255px] lg:px-4"
+          isCollapsed ? "lg:w-[68px] lg:px-3" : "lg:w-[236px] lg:px-3.5"
         } w-[255px] px-4 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
@@ -52,7 +52,7 @@ export function WorkspaceSidebar({
         <div className={`flex items-center ${isCollapsed ? "lg:justify-center" : "justify-between"}`}>
           <OrbivueLogo
             className={`!max-w-none transition-all duration-300 ${
-              isCollapsed ? "lg:!w-[48px]" : "!w-[205px]"
+              isCollapsed ? "lg:!w-[46px]" : "!w-[190px]"
             }`}
           />
           <button
@@ -68,7 +68,7 @@ export function WorkspaceSidebar({
         <button
           type="button"
           onClick={onNewChat}
-          className={`mt-8 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#00624b] text-sm font-extrabold text-white shadow-[0_14px_30px_rgba(0,98,75,0.22)] transition hover:bg-[#004d3b] ${
+          className={`mt-7 flex h-10 items-center justify-center gap-2 rounded-xl bg-[#00624b] text-sm font-extrabold text-white shadow-[0_14px_30px_rgba(0,98,75,0.22)] transition hover:bg-[#004d3b] ${
             isCollapsed ? "lg:px-0" : ""
           }`}
           title="New chat"
@@ -77,14 +77,14 @@ export function WorkspaceSidebar({
           <span className={isCollapsed ? "lg:hidden" : ""}>New chat</span>
         </button>
 
-        <nav className="mt-5 space-y-1.5">
+        <nav className="mt-4 space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
               <button
                 key={item.label}
                 type="button"
-                className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition ${
+                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${
                   isCollapsed ? "lg:justify-center lg:px-0" : ""
                 } ${
                   item.active
@@ -100,12 +100,12 @@ export function WorkspaceSidebar({
           })}
         </nav>
 
-        <div className={`mt-6 border-t border-[#d8ddd7] pt-5 ${isCollapsed ? "lg:hidden" : ""}`}>
+        <div className={`mt-5 border-t border-[#d8ddd7] pt-4 ${isCollapsed ? "lg:hidden" : ""}`}>
           <div className="mb-3 flex items-center justify-between text-sm font-bold">
             <span>Recent chats</span>
             <span className="text-lg leading-none">⌃</span>
           </div>
-          <div className="space-y-3.5">
+          <div className="space-y-2.5">
             {recentChats.map((chat) => (
               <button
                 key={chat.title}
@@ -131,7 +131,7 @@ export function WorkspaceSidebar({
         <button
           type="button"
           onClick={isCollapsed ? onToggleCollapse : undefined}
-          className={`mt-auto flex h-11 items-center justify-between rounded-xl border border-[#d8ddd7] bg-white/70 px-4 text-sm font-semibold text-[#10233a] shadow-sm ${
+          className={`mt-auto flex h-10 items-center justify-between rounded-xl border border-[#d8ddd7] bg-white/70 px-4 text-sm font-semibold text-[#10233a] shadow-sm ${
             isCollapsed ? "lg:justify-center lg:px-0" : ""
           }`}
           title={isCollapsed ? "Expand sidebar" : "View all chats"}

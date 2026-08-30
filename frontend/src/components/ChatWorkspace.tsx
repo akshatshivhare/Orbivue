@@ -79,7 +79,7 @@ export function ChatWorkspace({
       className={`main-query w-full rounded-[1.35rem] border border-[#b7d8c8] bg-white/88 shadow-[0_18px_55px_rgba(11,96,72,0.16)] backdrop-blur-md transition-all duration-300 ${
         isWorkspaceMode
           ? "flex min-h-[calc(100svh-12rem)] max-w-[1120px] flex-1 flex-col p-7 xl:max-w-[1180px]"
-          : "mt-5 max-w-[900px] p-4"
+          : "mt-4 max-w-[840px] p-3.5"
       }`}
     >
       <div className={`${isWorkspaceMode ? "flex min-h-0 flex-1 flex-col" : ""}`}>
@@ -149,13 +149,13 @@ export function ChatWorkspace({
         )}
 
         {!isWorkspaceMode && (
-          <div className="flex gap-4">
-            <Sparkles size={23} className="mt-0.5 shrink-0 text-[#1f426a]" />
+          <div className="flex gap-3.5">
+            <Sparkles size={21} className="mt-0.5 shrink-0 text-[#1f426a]" />
             <input
               value={query}
               onChange={(event) => onQueryChange(event.target.value)}
               onKeyDown={handleKeyDown}
-              className="min-w-0 flex-1 bg-transparent text-base font-medium text-[#173452] outline-none placeholder:text-[#173452]"
+              className="min-w-0 flex-1 bg-transparent text-[0.94rem] font-medium text-[#173452] outline-none placeholder:text-[#173452]"
               placeholder="Ask anything about changes, 3D, terrain, water, or history..."
             />
             <ComposerIconButtons
@@ -169,7 +169,7 @@ export function ChatWorkspace({
 
         <div
           className={`flex flex-wrap items-center gap-3 ${
-            isWorkspaceMode ? "mt-auto border-t border-[#d8e1dc] pt-5" : "mt-4 pl-11"
+            isWorkspaceMode ? "mt-auto border-t border-[#d8e1dc] pt-5" : "mt-3.5 pl-10"
           }`}
         >
           {hasTemporalImage && (
@@ -530,8 +530,8 @@ function ComposerAction({
   icon: LucideIcon;
 }) {
   return (
-    <button className="inline-flex items-center gap-2 rounded-lg border border-[#d8e1dc] bg-white px-3.5 py-1.5 text-sm font-semibold text-[#1f426a] shadow-sm">
-      <Icon size={16} />
+    <button className="inline-flex items-center gap-2 rounded-lg border border-[#d8e1dc] bg-white px-3 py-1.5 text-[0.82rem] font-semibold text-[#1f426a] shadow-sm">
+      <Icon size={15} />
       {label}
     </button>
   );
@@ -553,24 +553,24 @@ function ComposerIconButtons({
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
-        className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#d9ddd8] bg-white text-[#14233a] shadow-sm transition hover:border-[#0b7b5b] hover:text-[#0b7b5b]"
+        className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#d9ddd8] bg-white text-[#14233a] shadow-sm transition hover:border-[#0b7b5b] hover:text-[#0b7b5b]"
         aria-label="Attach image"
       >
-        <Paperclip size={21} />
+        <Paperclip size={19} />
       </button>
-      <button className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#d9ddd8] bg-white text-[#14233a] shadow-sm">
-        <Mic size={22} />
+      <button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#d9ddd8] bg-white text-[#14233a] shadow-sm">
+        <Mic size={20} />
       </button>
       <button
         type="button"
         onClick={onSubmit}
         disabled={isLoading || !canSubmit}
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0b7b5b] text-white shadow-[0_12px_30px_rgba(11,123,91,0.28)] transition hover:bg-[#075f47] disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#0b7b5b] text-white shadow-[0_12px_30px_rgba(11,123,91,0.28)] transition hover:bg-[#075f47] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isLoading ? (
           <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/45 border-t-white" />
         ) : (
-          <Send size={20} />
+          <Send size={19} />
         )}
       </button>
     </>
