@@ -3,6 +3,7 @@ import {
   ArrowLeftRight,
   ArrowRight,
   CalendarDays,
+  Check,
   FileText,
   Layers,
   type LucideIcon,
@@ -19,6 +20,10 @@ import type { ReportInput } from "./report/reportUtils";
 import type {
   ChangeAnalysisPayload,
   ChatMessage,
+  CompareMode,
+  CrossModalImagePreviews,
+  CrossModalImageSlot,
+  CrossModalImageState,
   TemporalImagePreviews,
   TemporalImageSlot,
   TemporalImageState,
@@ -34,14 +39,20 @@ type ChatWorkspaceProps = {
   error: string;
   selectedImage: File | null;
   imagePreviewUrl: string;
+  compareMode: CompareMode;
+  onCompareModeChange: (mode: CompareMode) => void;
   temporalImages: TemporalImageState;
   temporalPreviewUrls: TemporalImagePreviews;
+  crossModalImages: CrossModalImageState;
+  crossModalPreviewUrls: CrossModalImagePreviews;
   fileInputRef: RefObject<HTMLInputElement>;
   onImageSelected: (file: File | null) => void;
   onClearImage: () => void;
   onRemoveTemporalImage: (slot: TemporalImageSlot) => void;
   onReplaceTemporalImage: (slot: TemporalImageSlot) => void;
   onSwapTemporalImages: () => void;
+  onRemoveCrossModalImage: (slot: CrossModalImageSlot) => void;
+  onReplaceCrossModalImage: (slot: CrossModalImageSlot) => void;
   onRetryChangeAnalysis: () => void;
   onOpenReport: (report: ReportInput) => void;
   messages: ChatMessage[];
@@ -57,14 +68,20 @@ export function ChatWorkspace({
   error,
   selectedImage,
   imagePreviewUrl,
+  compareMode,
+  onCompareModeChange,
   temporalImages,
   temporalPreviewUrls,
+  crossModalImages,
+  crossModalPreviewUrls,
   fileInputRef,
   onImageSelected,
   onClearImage,
   onRemoveTemporalImage,
   onReplaceTemporalImage,
   onSwapTemporalImages,
+  onRemoveCrossModalImage,
+  onReplaceCrossModalImage,
   onRetryChangeAnalysis,
   onOpenReport,
   messages,
@@ -72,6 +89,7 @@ export function ChatWorkspace({
 }: ChatWorkspaceProps) {
   const hasTemporalPair = Boolean(temporalImages.t1 && temporalImages.t2);
   const hasTemporalImage = Boolean(temporalImages.t1 || temporalImages.t2);
+  const hasCrossModalPair = Boolean(crossModalImages.optical && crossModalImages.sar);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
@@ -101,7 +119,9 @@ export function ChatWorkspace({
         {isWorkspaceMode && (messages.length > 0 || error || isLoading) && (
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1">
             {messages.map((message) =>
-              message.role === "assistant" && message.temporalImages && message.changeAnalysis ? (
+              message.role === "assistant" && message.mode === "cross_modal" && message.crossModalImages ? (
+                <CrossModalResultCard key={message.id} message={message} onOpenReport={onOpenReport} />
+              ) : message.role === "assistant" && message.temporalImages && message.changeAnalysis ? (
                 <TemporalResultCard
                   key={message.id}
                   message={message}
@@ -137,14 +157,18 @@ export function ChatWorkspace({
             {isLoading && (
               <article className="mr-auto max-w-[86%] rounded-2xl border border-[#d8e1dc] bg-white/92 px-4 py-3 text-sm font-semibold text-[#173452] shadow-sm">
                 <span className="mr-2 inline-block h-3 w-3 animate-spin rounded-full border-2 border-[#0b7b5b]/35 border-t-[#0b7b5b]" />
-                {isChangeLoading ? "Comparing T1 and T2..." : "OrbiVue is analyzing..."}
+                {isChangeLoading
+                  ? "Comparing T1 and T2..."
+                  : compareMode === "cross_modal"
+                    ? "Analyzing optical and SAR imagery..."
+                    : "OrbiVue is analyzing..."}
               </article>
             )}
 
             {error && (
               <article className="mr-auto max-w-[86%] rounded-2xl border border-[#f4c7c2] bg-[#fff6f4] px-4 py-3 text-sm font-semibold text-[#b42318] shadow-sm">
                 <div>{error}</div>
-                {hasTemporalPair && (
+                {compareMode === "temporal" && hasTemporalPair && (
                   <button
                     type="button"
                     onClick={onRetryChangeAnalysis}
@@ -170,7 +194,7 @@ export function ChatWorkspace({
               placeholder="Ask anything about changes, 3D, terrain, water, or history..."
             />
             <ComposerIconButtons
-              canSubmit={Boolean(selectedImage || hasTemporalPair)}
+              canSubmit={Boolean(selectedImage || hasTemporalPair || hasCrossModalPair)}
               fileInputRef={fileInputRef}
               onSubmit={onSubmit}
               isLoading={isLoading}
@@ -183,7 +207,10 @@ export function ChatWorkspace({
             isWorkspaceMode ? "mt-auto border-t border-[#d8e1dc] pt-5" : "mt-3.5 pl-10"
           }`}
         >
-          {hasTemporalImage && (
+          {isWorkspaceMode && (
+            <CompareModeToggle compareMode={compareMode} onCompareModeChange={onCompareModeChange} disabled={isLoading} />
+          )}
+          {compareMode === "temporal" && hasTemporalImage && (
             <TemporalAttachmentStrip
               temporalImages={temporalImages}
               onRemoveTemporalImage={onRemoveTemporalImage}
@@ -192,7 +219,15 @@ export function ChatWorkspace({
               disabled={isLoading}
             />
           )}
-          {!hasTemporalImage && selectedImage && (
+          {compareMode === "cross_modal" && (
+            <CrossModalAttachmentStrip
+              crossModalImages={crossModalImages}
+              onRemoveCrossModalImage={onRemoveCrossModalImage}
+              onReplaceCrossModalImage={onReplaceCrossModalImage}
+              disabled={isLoading}
+            />
+          )}
+          {compareMode === "temporal" && !hasTemporalImage && selectedImage && (
             <div className="relative flex max-w-[360px] items-center gap-3 rounded-xl border border-[#b7d8c8] bg-[#e8f4eb] px-3 py-2.5 pr-10 text-sm font-semibold text-[#0b6048] shadow-sm">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[#0b6048] shadow-inner">
                 <Paperclip size={18} />
@@ -214,7 +249,7 @@ export function ChatWorkspace({
           {isWorkspaceMode && (
             <div className="ml-auto flex items-center gap-3">
               <ComposerIconButtons
-                canSubmit={Boolean(selectedImage || hasTemporalPair)}
+                canSubmit={Boolean(selectedImage || hasTemporalPair || hasCrossModalPair)}
                 fileInputRef={fileInputRef}
                 onSubmit={onSubmit}
                 isLoading={isLoading}
@@ -223,7 +258,7 @@ export function ChatWorkspace({
           )}
         </div>
 
-        {hasTemporalImage && (
+        {compareMode === "temporal" && hasTemporalImage && (
           <div className="mt-3 flex flex-wrap items-center gap-2 pl-1 text-xs font-bold text-[#657a8c]">
             <span
               className={`rounded-full px-3 py-1 ${
@@ -236,6 +271,18 @@ export function ChatWorkspace({
           </div>
         )}
 
+        {compareMode === "cross_modal" && isWorkspaceMode && (
+          <div className="mt-3">
+            <CrossModalUploadPanel
+              crossModalImages={crossModalImages}
+              crossModalPreviewUrls={crossModalPreviewUrls}
+              onRemoveCrossModalImage={onRemoveCrossModalImage}
+              onReplaceCrossModalImage={onReplaceCrossModalImage}
+              disabled={isLoading}
+            />
+          </div>
+        )}
+
         {isWorkspaceMode && (
           <div className="mt-4 flex items-center gap-4">
             <Sparkles size={23} className="shrink-0 text-[#1f426a]" />
@@ -245,7 +292,9 @@ export function ChatWorkspace({
               onKeyDown={handleKeyDown}
               className="min-w-0 flex-1 bg-transparent text-base font-medium text-[#173452] outline-none placeholder:text-[#173452]"
               placeholder={
-                hasTemporalPair
+                compareMode === "cross_modal"
+                  ? "Ask what complementary information the optical and SAR sensors reveal..."
+                  : hasTemporalPair
                   ? "Ask a follow-up about changes between T1 and T2..."
                   : "Ask anything about changes, 3D, terrain, water, or history..."
               }
@@ -266,7 +315,37 @@ export function ChatWorkspace({
       )}
       {temporalPreviewUrls.t1 && <span className="sr-only">T1 attached</span>}
       {temporalPreviewUrls.t2 && <span className="sr-only">T2 attached</span>}
+      {crossModalPreviewUrls.optical && <span className="sr-only">Optical image attached</span>}
+      {crossModalPreviewUrls.sar && <span className="sr-only">SAR image attached</span>}
     </section>
+  );
+}
+
+function CompareModeToggle({
+  compareMode,
+  onCompareModeChange,
+  disabled,
+}: {
+  compareMode: CompareMode;
+  onCompareModeChange: (mode: CompareMode) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="inline-flex rounded-xl border border-[#b7d8c8] bg-white/82 p-1 shadow-sm" aria-label="Compare mode">
+      {(["temporal", "cross_modal"] as CompareMode[]).map((mode) => (
+        <button
+          key={mode}
+          type="button"
+          onClick={() => onCompareModeChange(mode)}
+          disabled={disabled}
+          className={`rounded-lg px-3 py-1.5 text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-60 ${
+            compareMode === mode ? "bg-[#00624b] text-white shadow-sm" : "text-[#0b6048] hover:bg-[#e8f4eb]"
+          }`}
+        >
+          {mode === "temporal" ? "Change Over Time" : "Optical + SAR"}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -497,6 +576,89 @@ function TemporalImagePreview({ image }: { image: TemporalMessageImage }) {
   );
 }
 
+function CrossModalResultCard({
+  message,
+  onOpenReport,
+}: {
+  message: ChatMessage;
+  onOpenReport: (report: ReportInput) => void;
+}) {
+  const images = message.crossModalImages;
+
+  if (!images) {
+    return null;
+  }
+
+  return (
+    <article className="mr-auto w-full rounded-[1.25rem] border border-[#c9ddd4] bg-white/95 p-4 text-[#173452] shadow-[0_16px_45px_rgba(16,35,58,0.1)]">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <div className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#0b6048]">
+            OrbiVue AI
+          </div>
+          <div className="mt-1 text-lg font-black text-[#10233a]">OrbiVue Cross-Modal Analysis</div>
+        </div>
+        <span className="rounded-full bg-[#e8f4eb] px-3 py-1 text-xs font-bold text-[#0b6048]">
+          Optical + SAR
+        </span>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <SensorImagePreview image={images.optical} />
+        <SensorImagePreview image={images.sar} />
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-[#d8e1dc] bg-[#fbfaf6] p-4">
+        <div className="text-sm font-extrabold uppercase tracking-[0.12em] text-[#0b6048]">
+          OrbiVue Cross-Modal Analysis
+        </div>
+        <pre className="mt-2 whitespace-pre-wrap font-sans text-sm leading-6 text-[#173452]">
+          {cleanModelText(message.text)}
+        </pre>
+      </div>
+
+      <div className="mt-4">
+        <button
+          type="button"
+          onClick={() =>
+            onOpenReport({
+              mode: "cross_modal",
+              query: message.query,
+              finalAnswer: cleanModelText(message.text),
+              opticalImage: images.optical,
+              sarImage: images.sar,
+              generatedAt: message.generatedAt,
+            })
+          }
+          className="inline-flex items-center gap-2 rounded-lg border border-[#b7d8c8] bg-white px-3 py-2 text-xs font-black text-[#0b6048] shadow-sm transition hover:bg-[#e8f4eb]"
+          aria-label="Generate OrbiVue cross-modal analysis report"
+        >
+          <FileText size={15} />
+          Generate Report
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function SensorImagePreview({ image }: { image: { name: string; url: string; label: string } }) {
+  return (
+    <figure className="min-w-0 rounded-2xl border border-[#d8e1dc] bg-[#fbfaf6] p-3">
+      <div className="mb-2">
+        <figcaption className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#0b6048]">
+          {image.label}
+        </figcaption>
+        <div className="max-w-[320px] truncate text-xs font-semibold text-[#657a8c]">{image.name}</div>
+      </div>
+      <img
+        src={image.url}
+        alt={`${image.label} preview`}
+        className="block max-h-[260px] w-full rounded-xl bg-[#0d2730] object-contain"
+      />
+    </figure>
+  );
+}
+
 function ChangeCard({ change }: { change: ChangeAnalysisPayload["changes"][number] }) {
   return (
     <article className="rounded-2xl border border-[#d8e1dc] bg-white/88 p-3 shadow-sm">
@@ -591,6 +753,171 @@ function TemporalAttachmentStrip({
         </button>
       )}
     </div>
+  );
+}
+
+function CrossModalUploadPanel({
+  crossModalImages,
+  crossModalPreviewUrls,
+  onRemoveCrossModalImage,
+  onReplaceCrossModalImage,
+  disabled,
+}: {
+  crossModalImages: CrossModalImageState;
+  crossModalPreviewUrls: CrossModalImagePreviews;
+  onRemoveCrossModalImage: (slot: CrossModalImageSlot) => void;
+  onReplaceCrossModalImage: (slot: CrossModalImageSlot) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="grid gap-3 md:grid-cols-2">
+      <CrossModalUploadCard
+        slot="optical"
+        label="OPTICAL / MULTISPECTRAL"
+        helper="Upload optical imagery"
+        file={crossModalImages.optical}
+        previewUrl={crossModalPreviewUrls.optical}
+        onRemove={() => onRemoveCrossModalImage("optical")}
+        onReplace={() => onReplaceCrossModalImage("optical")}
+        disabled={disabled}
+      />
+      <CrossModalUploadCard
+        slot="sar"
+        label="SAR / RADAR"
+        helper="Upload SAR imagery"
+        file={crossModalImages.sar}
+        previewUrl={crossModalPreviewUrls.sar}
+        onRemove={() => onRemoveCrossModalImage("sar")}
+        onReplace={() => onReplaceCrossModalImage("sar")}
+        disabled={disabled}
+      />
+    </div>
+  );
+}
+
+function CrossModalAttachmentStrip({
+  crossModalImages,
+  onRemoveCrossModalImage,
+  onReplaceCrossModalImage,
+  disabled,
+}: {
+  crossModalImages: CrossModalImageState;
+  onRemoveCrossModalImage: (slot: CrossModalImageSlot) => void;
+  onReplaceCrossModalImage: (slot: CrossModalImageSlot) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {crossModalImages.optical ? (
+        <TemporalChip
+          label="OPTICAL / MULTISPECTRAL"
+          fileName={crossModalImages.optical.name}
+          onRemove={() => onRemoveCrossModalImage("optical")}
+          onReplace={() => onReplaceCrossModalImage("optical")}
+          disabled={disabled}
+        />
+      ) : (
+        <CompactUploadButton label="Add Optical" onClick={() => onReplaceCrossModalImage("optical")} disabled={disabled} />
+      )}
+      {crossModalImages.sar ? (
+        <TemporalChip
+          label="SAR / RADAR"
+          fileName={crossModalImages.sar.name}
+          onRemove={() => onRemoveCrossModalImage("sar")}
+          onReplace={() => onReplaceCrossModalImage("sar")}
+          disabled={disabled}
+        />
+      ) : (
+        <CompactUploadButton label="Add SAR" onClick={() => onReplaceCrossModalImage("sar")} disabled={disabled} />
+      )}
+    </div>
+  );
+}
+
+function CompactUploadButton({ label, onClick, disabled }: { label: string; onClick: () => void; disabled: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="inline-flex items-center gap-2 rounded-xl border border-dashed border-[#b7d8c8] bg-white/80 px-3 py-2.5 text-sm font-black text-[#0b6048] shadow-sm transition hover:bg-[#e8f4eb] disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      <Paperclip size={16} />
+      {label}
+    </button>
+  );
+}
+
+function CrossModalUploadCard({
+  label,
+  helper,
+  file,
+  previewUrl,
+  onRemove,
+  onReplace,
+  disabled,
+}: {
+  slot: CrossModalImageSlot;
+  label: string;
+  helper: string;
+  file: File | null;
+  previewUrl: string;
+  onRemove: () => void;
+  onReplace: () => void;
+  disabled: boolean;
+}) {
+  return (
+    <article className="min-w-0 rounded-2xl border border-[#c9ddd4] bg-white/86 p-3 shadow-sm">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-[0.72rem] font-black uppercase tracking-[0.14em] text-[#0b6048]">{label}</h3>
+          <p className="mt-1 text-sm font-semibold text-[#657a8c]">{helper}</p>
+        </div>
+        {file && (
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e8f4eb] text-[#0b6048]">
+            <Check size={16} />
+          </span>
+        )}
+      </div>
+
+      {previewUrl ? (
+        <img src={previewUrl} alt={`${label} preview`} className="block h-40 w-full rounded-xl bg-[#0d2730] object-contain" />
+      ) : (
+        <button
+          type="button"
+          onClick={onReplace}
+          disabled={disabled}
+          className="flex h-40 w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#b7d8c8] bg-[#fbfaf6] text-sm font-black text-[#0b6048] transition hover:bg-[#e8f4eb] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <Paperclip size={22} />
+          Upload
+        </button>
+      )}
+
+      {file && (
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <span className="min-w-0 truncate text-xs font-semibold text-[#657a8c]">{file.name}</span>
+          <span className="flex shrink-0 gap-2">
+            <button
+              type="button"
+              onClick={onReplace}
+              disabled={disabled}
+              className="rounded-lg bg-[#e8f4eb] px-2.5 py-1.5 text-xs font-black text-[#0b6048] transition hover:bg-[#d9eee0] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Replace
+            </button>
+            <button
+              type="button"
+              onClick={onRemove}
+              disabled={disabled}
+              className="rounded-lg bg-white px-2.5 py-1.5 text-xs font-black text-[#173452] shadow-sm transition hover:bg-[#0b7b5b] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Remove
+            </button>
+          </span>
+        </div>
+      )}
+    </article>
   );
 }
 
@@ -712,4 +1039,8 @@ function directionMarker(direction: string) {
 function formatConfidence(confidence: number) {
   const normalized = confidence <= 1 ? confidence * 100 : confidence;
   return `${Math.round(Math.max(0, Math.min(100, normalized)))}%`;
+}
+
+function cleanModelText(text: string) {
+  return text.replace(/\\n/g, "\n").replace(/\*\*/g, "").trim();
 }

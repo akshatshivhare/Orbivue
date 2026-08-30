@@ -3,13 +3,21 @@ export type BoundingBox = {
   box: [number, number, number, number];
 };
 
-export type AnalysisMode = "analysis" | "grounding" | "change_analysis" | "change_vqa" | null;
+export type AnalysisMode = "analysis" | "grounding" | "change_analysis" | "change_vqa" | "cross_modal" | null;
 
 export type TemporalImageSlot = "t1" | "t2";
 
 export type TemporalImageState = Record<TemporalImageSlot, File | null>;
 
 export type TemporalImagePreviews = Record<TemporalImageSlot, string>;
+
+export type CompareMode = "temporal" | "cross_modal";
+
+export type CrossModalImageSlot = "optical" | "sar";
+
+export type CrossModalImageState = Record<CrossModalImageSlot, File | null>;
+
+export type CrossModalImagePreviews = Record<CrossModalImageSlot, string>;
 
 export type ChangeDirection =
   | "increased"
@@ -45,6 +53,12 @@ export type TemporalMessageImage = {
   date?: string;
 };
 
+export type CrossModalMessageImage = {
+  name: string;
+  url: string;
+  label: string;
+};
+
 export type ChatMessage = {
   id: string;
   role: "user" | "assistant";
@@ -58,6 +72,10 @@ export type ChatMessage = {
   temporalImages?: {
     t1: TemporalMessageImage;
     t2: TemporalMessageImage;
+  };
+  crossModalImages?: {
+    optical: CrossModalMessageImage;
+    sar: CrossModalMessageImage;
   };
   showTemporalImages?: boolean;
   changeAnalysis?: ChangeAnalysisPayload;

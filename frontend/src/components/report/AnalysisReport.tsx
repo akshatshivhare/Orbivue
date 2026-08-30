@@ -106,6 +106,29 @@ export function AnalysisReport({ report }: AnalysisReportProps) {
 }
 
 function ReportImages({ report }: { report: ReportInput }) {
+  if (report.mode === "cross_modal") {
+    return (
+      <section className="analysis-report-section">
+        <div className="analysis-report-section-heading">
+          <h3>Optical and SAR imagery</h3>
+          <span>Sensor pair</span>
+        </div>
+        <div className="analysis-report-image-grid">
+          {report.opticalImage && (
+            <ReportFigure
+              imageUrl={report.opticalImage.url}
+              label={report.opticalImage.label}
+              name={report.opticalImage.name}
+            />
+          )}
+          {report.sarImage && (
+            <ReportFigure imageUrl={report.sarImage.url} label={report.sarImage.label} name={report.sarImage.name} />
+          )}
+        </div>
+      </section>
+    );
+  }
+
   if (report.mode === "temporal") {
     return (
       <section className="analysis-report-section">

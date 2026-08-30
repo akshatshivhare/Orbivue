@@ -1,6 +1,6 @@
-import type { BoundingBox, ChangeAnalysisPayload, TemporalMessageImage } from "../workspaceTypes";
+import type { BoundingBox, ChangeAnalysisPayload, CrossModalMessageImage, TemporalMessageImage } from "../workspaceTypes";
 
-export type ReportMode = "analysis" | "grounding" | "temporal";
+export type ReportMode = "analysis" | "grounding" | "temporal" | "cross_modal";
 
 export type ReportImage = {
   name: string;
@@ -16,6 +16,8 @@ export type ReportInput = {
   sourceImage?: ReportImage | null;
   beforeImage?: TemporalMessageImage | null;
   afterImage?: TemporalMessageImage | null;
+  opticalImage?: CrossModalMessageImage | null;
+  sarImage?: CrossModalMessageImage | null;
   generatedAt?: Date | string;
   changeAnalysis?: ChangeAnalysisPayload | null;
 };
@@ -81,6 +83,10 @@ export function reportTypeLabel(mode: ReportMode): string {
     return "Temporal Change";
   }
 
+  if (mode === "cross_modal") {
+    return "Cross-Modal Optical + SAR";
+  }
+
   return "Single Image";
 }
 
@@ -91,6 +97,14 @@ export function buildSummaryCards(report: ReportInput): SummaryCard[] {
       { label: "Analysis Type", value: "Temporal Change" },
       { label: "Images Compared", value: "2" },
       { label: "Change Categories", value: String(changeCategories), note: "Explicitly derived" },
+    ];
+  }
+
+  if (report.mode === "cross_modal") {
+    return [
+      { label: "Analysis Type", value: "Optical + SAR" },
+      { label: "Images Compared", value: "2" },
+      { label: "Sensors", value: "2", note: "Optical and SAR" },
     ];
   }
 
@@ -120,6 +134,10 @@ export function chartTitleForMode(mode: ReportMode): string {
     return "Detected Regions";
   }
 
+  if (mode === "cross_modal") {
+    return "Cross-Modal Finding Counts";
+  }
+
   return "Observable Finding Counts";
 }
 
@@ -130,6 +148,10 @@ export function chartDataForReport(report: ReportInput): ChartDatum[] {
 
   if (report.mode === "temporal") {
     return explicitTemporalCategoryCounts(report);
+  }
+
+  if (report.mode === "cross_modal") {
+    return [];
   }
 
   return explicitSingleImageCategoryCounts(report);

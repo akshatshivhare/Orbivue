@@ -21,6 +21,10 @@ import type {
   ChangeDirection,
   ChangeItem,
   ChatMessage,
+  CompareMode,
+  CrossModalImagePreviews,
+  CrossModalImageSlot,
+  CrossModalImageState,
   TemporalImagePreviews,
   TemporalImageSlot,
   TemporalImageState,
@@ -57,6 +61,7 @@ const MAX_ANALYSIS_IMAGE_SIDE = 1280;
 const ANALYSIS_IMAGE_QUALITY = 0.86;
 const SINGLE_ANALYSIS_ENDPOINT = apiUrl("/api/analyze");
 const CHANGE_ANALYSIS_ENDPOINT = apiUrl("/api/change-analyze");
+const CROSS_MODAL_ENDPOINT = apiUrl("/api/cross-modal");
 
 type MainPageProps = {
   userName?: string;
@@ -188,6 +193,14 @@ function buildTemporalPairKey(t1: File | null, t2: File | null) {
   return `${fileKey(t1)}::${fileKey(t2)}`;
 }
 
+function buildCrossModalPairKey(optical: File | null, sar: File | null) {
+  if (!optical || !sar) {
+    return "";
+  }
+
+  return `${fileKey(optical)}::${fileKey(sar)}`;
+}
+
 function normalizeTextArray(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
@@ -267,15 +280,34 @@ function normalizeChangeAnalysisResponse(data: unknown): ChangeAnalysisPayload {
   };
 }
 
+function normalizeCrossModalResponse(data: unknown) {
+  const source = data && typeof data === "object" ? (data as Record<string, unknown>) : {};
+  const finalAnswer =
+    typeof source.final_answer === "string" && source.final_answer.trim()
+      ? source.final_answer.replace(/\\n/g, "\n").replace(/\*\*/g, "").trim()
+      : "Cross-modal analysis completed.";
+
+  return {
+    mode: "cross_modal" as const,
+    final_answer: finalAnswer,
+  };
+}
+
 export function MainPage({ userName = "Explorer" }: MainPageProps) {
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isChangeLoading, setIsChangeLoading] = useState(false);
+  const [compareMode, setCompareMode] = useState<CompareMode>("temporal");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const [temporalImages, setTemporalImages] = useState<TemporalImageState>({ t1: null, t2: null });
   const [temporalPreviewUrls, setTemporalPreviewUrls] = useState<TemporalImagePreviews>({ t1: "", t2: "" });
+  const [crossModalImages, setCrossModalImages] = useState<CrossModalImageState>({ optical: null, sar: null });
+  const [crossModalPreviewUrls, setCrossModalPreviewUrls] = useState<CrossModalImagePreviews>({
+    optical: "",
+    sar: "",
+  });
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [latestReport, setLatestReport] = useState<ReportInput | null>(null);
   const [activeReport, setActiveReport] = useState<ReportInput | null>(null);
@@ -287,21 +319,25 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
   const submitLockRef = useRef(false);
   const changeSubmitLockRef = useRef(false);
   const temporalAttachSlotRef = useRef<TemporalImageSlot | "auto">("auto");
+  const crossModalAttachSlotRef = useRef<CrossModalImageSlot | "auto">("auto");
   const analyzedPairRef = useRef<string | null>(null);
   const compressedImageRef = useRef<{ source: File; file: File } | null>(null);
   const compressedTemporalImagesRef = useRef<Partial<Record<TemporalImageSlot, { source: File; file: File }>>>({});
+  const compressedCrossModalImagesRef = useRef<Partial<Record<CrossModalImageSlot, { source: File; file: File }>>>({});
 
   const temporalPairKey = useMemo(
     () => buildTemporalPairKey(temporalImages.t1, temporalImages.t2),
     [temporalImages.t1, temporalImages.t2]
   );
   const hasTemporalPair = Boolean(temporalImages.t1 && temporalImages.t2);
+  const hasCrossModalPair = Boolean(crossModalImages.optical && crossModalImages.sar);
   const isBusy = isLoading || isChangeLoading;
   const isWorkspaceMode =
     hasWorkspaceOpened ||
     query.trim().length > 0 ||
     selectedImage !== null ||
     Boolean(temporalImages.t1 || temporalImages.t2) ||
+    Boolean(crossModalImages.optical || crossModalImages.sar) ||
     messages.length > 0;
 
   useEffect(() => {
@@ -334,6 +370,22 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     };
   }, [temporalImages.t1, temporalImages.t2]);
 
+  useEffect(() => {
+    const opticalUrl = crossModalImages.optical ? URL.createObjectURL(crossModalImages.optical) : "";
+    const sarUrl = crossModalImages.sar ? URL.createObjectURL(crossModalImages.sar) : "";
+
+    setCrossModalPreviewUrls({ optical: opticalUrl, sar: sarUrl });
+
+    return () => {
+      if (opticalUrl) {
+        URL.revokeObjectURL(opticalUrl);
+      }
+      if (sarUrl) {
+        URL.revokeObjectURL(sarUrl);
+      }
+    };
+  }, [crossModalImages.optical, crossModalImages.sar]);
+
   const updateQuery = (value: string) => {
     setQuery(value);
     if (value.trim()) {
@@ -343,6 +395,31 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
 
   const selectImage = (file: File | null) => {
     if (!file) {
+      return;
+    }
+
+    if (compareMode === "cross_modal") {
+      const requestedSlot = crossModalAttachSlotRef.current;
+      crossModalAttachSlotRef.current = "auto";
+      const slot: CrossModalImageSlot =
+        requestedSlot !== "auto" ? requestedSlot : !crossModalImages.optical ? "optical" : "sar";
+      const nextCrossModalImages =
+        slot === "optical"
+          ? { optical: file, sar: crossModalImages.sar }
+          : { optical: crossModalImages.optical, sar: file };
+
+      setCrossModalImages(nextCrossModalImages);
+      setError("");
+      setHasWorkspaceOpened(true);
+      compressedCrossModalImagesRef.current[slot] = undefined;
+
+      console.log(`[OrbiVue CrossModal] ${slot === "optical" ? "Optical" : "SAR"} attached:`, file.name);
+      console.log("[OrbiVue CrossModal] pair ready:", Boolean(nextCrossModalImages.optical && nextCrossModalImages.sar));
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
       return;
     }
 
@@ -388,6 +465,12 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     }
   };
 
+  const clearCrossModalImages = () => {
+    setCrossModalImages({ optical: null, sar: null });
+    compressedCrossModalImagesRef.current = {};
+    crossModalAttachSlotRef.current = "auto";
+  };
+
   const removeTemporalImage = (slot: TemporalImageSlot) => {
     const nextTemporalImages =
       slot === "t1"
@@ -406,8 +489,31 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     }
   };
 
+  const removeCrossModalImage = (slot: CrossModalImageSlot) => {
+    const nextCrossModalImages =
+      slot === "optical"
+        ? { optical: null, sar: crossModalImages.sar }
+        : { optical: crossModalImages.optical, sar: null };
+
+    setCrossModalImages(nextCrossModalImages);
+    setError("");
+    compressedCrossModalImagesRef.current[slot] = undefined;
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const replaceTemporalImage = (slot: TemporalImageSlot) => {
     temporalAttachSlotRef.current = slot;
+    setCompareMode("temporal");
+    fileInputRef.current?.click();
+  };
+
+  const replaceCrossModalImage = (slot: CrossModalImageSlot) => {
+    crossModalAttachSlotRef.current = slot;
+    setCompareMode("cross_modal");
+    setHasWorkspaceOpened(true);
     fileInputRef.current?.click();
   };
 
@@ -432,6 +538,8 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     setQuery("");
     setError("");
     clearSelectedImage();
+    clearCrossModalImages();
+    setCompareMode("temporal");
     setHasWorkspaceOpened(true);
     setIsSidebarOpen(false);
   };
@@ -490,6 +598,137 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
       file: compressed,
     };
     return compressed;
+  };
+
+  const getCompressedCrossModalImage = async (slot: CrossModalImageSlot, file: File) => {
+    const cached = compressedCrossModalImagesRef.current[slot];
+
+    if (cached?.source === file) {
+      return cached.file;
+    }
+
+    const compressed = await compressImageForAnalysis(file);
+    compressedCrossModalImagesRef.current[slot] = {
+      source: file,
+      file: compressed,
+    };
+    return compressed;
+  };
+
+  const runCrossModalAnalysis = async (crossModalQuery: string) => {
+    const trimmedQuery = crossModalQuery.trim();
+
+    if (submitLockRef.current || isBusy) {
+      return;
+    }
+
+    if (!crossModalImages.optical) {
+      alert("Please attach an optical image first!");
+      return;
+    }
+
+    if (!crossModalImages.sar) {
+      alert("Please attach a SAR image first!");
+      return;
+    }
+
+    if (!trimmedQuery) {
+      return;
+    }
+
+    submitLockRef.current = true;
+    setIsLoading(true);
+    setError("");
+    setHasWorkspaceOpened(true);
+
+    const currentOpticalUrl = crossModalPreviewUrls.optical;
+    const currentSarUrl = crossModalPreviewUrls.sar;
+    const currentOpticalName = crossModalImages.optical.name;
+    const currentSarName = crossModalImages.sar.name;
+
+    setMessages((current) => [
+      ...current,
+      {
+        id: `user-cross-modal-${Date.now()}`,
+        role: "user",
+        text: trimmedQuery,
+        imageName: "Optical + SAR image pair",
+      },
+    ]);
+
+    try {
+      console.log("[OrbiVue CrossModal] submitting analysis");
+      console.log("[OrbiVue CrossModal] endpoint:", CROSS_MODAL_ENDPOINT);
+
+      const [opticalImage, sarImage] = await Promise.all([
+        getCompressedCrossModalImage("optical", crossModalImages.optical),
+        getCompressedCrossModalImage("sar", crossModalImages.sar),
+      ]);
+      const formData = new FormData();
+
+      formData.append("optical_image", opticalImage, opticalImage.name);
+      formData.append("sar_image", sarImage, sarImage.name);
+      formData.append("query", trimmedQuery);
+
+      const response = await fetch(CROSS_MODAL_ENDPOINT, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+
+      console.log("[OrbiVue CrossModal] response:", data);
+
+      if (!response.ok) {
+        throw new Error(data.detail || data.final_answer || "Cross-modal analysis request failed.");
+      }
+
+      const crossModalAnalysis = normalizeCrossModalResponse(data);
+      const generatedAt = new Date().toISOString();
+      const crossModalMessageImages = {
+        optical: {
+          name: currentOpticalName,
+          url: currentOpticalUrl,
+          label: "OPTICAL / MULTISPECTRAL",
+        },
+        sar: {
+          name: currentSarName,
+          url: currentSarUrl,
+          label: "SAR / RADAR",
+        },
+      };
+      const reportInput: ReportInput = {
+        mode: "cross_modal",
+        query: trimmedQuery,
+        finalAnswer: crossModalAnalysis.final_answer,
+        opticalImage: crossModalMessageImages.optical,
+        sarImage: crossModalMessageImages.sar,
+        generatedAt,
+      };
+
+      setLatestReport(reportInput);
+      setMessages((current) => [
+        ...current,
+        {
+          id: `assistant-cross-modal-${Date.now()}`,
+          role: "assistant",
+          text: crossModalAnalysis.final_answer,
+          query: trimmedQuery,
+          generatedAt,
+          mode: "cross_modal",
+          crossModalImages: crossModalMessageImages,
+        },
+      ]);
+      setQuery("");
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? `Cross-modal analysis could not be completed. ${requestError.message}`
+          : "Cross-modal analysis could not be completed."
+      );
+    } finally {
+      submitLockRef.current = false;
+      setIsLoading(false);
+    }
   };
 
   const runChangeAnalysis = useCallback(
@@ -612,6 +851,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
 
   useEffect(() => {
     if (
+      compareMode !== "temporal" ||
       !temporalPairKey ||
       !temporalPreviewUrls.t1 ||
       !temporalPreviewUrls.t2 ||
@@ -624,7 +864,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
 
     analyzedPairRef.current = temporalPairKey;
     void runChangeAnalysis("", { automatic: true });
-  }, [isChangeLoading, runChangeAnalysis, temporalPairKey, temporalPreviewUrls.t1, temporalPreviewUrls.t2]);
+  }, [compareMode, isChangeLoading, runChangeAnalysis, temporalPairKey, temporalPreviewUrls.t1, temporalPreviewUrls.t2]);
 
   const retryChangeAnalysis = () => {
     if (!hasTemporalPair || isBusy) {
@@ -637,6 +877,11 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
 
   const submitQuery = async () => {
     const trimmedQuery = query.trim();
+
+    if (compareMode === "cross_modal") {
+      await runCrossModalAnalysis(trimmedQuery);
+      return;
+    }
 
     if (hasTemporalPair) {
       if (!trimmedQuery || isBusy || changeSubmitLockRef.current) {
@@ -793,14 +1038,24 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                 error={error}
                 selectedImage={selectedImage}
                 imagePreviewUrl={imagePreviewUrl}
+                compareMode={compareMode}
+                onCompareModeChange={(mode) => {
+                  setCompareMode(mode);
+                  setError("");
+                  setHasWorkspaceOpened(true);
+                }}
                 temporalImages={temporalImages}
                 temporalPreviewUrls={temporalPreviewUrls}
+                crossModalImages={crossModalImages}
+                crossModalPreviewUrls={crossModalPreviewUrls}
                 fileInputRef={fileInputRef}
                 onImageSelected={selectImage}
                 onClearImage={clearSelectedImage}
                 onRemoveTemporalImage={removeTemporalImage}
                 onReplaceTemporalImage={replaceTemporalImage}
                 onSwapTemporalImages={swapTemporalImages}
+                onRemoveCrossModalImage={removeCrossModalImage}
+                onReplaceCrossModalImage={replaceCrossModalImage}
                 onRetryChangeAnalysis={retryChangeAnalysis}
                 onOpenReport={setActiveReport}
                 messages={messages}
@@ -839,14 +1094,24 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                 error={error}
                 selectedImage={selectedImage}
                 imagePreviewUrl={imagePreviewUrl}
+                compareMode={compareMode}
+                onCompareModeChange={(mode) => {
+                  setCompareMode(mode);
+                  setError("");
+                  setHasWorkspaceOpened(true);
+                }}
                 temporalImages={temporalImages}
                 temporalPreviewUrls={temporalPreviewUrls}
+                crossModalImages={crossModalImages}
+                crossModalPreviewUrls={crossModalPreviewUrls}
                 fileInputRef={fileInputRef}
                 onImageSelected={selectImage}
                 onClearImage={clearSelectedImage}
                 onRemoveTemporalImage={removeTemporalImage}
                 onReplaceTemporalImage={replaceTemporalImage}
                 onSwapTemporalImages={swapTemporalImages}
+                onRemoveCrossModalImage={removeCrossModalImage}
+                onReplaceCrossModalImage={replaceCrossModalImage}
                 onRetryChangeAnalysis={retryChangeAnalysis}
                 onOpenReport={setActiveReport}
                 messages={messages}
@@ -860,7 +1125,16 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                     <button
                       type="button"
                       key={card.title}
-                      onClick={card.title === "Generate Reports" ? openLatestReportFromHome : undefined}
+                      onClick={
+                        card.title === "Generate Reports"
+                          ? openLatestReportFromHome
+                          : card.title === "Compare Over Time"
+                            ? () => {
+                                setCompareMode("temporal");
+                                setHasWorkspaceOpened(true);
+                              }
+                            : undefined
+                      }
                       className="main-action-card min-h-[128px] rounded-2xl border border-[#d8d8d2] bg-white/86 p-3.5 text-left shadow-sm backdrop-blur-sm transition hover:border-[#b7d8c8] hover:bg-white/95"
                     >
                       <span className={`flex h-10 w-10 items-center justify-center rounded-full ${card.color}`}>
