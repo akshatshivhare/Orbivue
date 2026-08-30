@@ -1,4 +1,4 @@
-import type { KeyboardEvent, RefObject } from "react";
+import { useEffect, useState, type KeyboardEvent, type RefObject } from "react";
 import {
   ArrowLeftRight,
   ArrowRight,
@@ -12,6 +12,7 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
+import { BeforeAfterSlider } from "./BeforeAfterSlider";
 import { GroundingPreview } from "./GroundingPreview";
 import type {
   ChangeAnalysisPayload,
@@ -97,7 +98,12 @@ export function ChatWorkspace({
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1">
             {messages.map((message) =>
               message.role === "assistant" && message.temporalImages && message.changeAnalysis ? (
-                <TemporalResultCard key={message.id} message={message} />
+                <TemporalResultCard
+                  key={message.id}
+                  message={message}
+                  currentTemporalImages={temporalImages}
+                  currentTemporalPreviewUrls={temporalPreviewUrls}
+                />
               ) : message.role === "assistant" && message.imageUrl ? (
                 <AssistantResultCard key={message.id} message={message} />
               ) : (
@@ -295,10 +301,31 @@ function AssistantResultCard({ message }: { message: ChatMessage }) {
   );
 }
 
-function TemporalResultCard({ message }: { message: ChatMessage }) {
+function TemporalResultCard({
+  message,
+  currentTemporalImages,
+  currentTemporalPreviewUrls,
+}: {
+  message: ChatMessage;
+  currentTemporalImages: TemporalImageState;
+  currentTemporalPreviewUrls: TemporalImagePreviews;
+}) {
   const analysis = message.changeAnalysis;
   const temporalImages = message.temporalImages;
   const shouldShowImages = message.showTemporalImages !== false;
+  const [showVisualCompare, setShowVisualCompare] = useState(false);
+  const hasLiveTemporalPair = Boolean(
+    currentTemporalImages.t1 &&
+      currentTemporalImages.t2 &&
+      currentTemporalPreviewUrls.t1 &&
+      currentTemporalPreviewUrls.t2
+  );
+
+  useEffect(() => {
+    if (!hasLiveTemporalPair) {
+      setShowVisualCompare(false);
+    }
+  }, [hasLiveTemporalPair]);
 
   if (!analysis || !temporalImages) {
     return null;
@@ -321,6 +348,31 @@ function TemporalResultCard({ message }: { message: ChatMessage }) {
           {analysis.changes.length} changes
         </span>
       </div>
+
+      {hasLiveTemporalPair && (
+        <div className="mb-4 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setShowVisualCompare((current) => !current)}
+            className="inline-flex items-center gap-2 rounded-lg border border-[#b7d8c8] bg-white px-3 py-2 text-xs font-black text-[#0b6048] shadow-sm transition hover:bg-[#e8f4eb]"
+            aria-label={showVisualCompare ? "Hide visual before and after comparison" : "Compare before and after images visually"}
+          >
+            <ArrowLeftRight size={15} />
+            Compare Visually
+          </button>
+        </div>
+      )}
+
+      {showVisualCompare && hasLiveTemporalPair && (
+        <div className="mb-4">
+          <BeforeAfterSlider
+            beforeUrl={currentTemporalPreviewUrls.t1}
+            afterUrl={currentTemporalPreviewUrls.t2}
+            beforeLabel="BEFORE / T1"
+            afterLabel="AFTER / T2"
+          />
+        </div>
+      )}
 
       {shouldShowImages && (
         <div className="grid gap-4 md:grid-cols-2">

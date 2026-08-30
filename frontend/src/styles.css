@@ -269,6 +269,11 @@
   overflow: auto;
 }
 
+.before-after-slider:has(.before-after-range:focus-visible) {
+  outline: 3px solid rgba(11, 123, 91, 0.32);
+  outline-offset: 3px;
+}
+
 @media (max-height: 940px) and (min-width: 1024px) {
   .main-header {
     height: 4.25rem;
