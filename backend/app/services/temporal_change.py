@@ -2,16 +2,14 @@ import time
 from pathlib import Path
 from typing import Any
 
-from ..config import GEMINI_ANALYSIS_MODEL
 from ..schemas.change_analysis import ChangeAnalysisResponse, ChangeDirection, ChangeItem
 from .gemini_client import (
     GeminiAnalysisError,
-    create_gemini_interaction,
-    encode_image_part,
     error_type,
     parse_json_output,
     raise_user_facing_gemini_error,
 )
+from .providers import get_vision_provider
 
 ALLOWED_DIRECTIONS: set[str] = {
     "increased",
@@ -157,6 +155,7 @@ def analyze_change_with_gemini(
     is_follow_up = bool(query_text)
     t1_bytes = image_t1.read_bytes()
     t2_bytes = image_t2.read_bytes()
+    provider = get_vision_provider()
     prompt = _build_temporal_prompt(
         query=query_text,
         date_t1=date_t1,
@@ -166,30 +165,12 @@ def analyze_change_with_gemini(
 
     try:
         api_started_at = time.perf_counter()
-        print("[SatQuery Change] provider: Gemini")
-        print("[SatQuery Change] model:", GEMINI_ANALYSIS_MODEL)
+        print("[SatQuery Change] provider:", provider.name)
+        print("[SatQuery Change] model:", provider.model)
         print("[SatQuery Change] T1 bytes:", len(t1_bytes))
         print("[SatQuery Change] T2 bytes:", len(t2_bytes))
         print("[SatQuery Change] query:", query_text)
-        interaction = create_gemini_interaction(
-            input_parts=[
-                {
-                    "type": "text",
-                    "text": "IMAGE 1 = T1 / BEFORE / earlier reference image.",
-                },
-                encode_image_part(image_t1),
-                {
-                    "type": "text",
-                    "text": "IMAGE 2 = T2 / AFTER / later comparison image.",
-                },
-                encode_image_part(image_t2),
-                {
-                    "type": "text",
-                    "text": prompt,
-                },
-            ],
-            max_output_tokens=500,
-        )
+        output_text = provider.analyze_temporal(image_t1, image_t2, prompt)
         print("[SatQuery Change] api latency:", f"{time.perf_counter() - api_started_at:.3f}s")
     except GeminiAnalysisError:
         print("[SatQuery Change] total latency:", f"{time.perf_counter() - total_started_at:.3f}s")
@@ -203,7 +184,6 @@ def analyze_change_with_gemini(
             "Gemini change analysis could not be completed. Please try again.",
         )
 
-    output_text = getattr(interaction, "output_text", None)
     normalization_started_at = time.perf_counter()
     try:
         parsed = parse_json_output(output_text) if isinstance(output_text, str) else {}
@@ -214,7 +194,7 @@ def analyze_change_with_gemini(
             "final_answer": output_text.strip() if isinstance(output_text, str) else "",
             "changes": [],
             "unchanged": [],
-            "limitations": ["Gemini did not return parseable structured JSON."],
+            "limitations": [f"{provider.name} did not return parseable structured JSON."],
         }
 
     normalized = _normalize_change_response(parsed, is_follow_up=is_follow_up)

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .config import ALLOWED_ORIGINS, gemini_api_key_loaded
+from .config import ALLOWED_ORIGINS, VISION_PROVIDER, gemini_api_key_loaded
 from .routes.analyze import router as analyze_router
 from .routes.change_analysis import router as change_analysis_router
 from .routes.general import router as general_router
@@ -25,3 +25,4 @@ app.include_router(general_router)
 async def log_config_status() -> None:
     print("[SatQuery Config] Gemini API key loaded:", gemini_api_key_loaded())
     print("[SatQuery Config] allowed origins:", ALLOWED_ORIGINS)
+    print("[SatQuery Provider] configured vision provider:", VISION_PROVIDER)

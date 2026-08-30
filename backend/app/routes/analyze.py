@@ -6,10 +6,10 @@ from typing import Any
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from ..agent_router import route_query, route_vision_intent
-from ..config import GEMINI_ANALYSIS_MODEL
 from ..mapping_tools import generate_3d_terrain, generate_thermal_map
 from ..services.gemini_client import GeminiAnalysisError
 from ..services.image_analysis import analyze_image_with_gemini
+from ..services.providers import get_vision_provider
 from ..services.visual_grounding import ground_image_with_gemini
 from ..utils.image_utils import save_upload_to_temp
 
@@ -88,10 +88,10 @@ async def analyze(
                 vision_intent,
             )
 
+            provider = get_vision_provider()
             if expected_mode == "analysis":
-                print("[SatQuery Analysis] provider: Gemini")
-                print("[SatQuery Analysis] api: Interactions")
-                print("[SatQuery Analysis] model:", GEMINI_ANALYSIS_MODEL)
+                print("[SatQuery Analysis] provider:", provider.name)
+                print("[SatQuery Analysis] model:", provider.model)
                 analysis_started_at = time.perf_counter()
                 try:
                     final_answer = await asyncio.to_thread(
@@ -119,8 +119,8 @@ async def analyze(
                 print("[SatQuery Analysis] user query:", query)
                 print("[SatQuery Analysis] final output:", final_answer)
             else:
-                print("[SatQuery Grounding] provider: Gemini")
-                print("[SatQuery Grounding] model:", GEMINI_ANALYSIS_MODEL)
+                print("[SatQuery Grounding] provider:", provider.name)
+                print("[SatQuery Grounding] model:", provider.model)
                 print("[SatQuery Grounding] user query:", query)
                 grounding_started_at = time.perf_counter()
                 try:

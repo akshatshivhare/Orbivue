@@ -1,13 +1,11 @@
 from pathlib import Path
 
-from ..config import GEMINI_ANALYSIS_MODEL
 from .gemini_client import (
     GeminiAnalysisError,
-    create_gemini_interaction,
-    encode_image_part,
     error_type,
     raise_user_facing_gemini_error,
 )
+from .providers import get_vision_provider
 
 
 def _is_generic_analysis_query(user_query: str) -> bool:
@@ -47,18 +45,10 @@ def _build_analysis_prompt(user_query: str) -> str:
 def analyze_image_with_gemini(image_path: str, user_query: str) -> str:
     image_file = Path(image_path)
     prompt = _build_analysis_prompt(user_query)
+    provider = get_vision_provider()
 
     try:
-        interaction = create_gemini_interaction(
-            input_parts=[
-                encode_image_part(image_file),
-                {
-                    "type": "text",
-                    "text": prompt,
-                },
-            ],
-            max_output_tokens=220,
-        )
+        answer = provider.analyze_image(image_file, prompt)
     except GeminiAnalysisError as error:
         print("[SatQuery Analysis] error type:", error.error_type)
         print("[SatQuery Analysis] error:", repr(error))
@@ -71,13 +61,13 @@ def analyze_image_with_gemini(image_path: str, user_query: str) -> str:
             "Gemini analysis could not be completed. Please try again.",
         )
 
-    answer = getattr(interaction, "output_text", None)
     if not isinstance(answer, str) or not answer.strip():
         raise GeminiAnalysisError(
-            "Gemini returned an empty analysis response.",
+            f"{provider.name} returned an empty analysis response.",
             error_type="empty_response",
         )
 
-    print("[SatQuery Analysis] model:", GEMINI_ANALYSIS_MODEL)
+    print("[SatQuery Analysis] provider:", provider.name)
+    print("[SatQuery Analysis] model:", provider.model)
     print("[SatQuery Analysis] provider latency tracked by route/service caller")
     return answer.strip()
