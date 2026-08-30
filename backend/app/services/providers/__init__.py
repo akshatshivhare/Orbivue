@@ -51,11 +51,10 @@ def _create_provider(provider_name: str, task: ProviderTask) -> VisionProvider:
 
             return OrbiVueGroundingProvider()
 
-        raise GeminiAnalysisError(
-            "OrbiVue provider is not supported for temporal requests yet.",
-            error_type="unsupported_provider",
-            user_message="OrbiVue provider is not supported for temporal requests yet.",
-        )
+        if task == "temporal":
+            from .orbivue_temporal_provider import OrbiVueTemporalProvider
+
+            return OrbiVueTemporalProvider()
 
     if provider_name == "gemini":
         from .gemini_provider import GeminiVisionProvider
@@ -90,4 +89,15 @@ def get_grounding_provider() -> VisionProvider:
 
 
 def get_temporal_provider() -> VisionProvider:
+    if TEMPORAL_PROVIDER == "orbivue":
+        provider_key: tuple[ProviderTask, str] = ("temporal", TEMPORAL_PROVIDER)
+        if provider_key not in _providers:
+            from .orbivue_temporal_provider import OrbiVueTemporalProvider
+
+            _providers[provider_key] = OrbiVueTemporalProvider()
+            print("[SatQuery Provider] vision provider:", _providers[provider_key].name)
+            print("[SatQuery Provider] task:", "temporal")
+
+        return _providers[provider_key]
+
     return get_vision_provider("temporal")
