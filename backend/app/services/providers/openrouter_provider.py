@@ -18,7 +18,7 @@ class OpenRouterVisionProvider:
     model = OPENROUTER_VISION_MODEL
     coordinate_order = "xyxy"
 
-    def analyze_image(self, image_path: Path, prompt: str) -> str:
+    def analyze_image(self, image_path: Path, prompt: str, user_query: str) -> str:
         return self._chat_completion(
             request_type="analysis",
             messages=[

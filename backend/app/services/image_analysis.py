@@ -5,7 +5,7 @@ from .gemini_client import (
     error_type,
     raise_user_facing_gemini_error,
 )
-from .providers import get_vision_provider
+from .providers import get_analysis_provider
 
 
 def _is_generic_analysis_query(user_query: str) -> bool:
@@ -45,10 +45,10 @@ def _build_analysis_prompt(user_query: str) -> str:
 def analyze_image_with_gemini(image_path: str, user_query: str) -> str:
     image_file = Path(image_path)
     prompt = _build_analysis_prompt(user_query)
-    provider = get_vision_provider()
+    provider = get_analysis_provider()
 
     try:
-        answer = provider.analyze_image(image_file, prompt)
+        answer = provider.analyze_image(image_file, prompt, user_query)
     except GeminiAnalysisError as error:
         print("[SatQuery Analysis] error type:", error.error_type)
         print("[SatQuery Analysis] error:", repr(error))

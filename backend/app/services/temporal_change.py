@@ -9,7 +9,7 @@ from .gemini_client import (
     parse_json_output,
     raise_user_facing_gemini_error,
 )
-from .providers import get_vision_provider
+from .providers import get_temporal_provider
 
 ALLOWED_DIRECTIONS: set[str] = {
     "increased",
@@ -155,7 +155,7 @@ def analyze_change_with_gemini(
     is_follow_up = bool(query_text)
     t1_bytes = image_t1.read_bytes()
     t2_bytes = image_t2.read_bytes()
-    provider = get_vision_provider()
+    provider = get_temporal_provider()
     prompt = _build_temporal_prompt(
         query=query_text,
         date_t1=date_t1,

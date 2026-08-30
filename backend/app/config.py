@@ -11,11 +11,16 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_ANALYSIS_MODEL = os.getenv("GEMINI_ANALYSIS_MODEL", "gemini-3.6-flash")
 GEMINI_THINKING_LEVEL = os.getenv("GEMINI_THINKING_LEVEL", "minimal")
 VISION_PROVIDER = os.getenv("VISION_PROVIDER", "gemini").strip().casefold()
+ANALYSIS_PROVIDER = os.getenv("ANALYSIS_PROVIDER", VISION_PROVIDER).strip().casefold()
+GROUNDING_PROVIDER = os.getenv("GROUNDING_PROVIDER", VISION_PROVIDER).strip().casefold()
+TEMPORAL_PROVIDER = os.getenv("TEMPORAL_PROVIDER", VISION_PROVIDER).strip().casefold()
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_VISION_MODEL = os.getenv(
     "OPENROUTER_VISION_MODEL",
     "qwen/qwen2.5-vl-32b-instruct:free",
 )
+ORBIVUE_API_URL = os.getenv("ORBIVUE_API_URL", "").strip().rstrip("/")
+ORBIVUE_API_KEY = os.getenv("ORBIVUE_API_KEY")
 
 DEFAULT_ALLOWED_ORIGINS = [
     "https://orbivue.vercel.app",

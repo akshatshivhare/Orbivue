@@ -9,7 +9,7 @@ from .gemini_client import (
     parse_json_output,
     raise_user_facing_gemini_error,
 )
-from .providers import CoordinateOrder, get_vision_provider
+from .providers import CoordinateOrder, get_grounding_provider
 
 try:
     from PIL import Image
@@ -213,7 +213,7 @@ def _log_grounding_box_debug(raw_boxes: Any, normalized_boxes: list[GroundingBox
 def ground_image_with_gemini(image_path: str, user_query: str) -> GroundingResponse:
     total_started_at = time.perf_counter()
     image_file = Path(image_path)
-    provider = get_vision_provider()
+    provider = get_grounding_provider()
     image_size = _image_size(image_file)
     prompt = (
         "Locate only the object or region requested by the user in this image. "

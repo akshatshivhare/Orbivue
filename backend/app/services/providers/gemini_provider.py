@@ -10,7 +10,7 @@ class GeminiVisionProvider:
     model = GEMINI_ANALYSIS_MODEL
     coordinate_order = "yxyx"
 
-    def analyze_image(self, image_path: Path, prompt: str) -> str:
+    def analyze_image(self, image_path: Path, prompt: str, user_query: str) -> str:
         interaction = create_gemini_interaction(
             input_parts=[
                 encode_image_part(image_path),
