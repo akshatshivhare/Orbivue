@@ -49,6 +49,8 @@ export type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   text: string;
+  query?: string;
+  generatedAt?: string;
   imageUrl?: string;
   imageName?: string;
   mode?: AnalysisMode;

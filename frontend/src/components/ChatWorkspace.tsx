@@ -3,6 +3,7 @@ import {
   ArrowLeftRight,
   ArrowRight,
   CalendarDays,
+  FileText,
   Layers,
   type LucideIcon,
   Mic,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import { BeforeAfterSlider } from "./BeforeAfterSlider";
 import { GroundingPreview } from "./GroundingPreview";
+import type { ReportInput } from "./report/reportUtils";
 import type {
   ChangeAnalysisPayload,
   ChatMessage,
@@ -41,6 +43,7 @@ type ChatWorkspaceProps = {
   onReplaceTemporalImage: (slot: TemporalImageSlot) => void;
   onSwapTemporalImages: () => void;
   onRetryChangeAnalysis: () => void;
+  onOpenReport: (report: ReportInput) => void;
   messages: ChatMessage[];
   isWorkspaceMode: boolean;
 };
@@ -63,6 +66,7 @@ export function ChatWorkspace({
   onReplaceTemporalImage,
   onSwapTemporalImages,
   onRetryChangeAnalysis,
+  onOpenReport,
   messages,
   isWorkspaceMode,
 }: ChatWorkspaceProps) {
@@ -103,9 +107,10 @@ export function ChatWorkspace({
                   message={message}
                   currentTemporalImages={temporalImages}
                   currentTemporalPreviewUrls={temporalPreviewUrls}
+                  onOpenReport={onOpenReport}
                 />
               ) : message.role === "assistant" && message.imageUrl ? (
-                <AssistantResultCard key={message.id} message={message} />
+                <AssistantResultCard key={message.id} message={message} onOpenReport={onOpenReport} />
               ) : (
                 <article
                   key={message.id}
@@ -265,9 +270,16 @@ export function ChatWorkspace({
   );
 }
 
-function AssistantResultCard({ message }: { message: ChatMessage }) {
+function AssistantResultCard({
+  message,
+  onOpenReport,
+}: {
+  message: ChatMessage;
+  onOpenReport: (report: ReportInput) => void;
+}) {
   const boxes = message.mode === "grounding" ? message.boundingBoxes ?? [] : [];
   const modeLabel = message.mode === "grounding" ? "Visual Grounding" : "Image Analysis";
+  const canShowReport = Boolean(message.text && message.imageUrl);
 
   return (
     <article className="mr-auto w-full rounded-[1.25rem] border border-[#c9ddd4] bg-white/94 p-4 text-[#173452] shadow-[0_16px_45px_rgba(16,35,58,0.1)]">
@@ -297,6 +309,33 @@ function AssistantResultCard({ message }: { message: ChatMessage }) {
           <pre className="whitespace-pre-wrap font-sans text-sm leading-6 text-[#173452]">{message.text}</pre>
         </div>
       </div>
+
+      {canShowReport && (
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={() =>
+              onOpenReport({
+                mode: message.mode === "grounding" ? "grounding" : "analysis",
+                query: message.query,
+                finalAnswer: message.text,
+                boundingBoxes: boxes,
+                sourceImage: {
+                  name: message.imageName || "Uploaded image",
+                  url: message.imageUrl || "",
+                  label: message.mode === "grounding" ? "Grounding source" : "Source image",
+                },
+                generatedAt: message.generatedAt,
+              })
+            }
+            className="inline-flex items-center gap-2 rounded-lg border border-[#b7d8c8] bg-white px-3 py-2 text-xs font-black text-[#0b6048] shadow-sm transition hover:bg-[#e8f4eb]"
+            aria-label="Generate OrbiVue analysis report"
+          >
+            <FileText size={15} />
+            Generate Report
+          </button>
+        </div>
+      )}
     </article>
   );
 }
@@ -305,10 +344,12 @@ function TemporalResultCard({
   message,
   currentTemporalImages,
   currentTemporalPreviewUrls,
+  onOpenReport,
 }: {
   message: ChatMessage;
   currentTemporalImages: TemporalImageState;
   currentTemporalPreviewUrls: TemporalImagePreviews;
+  onOpenReport: (report: ReportInput) => void;
 }) {
   const analysis = message.changeAnalysis;
   const temporalImages = message.temporalImages;
@@ -373,6 +414,28 @@ function TemporalResultCard({
           />
         </div>
       )}
+
+      <div className="mb-4 flex justify-end">
+        <button
+          type="button"
+          onClick={() =>
+            onOpenReport({
+              mode: "temporal",
+              query: message.query,
+              finalAnswer: analysis.final_answer,
+              beforeImage: temporalImages.t1,
+              afterImage: temporalImages.t2,
+              generatedAt: message.generatedAt,
+              changeAnalysis: analysis,
+            })
+          }
+          className="inline-flex items-center gap-2 rounded-lg border border-[#b7d8c8] bg-white px-3 py-2 text-xs font-black text-[#0b6048] shadow-sm transition hover:bg-[#e8f4eb]"
+          aria-label="Generate OrbiVue temporal analysis report"
+        >
+          <FileText size={15} />
+          Generate Report
+        </button>
+      </div>
 
       {shouldShowImages && (
         <div className="grid gap-4 md:grid-cols-2">

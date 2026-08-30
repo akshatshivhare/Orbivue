@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { apiUrl } from "../config/api";
 import { ChatWorkspace } from "./ChatWorkspace";
+import { ReportPreviewModal } from "./report/ReportPreviewModal";
+import type { ReportInput } from "./report/reportUtils";
 import { WorkspaceHeader } from "./WorkspaceHeader";
 import { WorkspaceSidebar } from "./WorkspaceSidebar";
 import type {
@@ -275,6 +277,9 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
   const [temporalImages, setTemporalImages] = useState<TemporalImageState>({ t1: null, t2: null });
   const [temporalPreviewUrls, setTemporalPreviewUrls] = useState<TemporalImagePreviews>({ t1: "", t2: "" });
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [latestReport, setLatestReport] = useState<ReportInput | null>(null);
+  const [activeReport, setActiveReport] = useState<ReportInput | null>(null);
+  const [isReportEmptyStateOpen, setIsReportEmptyStateOpen] = useState(false);
   const [hasWorkspaceOpened, setHasWorkspaceOpened] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -431,6 +436,26 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     setIsSidebarOpen(false);
   };
 
+  const openLatestReportFromHome = () => {
+    if (latestReport) {
+      setActiveReport(latestReport);
+      setIsReportEmptyStateOpen(false);
+      return;
+    }
+
+    setIsReportEmptyStateOpen(true);
+  };
+
+  const closeReportPreview = () => {
+    setActiveReport(null);
+    setIsReportEmptyStateOpen(false);
+  };
+
+  const returnToAskOrbiVue = () => {
+    setIsReportEmptyStateOpen(false);
+    setHasWorkspaceOpened(true);
+  };
+
   const openRecentChat = (title: string, subtitle: string) => {
     setMessages([
       {
@@ -523,6 +548,26 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
         }
 
         const changeAnalysis = normalizeChangeAnalysisResponse(data);
+        const generatedAt = new Date().toISOString();
+        const reportInput: ReportInput = {
+          mode: "temporal",
+          query: changeQuery.trim() || "Initial temporal change analysis",
+          finalAnswer: changeAnalysis.final_answer,
+          beforeImage: {
+            name: temporalImages.t1?.name ?? "Before image",
+            url: temporalPreviewUrls.t1,
+            label: "BEFORE / T1",
+          },
+          afterImage: {
+            name: temporalImages.t2?.name ?? "After image",
+            url: temporalPreviewUrls.t2,
+            label: "AFTER / T2",
+          },
+          generatedAt,
+          changeAnalysis,
+        };
+
+        setLatestReport(reportInput);
 
         setMessages((current) => [
           ...current,
@@ -530,6 +575,8 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
             id: `assistant-change-${Date.now()}`,
             role: "assistant",
             text: changeAnalysis.final_answer,
+            query: reportInput.query,
+            generatedAt,
             mode: changeAnalysis.mode,
             temporalImages: {
               t1: {
@@ -665,6 +712,21 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
           : "Analysis completed. See the highlighted regions in the visual preview.";
       const analysisMode: AnalysisMode = data.mode === "grounding" ? "grounding" : "analysis";
       const boundingBoxes = analysisMode === "grounding" ? normalizeBoundingBoxes(data.bounding_boxes) : [];
+      const generatedAt = new Date().toISOString();
+      const reportInput: ReportInput = {
+        mode: analysisMode === "grounding" ? "grounding" : "analysis",
+        query: trimmedQuery,
+        finalAnswer,
+        boundingBoxes,
+        sourceImage: {
+          name: currentImageName,
+          url: currentImageUrl,
+          label: analysisMode === "grounding" ? "Grounding source" : "Source image",
+        },
+        generatedAt,
+      };
+
+      setLatestReport(reportInput);
 
       setMessages((current) => [
         ...current,
@@ -672,6 +734,8 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
           id: `assistant-${Date.now()}`,
           role: "assistant",
           text: finalAnswer,
+          query: trimmedQuery,
+          generatedAt,
           imageUrl: currentImageUrl,
           imageName: currentImageName,
           mode: analysisMode,
@@ -738,6 +802,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                 onReplaceTemporalImage={replaceTemporalImage}
                 onSwapTemporalImages={swapTemporalImages}
                 onRetryChangeAnalysis={retryChangeAnalysis}
+                onOpenReport={setActiveReport}
                 messages={messages}
                 isWorkspaceMode
               />
@@ -783,6 +848,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                 onReplaceTemporalImage={replaceTemporalImage}
                 onSwapTemporalImages={swapTemporalImages}
                 onRetryChangeAnalysis={retryChangeAnalysis}
+                onOpenReport={setActiveReport}
                 messages={messages}
                 isWorkspaceMode={false}
               />
@@ -791,9 +857,11 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                 {actionCards.map((card) => {
                   const Icon = card.icon;
                   return (
-                    <article
+                    <button
+                      type="button"
                       key={card.title}
-                      className="main-action-card min-h-[128px] rounded-2xl border border-[#d8d8d2] bg-white/86 p-3.5 shadow-sm backdrop-blur-sm"
+                      onClick={card.title === "Generate Reports" ? openLatestReportFromHome : undefined}
+                      className="main-action-card min-h-[128px] rounded-2xl border border-[#d8d8d2] bg-white/86 p-3.5 text-left shadow-sm backdrop-blur-sm transition hover:border-[#b7d8c8] hover:bg-white/95"
                     >
                       <span className={`flex h-10 w-10 items-center justify-center rounded-full ${card.color}`}>
                         <Icon size={21} strokeWidth={1.8} />
@@ -801,7 +869,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                       <h2 className="mt-2.5 text-[0.92rem] font-extrabold text-[#141b28]">{card.title}</h2>
                       <p className="mt-1 text-[0.78rem] leading-[1.18rem] text-[#1f426a]">{card.description}</p>
                       <ArrowRight className="mt-1.5 text-[#1f426a]" size={19} />
-                    </article>
+                    </button>
                   );
                 })}
               </div>
@@ -827,6 +895,14 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
           </footer>
         </div>
       </div>
+      {(activeReport || isReportEmptyStateOpen) && (
+        <ReportPreviewModal
+          report={activeReport}
+          isEmpty={isReportEmptyStateOpen}
+          onClose={closeReportPreview}
+          onStartAnalysis={returnToAskOrbiVue}
+        />
+      )}
     </main>
   );
 }
