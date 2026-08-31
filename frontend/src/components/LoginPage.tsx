@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   BarChart3,
   Brain,
@@ -39,6 +40,11 @@ type LoginPageProps = {
 };
 
 export function LoginPage({ onLogin }: LoginPageProps) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const canSubmit = isEmailValid && password.trim().length > 0;
+
   return (
     <main className="login-page fixed inset-0 overflow-hidden bg-[#0d3440] p-0 text-onboarding-ink">
       <div className="relative h-full w-full overflow-hidden bg-[#0d3440] lg:rounded-[2rem]">
@@ -88,6 +94,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           <form
             onSubmit={(event) => {
               event.preventDefault();
+              if (!canSubmit) {
+                return;
+              }
               onLogin?.();
             }}
             className="login-card ml-auto flex h-full max-h-[calc(100svh-5rem)] w-full max-w-[650px] flex-col justify-center rounded-[1.7rem] border border-white/90 bg-white/98 px-8 py-7 shadow-[0_28px_80px_rgba(5,24,28,0.36)] backdrop-blur-xl sm:px-12 lg:px-14"
@@ -109,8 +118,11 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 <Mail size={22} />
                 <input
                   type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
                   placeholder="you@example.com"
                   className="w-full border-0 bg-transparent text-base text-onboarding-ink outline-none placeholder:text-onboarding-muted"
+                  autoComplete="email"
                 />
               </span>
             </label>
@@ -121,8 +133,11 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 <Lock size={22} />
                 <input
                   type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
                   placeholder="password"
                   className="w-full border-0 bg-transparent text-base text-onboarding-ink outline-none placeholder:text-onboarding-muted"
+                  autoComplete="current-password"
                 />
                 <Eye size={21} />
               </span>
@@ -134,7 +149,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
             <button
               type="submit"
-              className="mt-6 flex h-[3.25rem] items-center justify-center gap-3 rounded-xl bg-[#2f8b58] text-base font-extrabold text-white shadow-[0_14px_30px_rgba(47,139,88,0.28)] transition hover:bg-onboarding-forest"
+              disabled={!canSubmit}
+              className="mt-6 flex h-[3.25rem] items-center justify-center gap-3 rounded-xl bg-[#2f8b58] text-base font-extrabold text-white shadow-[0_14px_30px_rgba(47,139,88,0.28)] transition hover:bg-onboarding-forest disabled:cursor-not-allowed disabled:bg-[#9aa9a1] disabled:text-white/75 disabled:shadow-none"
             >
               <Leaf size={22} />
               Enter OrbiVue

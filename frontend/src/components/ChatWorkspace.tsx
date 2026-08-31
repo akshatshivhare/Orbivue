@@ -123,18 +123,18 @@ export function ChatWorkspace({
     <section
       className={`main-query w-full rounded-[1.15rem] border border-[#a9c9ba] bg-[#fbfaf6]/90 shadow-[0_14px_42px_rgba(6,64,51,0.14)] backdrop-blur-md transition-all duration-300 ${
         isWorkspaceMode
-          ? "flex h-full min-h-0 max-w-[1000px] flex-1 flex-col p-4 xl:max-w-[1060px]"
+          ? "flex h-full max-h-[74svh] min-h-0 max-w-[900px] flex-1 flex-col p-3.5 xl:max-w-[960px]"
           : "mt-3.5 max-w-[790px] p-3"
       }`}
     >
       <div className={`${isWorkspaceMode ? "flex min-h-0 flex-1 flex-col" : ""}`}>
         {isWorkspaceMode && messages.length === 0 && !isLoading && !error && (
-          <div className="mx-auto flex min-h-[250px] w-full max-w-[760px] flex-1 flex-col justify-center px-4 text-center md:min-h-[280px]">
-            <Sparkles size={29} className="mx-auto mb-3 text-[#123a5d]" />
-            <h2 className="text-lg font-black text-[#0b1d31] md:text-[1.28rem]">
+          <div className="mx-auto flex min-h-[210px] w-full max-w-[700px] flex-1 flex-col justify-center px-3 text-center md:min-h-[235px]">
+            <Sparkles size={26} className="mx-auto mb-2.5 text-[#123a5d]" />
+            <h2 className="text-base font-black text-[#0b1d31] md:text-[1.14rem]">
               Ask anything about changes, 3D, terrain, water, or history...
             </h2>
-            <p className="mt-1.5 text-[0.84rem] text-[#506879]">Your geospatial AI assistant for Earth intelligence.</p>
+            <p className="mt-1 text-[0.78rem] text-[#506879]">Your geospatial AI assistant for Earth intelligence.</p>
           </div>
         )}
 
@@ -219,7 +219,7 @@ export function ChatWorkspace({
           </div>
         )}
 
-        <div className={isWorkspaceMode ? "mt-3 shrink-0 rounded-xl border border-[#c2d6cd] bg-[#fffdf8]/88 p-2.5 shadow-sm" : ""}>
+        <div className={isWorkspaceMode ? "mt-2.5 shrink-0 rounded-xl border border-[#c2d6cd] bg-[#fffdf8]/88 p-2 shadow-sm" : ""}>
         <div
           className={`flex flex-wrap items-center gap-2.5 ${
             isWorkspaceMode ? "" : "mt-3 pl-10"
@@ -304,8 +304,8 @@ export function ChatWorkspace({
         )}
 
         {isWorkspaceMode && (
-          <div className="mt-2.5 flex items-center gap-2.5 rounded-xl border border-[#d5dfda] bg-white/86 px-3 py-2 shadow-inner">
-            <Sparkles size={21} className="shrink-0 text-[#183958]" />
+          <div className="mt-2 flex items-center gap-2.5 rounded-xl border border-[#d5dfda] bg-white/86 px-2.5 py-1.5 shadow-inner">
+            <Sparkles size={19} className="shrink-0 text-[#183958]" />
             <input
               value={query}
               onChange={(event) => onQueryChange(event.target.value)}

@@ -242,8 +242,7 @@ export function OnboardingPage({ onFinish }: OnboardingPageProps) {
             )}
             </div>
 
-          <div className="onboarding-actions mt-auto grid w-full max-w-[600px] grid-cols-[1fr_auto] items-center gap-5 pt-5">
-            <div>
+          <div className="onboarding-actions mt-auto flex w-full max-w-[600px] flex-col items-start gap-4 pt-5">
             {isFinalSlide ? (
               <button
                 onClick={goBack}
@@ -258,13 +257,12 @@ export function OnboardingPage({ onFinish }: OnboardingPageProps) {
                 <ArrowRight size={21} />
               </button>
             )}
-            </div>
             <button
               onClick={goNext}
-              className="group flex h-14 min-w-[190px] items-center justify-center gap-4 rounded-xl bg-onboarding-forest px-4 text-base font-extrabold text-white shadow-[0_16px_34px_rgba(10,74,56,0.26)] transition hover:bg-[#123f35]"
+              className="group flex h-12 min-w-[168px] items-center justify-center gap-3 rounded-xl bg-onboarding-forest px-3.5 text-[0.94rem] font-extrabold text-white shadow-[0_14px_30px_rgba(10,74,56,0.24)] transition hover:bg-[#123f35]"
             >
-              <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/75 transition group-hover:translate-x-1">
-                <ArrowRight size={23} />
+              <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/75 transition group-hover:translate-x-1">
+                <ArrowRight size={21} />
               </span>
               {isFinalSlide ? "Start Exploring" : isIntroSlide ? "Enter OrbiVue" : "Continue"}
             </button>

@@ -1057,12 +1057,18 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
       }`}
     >
       <img
-        src="/assets/main-earth-bg.png"
+        src="/assets/orbivue-space-earth-bg.png"
         alt=""
         className="absolute inset-0 h-full w-full object-cover"
         aria-hidden="true"
       />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(249,246,239,0.99)_0%,rgba(249,246,239,0.95)_38%,rgba(249,246,239,0.36)_66%,rgba(249,246,239,0.02)_100%)]" />
+      <div
+        className={`absolute inset-0 ${
+          isWorkspaceMode
+            ? "bg-[linear-gradient(90deg,rgba(4,18,26,0.18)_0%,rgba(4,18,26,0.08)_45%,rgba(4,18,26,0.02)_100%)]"
+            : "bg-[linear-gradient(90deg,rgba(249,246,239,0.97)_0%,rgba(249,246,239,0.9)_36%,rgba(249,246,239,0.28)_62%,rgba(249,246,239,0.02)_100%)]"
+        }`}
+      />
 
       <div className="relative z-10 flex h-full min-h-0">
         <WorkspaceSidebar
@@ -1082,7 +1088,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
           />
 
           {isWorkspaceMode ? (
-            <section className="flex min-h-0 flex-1 px-5 pb-4 pt-1 lg:px-6 lg:pb-5">
+            <section className="flex min-h-0 flex-1 items-center justify-center px-5 py-4 lg:px-6">
               <ChatWorkspace
                 query={query}
                 onQueryChange={updateQuery}
