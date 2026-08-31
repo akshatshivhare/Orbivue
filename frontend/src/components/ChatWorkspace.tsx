@@ -1,4 +1,4 @@
-import { useEffect, useState, type KeyboardEvent, type RefObject } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import {
   ArrowLeftRight,
   ArrowRight,
@@ -90,6 +90,28 @@ export function ChatWorkspace({
   const hasTemporalPair = Boolean(temporalImages.t1 && temporalImages.t2);
   const hasTemporalImage = Boolean(temporalImages.t1 || temporalImages.t2);
   const hasCrossModalPair = Boolean(crossModalImages.optical && crossModalImages.sar);
+  const messageHistoryRef = useRef<HTMLDivElement | null>(null);
+  const previousMessageCountRef = useRef(messages.length);
+
+  useEffect(() => {
+    const history = messageHistoryRef.current;
+    if (!history) {
+      previousMessageCountRef.current = messages.length;
+      return;
+    }
+
+    const messageCountChanged = previousMessageCountRef.current !== messages.length;
+    const distanceFromBottom = history.scrollHeight - history.scrollTop - history.clientHeight;
+    const shouldStickToBottom = messageCountChanged || isLoading || distanceFromBottom < 120;
+
+    if (shouldStickToBottom) {
+      requestAnimationFrame(() => {
+        history.scrollTo({ top: history.scrollHeight, behavior: "smooth" });
+      });
+    }
+
+    previousMessageCountRef.current = messages.length;
+  }, [messages, isLoading, error]);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
@@ -101,23 +123,23 @@ export function ChatWorkspace({
     <section
       className={`main-query w-full rounded-[1.15rem] border border-[#a9c9ba] bg-[#fbfaf6]/90 shadow-[0_14px_42px_rgba(6,64,51,0.14)] backdrop-blur-md transition-all duration-300 ${
         isWorkspaceMode
-          ? "flex min-h-[calc(100svh-12.6rem)] max-w-[1060px] flex-1 flex-col p-5 xl:max-w-[1120px]"
+          ? "flex h-full min-h-0 max-w-[1000px] flex-1 flex-col p-4 xl:max-w-[1060px]"
           : "mt-3.5 max-w-[790px] p-3"
       }`}
     >
       <div className={`${isWorkspaceMode ? "flex min-h-0 flex-1 flex-col" : ""}`}>
         {isWorkspaceMode && messages.length === 0 && !isLoading && !error && (
-          <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
-            <Sparkles size={32} className="mb-4 text-[#123a5d]" />
-            <h2 className="text-xl font-black text-[#0b1d31] md:text-[1.45rem]">
+          <div className="mx-auto flex min-h-[250px] w-full max-w-[760px] flex-1 flex-col justify-center px-4 text-center md:min-h-[280px]">
+            <Sparkles size={29} className="mx-auto mb-3 text-[#123a5d]" />
+            <h2 className="text-lg font-black text-[#0b1d31] md:text-[1.28rem]">
               Ask anything about changes, 3D, terrain, water, or history...
             </h2>
-            <p className="mt-2 text-sm text-[#506879]">Your geospatial AI assistant for Earth intelligence.</p>
+            <p className="mt-1.5 text-[0.84rem] text-[#506879]">Your geospatial AI assistant for Earth intelligence.</p>
           </div>
         )}
 
         {isWorkspaceMode && (messages.length > 0 || error || isLoading) && (
-          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
+          <div ref={messageHistoryRef} className="chat-history flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-1 pr-1">
             {messages.map((message) =>
               message.role === "assistant" && message.mode === "cross_modal" && message.crossModalImages ? (
                 <CrossModalResultCard key={message.id} message={message} onOpenReport={onOpenReport} />
@@ -143,12 +165,7 @@ export function ChatWorkspace({
                   <div className="mb-1 text-[0.68rem] font-black uppercase tracking-[0.14em] opacity-70">
                     {message.role === "user" ? "User" : "OrbiVue AI"}
                   </div>
-                  {message.imageName && message.role === "user" && (
-                    <div className="mb-2 inline-flex max-w-full items-center gap-2 rounded-lg bg-white/14 px-2.5 py-1 text-xs font-semibold">
-                      <Paperclip size={14} />
-                      <span className="truncate">{message.imageName}</span>
-                    </div>
-                  )}
+                  {message.role === "user" && <MessageAttachments message={message} />}
                   <pre className="whitespace-pre-wrap font-sans">{message.text}</pre>
                 </article>
               )
@@ -202,9 +219,10 @@ export function ChatWorkspace({
           </div>
         )}
 
+        <div className={isWorkspaceMode ? "mt-3 shrink-0 rounded-xl border border-[#c2d6cd] bg-[#fffdf8]/88 p-2.5 shadow-sm" : ""}>
         <div
           className={`flex flex-wrap items-center gap-2.5 ${
-            isWorkspaceMode ? "mt-auto border-t border-[#ccd8d3] pt-4" : "mt-3 pl-10"
+            isWorkspaceMode ? "" : "mt-3 pl-10"
           }`}
         >
           {isWorkspaceMode && (
@@ -216,6 +234,7 @@ export function ChatWorkspace({
               onRemoveTemporalImage={onRemoveTemporalImage}
               onReplaceTemporalImage={onReplaceTemporalImage}
               onSwapTemporalImages={onSwapTemporalImages}
+              temporalPreviewUrls={temporalPreviewUrls}
               disabled={isLoading}
             />
           )}
@@ -224,6 +243,7 @@ export function ChatWorkspace({
               crossModalImages={crossModalImages}
               onRemoveCrossModalImage={onRemoveCrossModalImage}
               onReplaceCrossModalImage={onReplaceCrossModalImage}
+              crossModalPreviewUrls={crossModalPreviewUrls}
               disabled={isLoading}
             />
           )}
@@ -284,7 +304,7 @@ export function ChatWorkspace({
         )}
 
         {isWorkspaceMode && (
-          <div className="mt-3 flex items-center gap-3">
+          <div className="mt-2.5 flex items-center gap-2.5 rounded-xl border border-[#d5dfda] bg-white/86 px-3 py-2 shadow-inner">
             <Sparkles size={21} className="shrink-0 text-[#183958]" />
             <input
               value={query}
@@ -301,6 +321,7 @@ export function ChatWorkspace({
             />
           </div>
         )}
+        </div>
       </div>
 
       <input
@@ -346,6 +367,62 @@ function CompareModeToggle({
         </button>
       ))}
     </div>
+  );
+}
+
+function MessageAttachments({ message }: { message: ChatMessage }) {
+  if (message.crossModalImages) {
+    return (
+      <div className="mb-2 flex flex-wrap gap-2">
+        <MessageThumb imageUrl={message.crossModalImages.optical.url} imageName={message.crossModalImages.optical.name} label="OPTICAL" />
+        <MessageThumb imageUrl={message.crossModalImages.sar.url} imageName={message.crossModalImages.sar.name} label="SAR" />
+      </div>
+    );
+  }
+
+  if (message.temporalImages) {
+    return (
+      <div className="mb-2 flex flex-wrap gap-2">
+        <MessageThumb imageUrl={message.temporalImages.t1.url} imageName={message.temporalImages.t1.name} label="T1" />
+        <MessageThumb imageUrl={message.temporalImages.t2.url} imageName={message.temporalImages.t2.name} label="T2" />
+      </div>
+    );
+  }
+
+  if (message.imageUrl || message.imageName) {
+    return (
+      <div className="mb-2">
+        <MessageThumb imageUrl={message.imageUrl} imageName={message.imageName || "Uploaded image"} label="IMAGE" />
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function MessageThumb({
+  imageUrl,
+  imageName,
+  label,
+}: {
+  imageUrl?: string;
+  imageName: string;
+  label: string;
+}) {
+  return (
+    <span className="inline-flex max-w-[220px] items-center gap-2 rounded-lg bg-white/14 p-1.5 text-left text-xs font-semibold">
+      {imageUrl ? (
+        <img src={imageUrl} alt="" className="h-11 w-11 shrink-0 rounded-md bg-[#0b222b] object-cover" />
+      ) : (
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-white/15">
+          <Paperclip size={16} />
+        </span>
+      )}
+      <span className="min-w-0">
+        <span className="block text-[0.62rem] font-black uppercase tracking-[0.12em] opacity-75">{label}</span>
+        <span className="block truncate">{imageName}</span>
+      </span>
+    </span>
   );
 }
 
@@ -694,12 +771,14 @@ function ListSection({ title, items }: { title: string; items: string[] }) {
 
 function TemporalAttachmentStrip({
   temporalImages,
+  temporalPreviewUrls,
   onRemoveTemporalImage,
   onReplaceTemporalImage,
   onSwapTemporalImages,
   disabled,
 }: {
   temporalImages: TemporalImageState;
+  temporalPreviewUrls: TemporalImagePreviews;
   onRemoveTemporalImage: (slot: TemporalImageSlot) => void;
   onReplaceTemporalImage: (slot: TemporalImageSlot) => void;
   onSwapTemporalImages: () => void;
@@ -713,6 +792,7 @@ function TemporalAttachmentStrip({
         <TemporalChip
           label="T1 / BEFORE"
           fileName={temporalImages.t1.name}
+          previewUrl={temporalPreviewUrls.t1}
           onRemove={() => onRemoveTemporalImage("t1")}
           onReplace={() => onReplaceTemporalImage("t1")}
           disabled={disabled}
@@ -733,6 +813,7 @@ function TemporalAttachmentStrip({
         <TemporalChip
           label="T2 / AFTER"
           fileName={temporalImages.t2.name}
+          previewUrl={temporalPreviewUrls.t2}
           onRemove={() => onRemoveTemporalImage("t2")}
           onReplace={() => onReplaceTemporalImage("t2")}
           disabled={disabled}
@@ -793,11 +874,13 @@ function CrossModalUploadPanel({
 
 function CrossModalAttachmentStrip({
   crossModalImages,
+  crossModalPreviewUrls,
   onRemoveCrossModalImage,
   onReplaceCrossModalImage,
   disabled,
 }: {
   crossModalImages: CrossModalImageState;
+  crossModalPreviewUrls: CrossModalImagePreviews;
   onRemoveCrossModalImage: (slot: CrossModalImageSlot) => void;
   onReplaceCrossModalImage: (slot: CrossModalImageSlot) => void;
   disabled: boolean;
@@ -808,6 +891,7 @@ function CrossModalAttachmentStrip({
         <TemporalChip
           label="OPTICAL / MULTISPECTRAL"
           fileName={crossModalImages.optical.name}
+          previewUrl={crossModalPreviewUrls.optical}
           onRemove={() => onRemoveCrossModalImage("optical")}
           onReplace={() => onReplaceCrossModalImage("optical")}
           disabled={disabled}
@@ -819,6 +903,7 @@ function CrossModalAttachmentStrip({
         <TemporalChip
           label="SAR / RADAR"
           fileName={crossModalImages.sar.name}
+          previewUrl={crossModalPreviewUrls.sar}
           onRemove={() => onRemoveCrossModalImage("sar")}
           onReplace={() => onReplaceCrossModalImage("sar")}
           disabled={disabled}
@@ -863,11 +948,11 @@ function CrossModalUploadCard({
   disabled: boolean;
 }) {
   return (
-    <article className="min-w-0 rounded-xl border border-[#c2d6cd] bg-white/86 p-2.5 shadow-sm">
-      <div className="mb-2.5 flex items-start justify-between gap-2.5">
+    <article className="min-w-0 rounded-xl border border-[#c2d6cd] bg-white/86 p-2 shadow-sm">
+      <div className="mb-2 flex items-start justify-between gap-2.5">
         <div className="min-w-0">
           <h3 className="text-[0.72rem] font-black uppercase tracking-[0.14em] text-[#0b6048]">{label}</h3>
-          <p className="mt-1 text-sm font-semibold text-[#657a8c]">{helper}</p>
+          <p className="mt-0.5 text-xs font-semibold text-[#657a8c]">{helper}</p>
         </div>
         {file && (
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e8f4eb] text-[#0b6048]">
@@ -877,21 +962,21 @@ function CrossModalUploadCard({
       </div>
 
       {previewUrl ? (
-        <img src={previewUrl} alt={`${label} preview`} className="block h-36 w-full rounded-lg bg-[#0b222b] object-contain" />
+        <img src={previewUrl} alt={`${label} preview`} className="block h-16 w-full rounded-lg bg-[#0b222b] object-cover" />
       ) : (
         <button
           type="button"
           onClick={onReplace}
           disabled={disabled}
-          className="flex h-36 w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[#a9c9ba] bg-[#f7f4ed] text-[0.84rem] font-black text-[#074d3b] transition hover:bg-[#dcece2] disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-16 w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#a9c9ba] bg-[#f7f4ed] text-xs font-black text-[#074d3b] transition hover:bg-[#dcece2] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <Paperclip size={22} />
+          <Paperclip size={17} />
           Upload
         </button>
       )}
 
       {file && (
-        <div className="mt-3 flex items-center justify-between gap-3">
+        <div className="mt-2 flex items-center justify-between gap-2">
           <span className="min-w-0 truncate text-xs font-semibold text-[#657a8c]">{file.name}</span>
           <span className="flex shrink-0 gap-2">
             <button
@@ -920,21 +1005,27 @@ function CrossModalUploadCard({
 function TemporalChip({
   label,
   fileName,
+  previewUrl,
   onRemove,
   onReplace,
   disabled,
 }: {
   label: string;
   fileName: string;
+  previewUrl?: string;
   onRemove: () => void;
   onReplace: () => void;
   disabled: boolean;
 }) {
   return (
-    <div className="relative flex max-w-[280px] items-center gap-2.5 rounded-lg border border-[#a9c9ba] bg-[#dcece2] px-2.5 py-2 pr-8 text-[0.84rem] text-[#074d3b] shadow-sm">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#074d3b] shadow-inner">
-        <Paperclip size={16} />
-      </span>
+    <div className="relative flex max-w-[310px] items-center gap-2 rounded-lg border border-[#a9c9ba] bg-[#dcece2] px-2 py-1.5 pr-8 text-[0.8rem] text-[#074d3b] shadow-sm">
+      {previewUrl ? (
+        <img src={previewUrl} alt="" className="h-11 w-11 shrink-0 rounded-md bg-[#0b222b] object-cover" />
+      ) : (
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-white text-[#074d3b] shadow-inner">
+          <Paperclip size={16} />
+        </span>
+      )}
       <span className="min-w-0">
         <span className="block text-[0.65rem] font-black uppercase tracking-[0.12em]">{label}</span>
         <span className="block truncate font-semibold">{fileName}</span>

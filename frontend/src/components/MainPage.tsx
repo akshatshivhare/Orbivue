@@ -324,6 +324,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
   const compressedImageRef = useRef<{ source: File; file: File } | null>(null);
   const compressedTemporalImagesRef = useRef<Partial<Record<TemporalImageSlot, { source: File; file: File }>>>({});
   const compressedCrossModalImagesRef = useRef<Partial<Record<CrossModalImageSlot, { source: File; file: File }>>>({});
+  const messageImageUrlsRef = useRef<string[]>([]);
 
   const temporalPairKey = useMemo(
     () => buildTemporalPairKey(temporalImages.t1, temporalImages.t2),
@@ -385,6 +386,28 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
       }
     };
   }, [crossModalImages.optical, crossModalImages.sar]);
+
+  useEffect(() => {
+    return () => {
+      messageImageUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      messageImageUrlsRef.current = [];
+    };
+  }, []);
+
+  const createMessageImageUrl = (file: File | null) => {
+    if (!file) {
+      return "";
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    messageImageUrlsRef.current.push(objectUrl);
+    return objectUrl;
+  };
+
+  const clearMessageImageUrls = () => {
+    messageImageUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    messageImageUrlsRef.current = [];
+  };
 
   const updateQuery = (value: string) => {
     setQuery(value);
@@ -534,6 +557,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
   };
 
   const startNewChat = () => {
+    clearMessageImageUrls();
     setMessages([]);
     setQuery("");
     setError("");
@@ -645,6 +669,18 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     const currentSarUrl = crossModalPreviewUrls.sar;
     const currentOpticalName = crossModalImages.optical.name;
     const currentSarName = crossModalImages.sar.name;
+    const submittedCrossModalImages = {
+      optical: {
+        name: currentOpticalName,
+        url: createMessageImageUrl(crossModalImages.optical),
+        label: "OPTICAL / MULTISPECTRAL",
+      },
+      sar: {
+        name: currentSarName,
+        url: createMessageImageUrl(crossModalImages.sar),
+        label: "SAR / RADAR",
+      },
+    };
 
     setMessages((current) => [
       ...current,
@@ -653,6 +689,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
         role: "user",
         text: trimmedQuery,
         imageName: "Optical + SAR image pair",
+        crossModalImages: submittedCrossModalImages,
       },
     ]);
 
@@ -687,12 +724,12 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
       const crossModalMessageImages = {
         optical: {
           name: currentOpticalName,
-          url: currentOpticalUrl,
+          url: currentOpticalUrl || submittedCrossModalImages.optical.url,
           label: "OPTICAL / MULTISPECTRAL",
         },
         sar: {
           name: currentSarName,
-          url: currentSarUrl,
+          url: currentSarUrl || submittedCrossModalImages.sar.url,
           label: "SAR / RADAR",
         },
       };
@@ -751,6 +788,19 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
       console.log("[OrbiVue Change] endpoint:", CHANGE_ANALYSIS_ENDPOINT);
 
       if (!options.automatic && changeQuery.trim()) {
+        const submittedTemporalImages = {
+          t1: {
+            name: temporalImages.t1.name,
+            url: createMessageImageUrl(temporalImages.t1),
+            label: "BEFORE / T1",
+          },
+          t2: {
+            name: temporalImages.t2.name,
+            url: createMessageImageUrl(temporalImages.t2),
+            label: "AFTER / T2",
+          },
+        };
+
         setMessages((current) => [
           ...current,
           {
@@ -758,6 +808,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
             role: "user",
             text: changeQuery.trim(),
             imageName: "T1 / T2 temporal pair",
+            temporalImages: submittedTemporalImages,
           },
         ]);
       }
@@ -788,20 +839,24 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
 
         const changeAnalysis = normalizeChangeAnalysisResponse(data);
         const generatedAt = new Date().toISOString();
+        const resultTemporalImages = {
+          t1: {
+            name: temporalImages.t1?.name ?? "Before image",
+            url: createMessageImageUrl(temporalImages.t1),
+            label: "BEFORE / T1",
+          },
+          t2: {
+            name: temporalImages.t2?.name ?? "After image",
+            url: createMessageImageUrl(temporalImages.t2),
+            label: "AFTER / T2",
+          },
+        };
         const reportInput: ReportInput = {
           mode: "temporal",
           query: changeQuery.trim() || "Initial temporal change analysis",
           finalAnswer: changeAnalysis.final_answer,
-          beforeImage: {
-            name: temporalImages.t1?.name ?? "Before image",
-            url: temporalPreviewUrls.t1,
-            label: "BEFORE / T1",
-          },
-          afterImage: {
-            name: temporalImages.t2?.name ?? "After image",
-            url: temporalPreviewUrls.t2,
-            label: "AFTER / T2",
-          },
+          beforeImage: resultTemporalImages.t1,
+          afterImage: resultTemporalImages.t2,
           generatedAt,
           changeAnalysis,
         };
@@ -817,18 +872,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
             query: reportInput.query,
             generatedAt,
             mode: changeAnalysis.mode,
-            temporalImages: {
-              t1: {
-                name: temporalImages.t1?.name ?? "Before image",
-                url: temporalPreviewUrls.t1,
-                label: "BEFORE / T1",
-              },
-              t2: {
-                name: temporalImages.t2?.name ?? "After image",
-                url: temporalPreviewUrls.t2,
-                label: "AFTER / T2",
-              },
-            },
+            temporalImages: resultTemporalImages,
             showTemporalImages: Boolean(options.automatic),
             changeAnalysis,
           },
@@ -908,11 +952,13 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
 
     const currentImageUrl = imagePreviewUrl;
     const currentImageName = selectedImage.name;
+    const submittedImageUrl = createMessageImageUrl(selectedImage);
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: "user",
       text: trimmedQuery,
       imageName: currentImageName,
+      imageUrl: submittedImageUrl,
     };
 
     setMessages((current) => [...current, userMessage]);
@@ -965,7 +1011,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
         boundingBoxes,
         sourceImage: {
           name: currentImageName,
-          url: currentImageUrl,
+          url: submittedImageUrl || currentImageUrl,
           label: analysisMode === "grounding" ? "Grounding source" : "Source image",
         },
         generatedAt,
@@ -981,13 +1027,21 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
           text: finalAnswer,
           query: trimmedQuery,
           generatedAt,
-          imageUrl: currentImageUrl,
+          imageUrl: submittedImageUrl || currentImageUrl,
           imageName: currentImageName,
           mode: analysisMode,
           boundingBoxes,
         },
       ]);
       setQuery("");
+      setSelectedImage(null);
+      setTemporalImages({ t1: null, t2: null });
+      compressedImageRef.current = null;
+      compressedTemporalImagesRef.current = {};
+      analyzedPairRef.current = null;
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to reach analysis backend.");
     } finally {
