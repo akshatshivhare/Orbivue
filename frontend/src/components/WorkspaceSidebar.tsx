@@ -1,4 +1,4 @@
-import { Bell, ChevronRight, Clock3, Copy, FileText, Menu, Plus, Sparkles } from "lucide-react";
+import { Bell, ChevronRight, Clock3, Copy, FileText, Menu, Plus, Sparkles, type LucideIcon } from "lucide-react";
 import { OrbivueLogo } from "./OrbivueLogo";
 
 type WorkspaceSidebarProps = {
@@ -7,12 +7,15 @@ type WorkspaceSidebarProps = {
   onClose: () => void;
   onToggleCollapse: () => void;
   onNewChat: () => void;
+  onOpenAsk: () => void;
+  onOpenCompare: () => void;
   onOpenRecentChat: (title: string, subtitle: string) => void;
+  activeSection: "ask" | "compare";
 };
 
-const navItems = [
-  { label: "Ask OrbiVue", icon: Sparkles, active: true },
-  { label: "Compare", icon: Copy },
+const navItems: Array<{ label: string; icon: LucideIcon; section?: "ask" | "compare" }> = [
+  { label: "Ask OrbiVue", icon: Sparkles, section: "ask" },
+  { label: "Compare", icon: Copy, section: "compare" },
   { label: "Time", icon: Clock3 },
   { label: "Reports", icon: FileText },
   { label: "Alerts", icon: Bell },
@@ -32,7 +35,10 @@ export function WorkspaceSidebar({
   onClose,
   onToggleCollapse,
   onNewChat,
+  onOpenAsk,
+  onOpenCompare,
   onOpenRecentChat,
+  activeSection,
 }: WorkspaceSidebarProps) {
   return (
     <>
@@ -43,7 +49,7 @@ export function WorkspaceSidebar({
         onClick={onClose}
       />
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-[#d8ddd7] bg-[#fbf8f0]/96 py-5 text-[#0f2d46] shadow-[20px_0_60px_rgba(16,35,58,0.12)] transition-[width,transform,padding] duration-300 lg:static lg:translate-x-0 lg:shadow-none ${
+        className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-[#d8ddd7] bg-white/96 py-5 text-[#0f2d46] shadow-[20px_0_60px_rgba(16,35,58,0.12)] transition-[width,transform,padding] duration-300 lg:static lg:translate-x-0 lg:shadow-none ${
           isCollapsed ? "lg:w-[64px] lg:px-2.5" : "lg:w-[230px] lg:px-3"
         } w-[240px] px-3.5 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
@@ -84,10 +90,17 @@ export function WorkspaceSidebar({
               <button
                 key={item.label}
                 type="button"
+                onClick={
+                  item.section === "ask"
+                    ? onOpenAsk
+                    : item.section === "compare"
+                      ? onOpenCompare
+                      : undefined
+                }
                 className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[0.82rem] font-semibold transition ${
                   isCollapsed ? "lg:justify-center lg:px-0" : ""
                 } ${
-                  item.active
+                  item.section && activeSection === item.section
                     ? "bg-[#e8f2ed] text-[#005b46]"
                     : "text-[#10233a] hover:bg-white"
                 }`}

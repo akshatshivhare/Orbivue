@@ -313,6 +313,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
   const [activeReport, setActiveReport] = useState<ReportInput | null>(null);
   const [isReportEmptyStateOpen, setIsReportEmptyStateOpen] = useState(false);
   const [hasWorkspaceOpened, setHasWorkspaceOpened] = useState(false);
+  const [isCompareWorkflow, setIsCompareWorkflow] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -337,8 +338,8 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     hasWorkspaceOpened ||
     query.trim().length > 0 ||
     selectedImage !== null ||
-    Boolean(temporalImages.t1 || temporalImages.t2) ||
-    Boolean(crossModalImages.optical || crossModalImages.sar) ||
+    (isCompareWorkflow && Boolean(temporalImages.t1 || temporalImages.t2)) ||
+    (isCompareWorkflow && Boolean(crossModalImages.optical || crossModalImages.sar)) ||
     messages.length > 0;
 
   useEffect(() => {
@@ -421,7 +422,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
       return;
     }
 
-    if (compareMode === "cross_modal") {
+    if (isCompareWorkflow && compareMode === "cross_modal") {
       const requestedSlot = crossModalAttachSlotRef.current;
       crossModalAttachSlotRef.current = "auto";
       const slot: CrossModalImageSlot =
@@ -446,6 +447,19 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
       return;
     }
 
+    if (!isCompareWorkflow) {
+      setSelectedImage(file);
+      setError("");
+      compressedImageRef.current = null;
+      setHasWorkspaceOpened(true);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      return;
+    }
+
     const requestedSlot = temporalAttachSlotRef.current;
     temporalAttachSlotRef.current = "auto";
     const slot: TemporalImageSlot =
@@ -457,7 +471,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
         : { t1: temporalImages.t1 ?? file, t2: temporalImages.t1 ? file : null };
 
     setTemporalImages(nextTemporalImages);
-    setSelectedImage(nextTemporalImages.t1);
+    setSelectedImage(null);
     setError("");
     compressedImageRef.current = null;
     compressedTemporalImagesRef.current[slot] = undefined;
@@ -477,11 +491,8 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
 
   const clearSelectedImage = () => {
     setSelectedImage(null);
-    setTemporalImages({ t1: null, t2: null });
     setError("");
     compressedImageRef.current = null;
-    compressedTemporalImagesRef.current = {};
-    analyzedPairRef.current = null;
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -501,7 +512,6 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
         : { t1: temporalImages.t1, t2: null };
 
     setTemporalImages(nextTemporalImages);
-    setSelectedImage(nextTemporalImages.t1);
     setError("");
     compressedImageRef.current = null;
     compressedTemporalImagesRef.current = {};
@@ -530,12 +540,18 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
   const replaceTemporalImage = (slot: TemporalImageSlot) => {
     temporalAttachSlotRef.current = slot;
     setCompareMode("temporal");
+    setIsCompareWorkflow(true);
+    setSelectedImage(null);
+    compressedImageRef.current = null;
     fileInputRef.current?.click();
   };
 
   const replaceCrossModalImage = (slot: CrossModalImageSlot) => {
     crossModalAttachSlotRef.current = slot;
     setCompareMode("cross_modal");
+    setIsCompareWorkflow(true);
+    setSelectedImage(null);
+    compressedImageRef.current = null;
     setHasWorkspaceOpened(true);
     fileInputRef.current?.click();
   };
@@ -547,7 +563,6 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
 
     const nextTemporalImages = { t1: temporalImages.t2, t2: temporalImages.t1 };
     setTemporalImages(nextTemporalImages);
-    setSelectedImage(nextTemporalImages.t1);
     setError("");
     compressedImageRef.current = null;
     compressedTemporalImagesRef.current = {};
@@ -562,8 +577,28 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     setQuery("");
     setError("");
     clearSelectedImage();
+    setTemporalImages({ t1: null, t2: null });
+    compressedTemporalImagesRef.current = {};
+    analyzedPairRef.current = null;
     clearCrossModalImages();
     setCompareMode("temporal");
+    setIsCompareWorkflow(false);
+    setHasWorkspaceOpened(true);
+    setIsSidebarOpen(false);
+  };
+
+  const openAskWorkflow = () => {
+    setIsCompareWorkflow(false);
+    setError("");
+    setHasWorkspaceOpened(true);
+    setIsSidebarOpen(false);
+  };
+
+  const openCompareWorkflow = () => {
+    setIsCompareWorkflow(true);
+    setSelectedImage(null);
+    compressedImageRef.current = null;
+    setError("");
     setHasWorkspaceOpened(true);
     setIsSidebarOpen(false);
   };
@@ -895,6 +930,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
 
   useEffect(() => {
     if (
+      !isCompareWorkflow ||
       compareMode !== "temporal" ||
       !temporalPairKey ||
       !temporalPreviewUrls.t1 ||
@@ -908,7 +944,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
 
     analyzedPairRef.current = temporalPairKey;
     void runChangeAnalysis("", { automatic: true });
-  }, [compareMode, isChangeLoading, runChangeAnalysis, temporalPairKey, temporalPreviewUrls.t1, temporalPreviewUrls.t2]);
+  }, [compareMode, isChangeLoading, isCompareWorkflow, runChangeAnalysis, temporalPairKey, temporalPreviewUrls.t1, temporalPreviewUrls.t2]);
 
   const retryChangeAnalysis = () => {
     if (!hasTemporalPair || isBusy) {
@@ -922,12 +958,12 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
   const submitQuery = async () => {
     const trimmedQuery = query.trim();
 
-    if (compareMode === "cross_modal") {
+    if (isCompareWorkflow && compareMode === "cross_modal") {
       await runCrossModalAnalysis(trimmedQuery);
       return;
     }
 
-    if (hasTemporalPair) {
+    if (isCompareWorkflow && hasTemporalPair) {
       if (!trimmedQuery || isBusy || changeSubmitLockRef.current) {
         return;
       }
@@ -1035,10 +1071,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
       ]);
       setQuery("");
       setSelectedImage(null);
-      setTemporalImages({ t1: null, t2: null });
       compressedImageRef.current = null;
-      compressedTemporalImagesRef.current = {};
-      analyzedPairRef.current = null;
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -1077,7 +1110,10 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
           onClose={() => setIsSidebarOpen(false)}
           onToggleCollapse={() => setIsSidebarCollapsed((current) => !current)}
           onNewChat={startNewChat}
+          onOpenAsk={openAskWorkflow}
+          onOpenCompare={openCompareWorkflow}
           onOpenRecentChat={openRecentChat}
+          activeSection={isCompareWorkflow ? "compare" : "ask"}
         />
 
         <div className="flex min-w-0 flex-1 flex-col">
@@ -1099,7 +1135,11 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                 selectedImage={selectedImage}
                 imagePreviewUrl={imagePreviewUrl}
                 compareMode={compareMode}
+                isCompareWorkflow={isCompareWorkflow}
                 onCompareModeChange={(mode) => {
+                  setIsCompareWorkflow(true);
+                  setSelectedImage(null);
+                  compressedImageRef.current = null;
                   setCompareMode(mode);
                   setError("");
                   setHasWorkspaceOpened(true);
@@ -1155,7 +1195,11 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                 selectedImage={selectedImage}
                 imagePreviewUrl={imagePreviewUrl}
                 compareMode={compareMode}
+                isCompareWorkflow={isCompareWorkflow}
                 onCompareModeChange={(mode) => {
+                  setIsCompareWorkflow(true);
+                  setSelectedImage(null);
+                  compressedImageRef.current = null;
                   setCompareMode(mode);
                   setError("");
                   setHasWorkspaceOpened(true);
@@ -1190,6 +1234,9 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                           ? openLatestReportFromHome
                           : card.title === "Compare Over Time"
                             ? () => {
+                                setIsCompareWorkflow(true);
+                                setSelectedImage(null);
+                                compressedImageRef.current = null;
                                 setCompareMode("temporal");
                                 setHasWorkspaceOpened(true);
                               }

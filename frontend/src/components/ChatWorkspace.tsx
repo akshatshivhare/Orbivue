@@ -40,6 +40,7 @@ type ChatWorkspaceProps = {
   selectedImage: File | null;
   imagePreviewUrl: string;
   compareMode: CompareMode;
+  isCompareWorkflow: boolean;
   onCompareModeChange: (mode: CompareMode) => void;
   temporalImages: TemporalImageState;
   temporalPreviewUrls: TemporalImagePreviews;
@@ -69,6 +70,7 @@ export function ChatWorkspace({
   selectedImage,
   imagePreviewUrl,
   compareMode,
+  isCompareWorkflow,
   onCompareModeChange,
   temporalImages,
   temporalPreviewUrls,
@@ -90,6 +92,7 @@ export function ChatWorkspace({
   const hasTemporalPair = Boolean(temporalImages.t1 && temporalImages.t2);
   const hasTemporalImage = Boolean(temporalImages.t1 || temporalImages.t2);
   const hasCrossModalPair = Boolean(crossModalImages.optical && crossModalImages.sar);
+  const canSubmit = Boolean(selectedImage || (isCompareWorkflow && (hasTemporalPair || hasCrossModalPair)));
   const messageHistoryRef = useRef<HTMLDivElement | null>(null);
   const previousMessageCountRef = useRef(messages.length);
 
@@ -176,7 +179,7 @@ export function ChatWorkspace({
                 <span className="mr-2 inline-block h-3 w-3 animate-spin rounded-full border-2 border-[#0b7b5b]/35 border-t-[#0b7b5b]" />
                 {isChangeLoading
                   ? "Comparing T1 and T2..."
-                  : compareMode === "cross_modal"
+                  : isCompareWorkflow && compareMode === "cross_modal"
                     ? "Analyzing optical and SAR imagery..."
                     : "OrbiVue is analyzing..."}
               </article>
@@ -211,7 +214,7 @@ export function ChatWorkspace({
               placeholder="Ask anything about changes, 3D, terrain, water, or history..."
             />
             <ComposerIconButtons
-              canSubmit={Boolean(selectedImage || hasTemporalPair || hasCrossModalPair)}
+              canSubmit={canSubmit}
               fileInputRef={fileInputRef}
               onSubmit={onSubmit}
               isLoading={isLoading}
@@ -225,10 +228,10 @@ export function ChatWorkspace({
             isWorkspaceMode ? "" : "mt-3 pl-10"
           }`}
         >
-          {isWorkspaceMode && (
+          {isWorkspaceMode && isCompareWorkflow && (
             <CompareModeToggle compareMode={compareMode} onCompareModeChange={onCompareModeChange} disabled={isLoading} />
           )}
-          {compareMode === "temporal" && hasTemporalImage && (
+          {isCompareWorkflow && compareMode === "temporal" && hasTemporalImage && (
             <TemporalAttachmentStrip
               temporalImages={temporalImages}
               onRemoveTemporalImage={onRemoveTemporalImage}
@@ -238,7 +241,7 @@ export function ChatWorkspace({
               disabled={isLoading}
             />
           )}
-          {compareMode === "cross_modal" && (
+          {isCompareWorkflow && compareMode === "cross_modal" && (
             <CrossModalAttachmentStrip
               crossModalImages={crossModalImages}
               onRemoveCrossModalImage={onRemoveCrossModalImage}
@@ -247,11 +250,15 @@ export function ChatWorkspace({
               disabled={isLoading}
             />
           )}
-          {compareMode === "temporal" && !hasTemporalImage && selectedImage && (
-            <div className="relative flex max-w-[360px] items-center gap-3 rounded-xl border border-[#b7d8c8] bg-[#e8f4eb] px-3 py-2.5 pr-10 text-sm font-semibold text-[#0b6048] shadow-sm">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[#0b6048] shadow-inner">
-                <Paperclip size={18} />
-              </span>
+          {!isCompareWorkflow && selectedImage && (
+            <div className="relative flex max-w-[280px] items-center gap-2 rounded-lg border border-[#a9c9ba] bg-[#dcece2] px-2 py-1.5 pr-8 text-[0.8rem] font-semibold text-[#074d3b] shadow-sm">
+              {imagePreviewUrl && selectedImage.type.startsWith("image/") ? (
+                <img src={imagePreviewUrl} alt="" className="h-11 w-11 shrink-0 rounded-md bg-[#0b222b] object-cover" />
+              ) : (
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-white text-[#074d3b] shadow-inner">
+                  <Paperclip size={16} />
+                </span>
+              )}
               <span className="min-w-0 flex-1 truncate">{selectedImage.name}</span>
               <button
                 type="button"
@@ -269,7 +276,7 @@ export function ChatWorkspace({
           {isWorkspaceMode && (
             <div className="ml-auto flex items-center gap-3">
               <ComposerIconButtons
-                canSubmit={Boolean(selectedImage || hasTemporalPair || hasCrossModalPair)}
+                canSubmit={canSubmit}
                 fileInputRef={fileInputRef}
                 onSubmit={onSubmit}
                 isLoading={isLoading}
@@ -278,7 +285,7 @@ export function ChatWorkspace({
           )}
         </div>
 
-        {compareMode === "temporal" && hasTemporalImage && (
+        {isCompareWorkflow && compareMode === "temporal" && hasTemporalImage && (
           <div className="mt-3 flex flex-wrap items-center gap-2 pl-1 text-xs font-bold text-[#657a8c]">
             <span
               className={`rounded-full px-3 py-1 ${
@@ -291,7 +298,7 @@ export function ChatWorkspace({
           </div>
         )}
 
-        {compareMode === "cross_modal" && isWorkspaceMode && (
+        {isCompareWorkflow && compareMode === "cross_modal" && isWorkspaceMode && (
           <div className="mt-2.5">
             <CrossModalUploadPanel
               crossModalImages={crossModalImages}
@@ -312,9 +319,9 @@ export function ChatWorkspace({
               onKeyDown={handleKeyDown}
               className="min-w-0 flex-1 bg-transparent text-[0.94rem] font-medium text-[#14314b] outline-none placeholder:text-[#173452]"
               placeholder={
-                compareMode === "cross_modal"
+                isCompareWorkflow && compareMode === "cross_modal"
                   ? "Ask what complementary information the optical and SAR sensors reveal..."
-                  : hasTemporalPair
+                  : isCompareWorkflow && hasTemporalPair
                   ? "Ask a follow-up about changes between T1 and T2..."
                   : "Ask anything about changes, 3D, terrain, water, or history..."
               }
