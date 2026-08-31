@@ -22,7 +22,7 @@ export function BeforeAfterSlider({
 
   return (
     <section className="rounded-xl border border-[#c9ddd4] bg-[#fbfaf6]/95 p-2.5 shadow-sm">
-      <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="text-[0.82rem] font-black text-[#10233a]">Visual comparison</h3>
           <p className="mt-0.5 text-xs font-semibold text-[#657a8c]">Drag the divider to reveal T2 over T1.</p>
@@ -38,11 +38,11 @@ export function BeforeAfterSlider({
         </button>
       </div>
 
-      <div className="before-after-slider relative isolate mx-auto max-h-[370px] min-h-[200px] overflow-hidden rounded-xl border border-[#d8e1dc] bg-[#0d2730] shadow-inner">
+      <div className="before-after-slider relative isolate mx-auto h-[clamp(250px,38vh,470px)] overflow-hidden rounded-xl border border-[#d8e1dc] bg-[#0d2730] shadow-inner">
         <img
           src={beforeUrl}
           alt={`${beforeLabel} comparison image`}
-          className="block h-full max-h-[370px] min-h-[200px] w-full object-contain"
+          className="block h-full w-full object-contain"
           draggable={false}
         />
         <div

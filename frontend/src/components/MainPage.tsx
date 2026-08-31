@@ -1095,13 +1095,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
         className="absolute inset-0 h-full w-full object-cover"
         aria-hidden="true"
       />
-      <div
-        className={`absolute inset-0 ${
-          isWorkspaceMode
-            ? "bg-[linear-gradient(90deg,rgba(4,18,26,0.18)_0%,rgba(4,18,26,0.08)_45%,rgba(4,18,26,0.02)_100%)]"
-            : "bg-[linear-gradient(90deg,rgba(249,246,239,0.97)_0%,rgba(249,246,239,0.9)_36%,rgba(249,246,239,0.28)_62%,rgba(249,246,239,0.02)_100%)]"
-        }`}
-      />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(4,18,26,0.38)_0%,rgba(4,18,26,0.18)_38%,rgba(4,18,26,0.05)_100%)]" />
 
       <div className="relative z-10 flex h-full min-h-0">
         <WorkspaceSidebar
@@ -1124,7 +1118,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
           />
 
           {isWorkspaceMode ? (
-            <section className="flex min-h-0 flex-1 items-center justify-center px-5 py-4 lg:px-6">
+            <section className="workspace-stage flex min-h-0 flex-1 items-center justify-center px-4 py-3 lg:px-6">
               <ChatWorkspace
                 query={query}
                 onQueryChange={updateQuery}
@@ -1170,7 +1164,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                   Welcome to ORBiVUE
                 </div>
 
-                <h1 className="mt-2.5 text-[2.18rem] font-black leading-[1.03] tracking-normal text-[#0b1d31]">
+                <h1 className="mt-2.5 text-[2.18rem] font-black leading-[1.03] tracking-normal text-white">
                   Ask Earth anything.
                   <br />
                   Understand <span className="text-[#0b7b5b]">change</span>
@@ -1178,7 +1172,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                   with <span className="text-[#0b7b5b]">intelligence.</span>
                 </h1>
 
-                <p className="mt-2 max-w-[500px] text-[0.86rem] leading-5 text-[#183958]">
+                <p className="mt-2 max-w-[500px] text-[0.86rem] leading-5 text-white/84">
                   OrbiVue combines multi-sensor data, AI models, and historical comparison to help you analyze
                   changes, monitor the environment, and make confident decisions instantly.
                 </p>

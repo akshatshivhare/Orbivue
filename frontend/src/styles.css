@@ -237,7 +237,27 @@
 
 .workspace-mode .main-query {
   margin-top: 0 !important;
-  max-width: min(960px, 100%) !important;
+  max-width: min(82vw, 1350px, 100%) !important;
+}
+
+.workspace-chat-card {
+  width: min(82vw, 1350px);
+}
+
+.workspace-chat-card-empty {
+  height: min(70svh, 650px);
+  min-height: 430px;
+  max-width: min(72vw, 1120px);
+}
+
+.workspace-chat-card-active {
+  height: min(82svh, 840px);
+  min-height: 520px;
+  max-width: min(82vw, 1350px);
+}
+
+.workspace-stage {
+  min-height: 0;
 }
 
 .main-brand img,
@@ -298,8 +318,20 @@
 
   .workspace-mode .main-query {
     margin-top: 0 !important;
-    max-width: min(900px, 100%) !important;
-    padding: 0.85rem !important;
+    max-width: min(82vw, 1280px, 100%) !important;
+    padding: 0.9rem !important;
+  }
+
+  .workspace-chat-card-empty {
+    height: min(68svh, 620px);
+    min-height: 400px;
+    max-width: min(74vw, 1080px);
+  }
+
+  .workspace-chat-card-active {
+    height: min(80svh, 800px);
+    min-height: 500px;
+    max-width: min(82vw, 1280px);
   }
 
   .main-query > div:first-child {
@@ -598,8 +630,19 @@
 
   .workspace-mode .main-query {
     max-width: 100% !important;
+    width: 100%;
+    height: auto;
     max-height: none;
     padding: 0.85rem !important;
+  }
+
+  .workspace-chat-card,
+  .workspace-chat-card-empty,
+  .workspace-chat-card-active {
+    width: 100%;
+    max-width: 100%;
+    min-height: min(74svh, 620px);
+    height: calc(100svh - 8.25rem);
   }
 
   .main-header {

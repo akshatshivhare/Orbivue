@@ -49,7 +49,7 @@ export function WorkspaceSidebar({
         onClick={onClose}
       />
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-[#d8ddd7] bg-white/96 py-5 text-[#0f2d46] shadow-[20px_0_60px_rgba(16,35,58,0.12)] transition-[width,transform,padding] duration-300 lg:static lg:translate-x-0 lg:shadow-none ${
+        className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-[#d8ddd7] bg-[#fffefa] py-5 text-[#0f2d46] shadow-[20px_0_60px_rgba(16,35,58,0.16)] transition-[width,transform,padding] duration-300 lg:static lg:translate-x-0 ${
           isCollapsed ? "lg:w-[64px] lg:px-2.5" : "lg:w-[230px] lg:px-3"
         } w-[240px] px-3.5 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
@@ -102,7 +102,7 @@ export function WorkspaceSidebar({
                 } ${
                   item.section && activeSection === item.section
                     ? "bg-[#e8f2ed] text-[#005b46]"
-                    : "text-[#10233a] hover:bg-white"
+                    : "text-[#263c50] hover:bg-[#f3f7f3]"
                 }`}
                 title={item.label}
               >
@@ -124,7 +124,7 @@ export function WorkspaceSidebar({
                 key={chat.title}
                 type="button"
                 onClick={() => onOpenRecentChat(chat.title, chat.subtitle)}
-                className="group flex w-full gap-2.5 rounded-lg px-2 py-1 text-left transition hover:bg-white"
+                className="group flex w-full gap-2.5 rounded-lg px-2 py-1 text-left transition hover:bg-[#f3f7f3]"
               >
                 <Sparkles size={15} className="mt-1 shrink-0 text-[#133a5d]" />
                 <span className="min-w-0">
@@ -144,7 +144,7 @@ export function WorkspaceSidebar({
         <button
           type="button"
           onClick={isCollapsed ? onToggleCollapse : undefined}
-          className={`mt-auto flex h-9 items-center justify-between rounded-lg border border-[#d8ddd7] bg-white/70 px-3 text-[0.82rem] font-semibold text-[#10233a] shadow-sm ${
+          className={`mt-auto flex h-9 items-center justify-between rounded-lg border border-[#d8ddd7] bg-white px-3 text-[0.82rem] font-semibold text-[#10233a] shadow-sm ${
             isCollapsed ? "lg:justify-center lg:px-0" : ""
           }`}
           title={isCollapsed ? "Expand sidebar" : "View all chats"}

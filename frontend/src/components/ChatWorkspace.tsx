@@ -93,6 +93,7 @@ export function ChatWorkspace({
   const hasTemporalImage = Boolean(temporalImages.t1 || temporalImages.t2);
   const hasCrossModalPair = Boolean(crossModalImages.optical && crossModalImages.sar);
   const canSubmit = Boolean(selectedImage || (isCompareWorkflow && (hasTemporalPair || hasCrossModalPair)));
+  const hasActiveWorkspaceContent = Boolean(messages.length > 0 || error || isLoading || hasTemporalPair || hasCrossModalPair);
   const messageHistoryRef = useRef<HTMLDivElement | null>(null);
   const previousMessageCountRef = useRef(messages.length);
 
@@ -126,13 +127,15 @@ export function ChatWorkspace({
     <section
       className={`main-query w-full rounded-[1.15rem] border border-[#a9c9ba] bg-[#fbfaf6]/90 shadow-[0_14px_42px_rgba(6,64,51,0.14)] backdrop-blur-md transition-all duration-300 ${
         isWorkspaceMode
-          ? "flex h-full max-h-[74svh] min-h-0 max-w-[900px] flex-1 flex-col p-3.5 xl:max-w-[960px]"
+          ? `workspace-chat-card ${
+              hasActiveWorkspaceContent ? "workspace-chat-card-active" : "workspace-chat-card-empty"
+            } flex min-h-0 flex-1 flex-col p-4`
           : "mt-3.5 max-w-[790px] p-3"
       }`}
     >
       <div className={`${isWorkspaceMode ? "flex min-h-0 flex-1 flex-col" : ""}`}>
         {isWorkspaceMode && messages.length === 0 && !isLoading && !error && (
-          <div className="mx-auto flex min-h-[210px] w-full max-w-[700px] flex-1 flex-col justify-center px-3 text-center md:min-h-[235px]">
+          <div className="mx-auto flex min-h-[260px] w-full max-w-[760px] flex-1 flex-col justify-center px-3 text-center md:min-h-[320px]">
             <Sparkles size={26} className="mx-auto mb-2.5 text-[#123a5d]" />
             <h2 className="text-base font-black text-[#0b1d31] md:text-[1.14rem]">
               Ask anything about changes, 3D, terrain, water, or history...
@@ -142,7 +145,7 @@ export function ChatWorkspace({
         )}
 
         {isWorkspaceMode && (messages.length > 0 || error || isLoading) && (
-          <div ref={messageHistoryRef} className="chat-history flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-1 pr-1">
+          <div ref={messageHistoryRef} className="chat-history flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto pb-2 pr-2">
             {messages.map((message) =>
               message.role === "assistant" && message.mode === "cross_modal" && message.crossModalImages ? (
                 <CrossModalResultCard key={message.id} message={message} onOpenReport={onOpenReport} />
@@ -222,9 +225,9 @@ export function ChatWorkspace({
           </div>
         )}
 
-        <div className={isWorkspaceMode ? "mt-2.5 shrink-0 rounded-xl border border-[#c2d6cd] bg-[#fffdf8]/88 p-2 shadow-sm" : ""}>
+        <div className={isWorkspaceMode ? "mt-2 shrink-0 rounded-xl border border-[#c2d6cd] bg-[#fffdf8]/88 p-2 shadow-sm" : ""}>
         <div
-          className={`flex flex-wrap items-center gap-2.5 ${
+          className={`flex flex-wrap items-center gap-2 ${
             isWorkspaceMode ? "" : "mt-3 pl-10"
           }`}
         >
@@ -286,7 +289,7 @@ export function ChatWorkspace({
         </div>
 
         {isCompareWorkflow && compareMode === "temporal" && hasTemporalImage && (
-          <div className="mt-3 flex flex-wrap items-center gap-2 pl-1 text-xs font-bold text-[#657a8c]">
+          <div className="mt-2 flex flex-wrap items-center gap-2 pl-1 text-xs font-bold text-[#657a8c]">
             <span
               className={`rounded-full px-3 py-1 ${
                 hasTemporalPair ? "bg-[#e8f4eb] text-[#0b6048]" : "bg-[#f3f1ec] text-[#657a8c]"
@@ -299,7 +302,7 @@ export function ChatWorkspace({
         )}
 
         {isCompareWorkflow && compareMode === "cross_modal" && isWorkspaceMode && (
-          <div className="mt-2.5">
+          <div className="mt-2">
             <CrossModalUploadPanel
               crossModalImages={crossModalImages}
               crossModalPreviewUrls={crossModalPreviewUrls}
@@ -359,14 +362,14 @@ function CompareModeToggle({
   disabled: boolean;
 }) {
   return (
-    <div className="inline-flex rounded-xl border border-[#b7d8c8] bg-white/82 p-1 shadow-sm" aria-label="Compare mode">
+    <div className="inline-flex rounded-xl border border-[#b7d8c8] bg-white/82 p-0.5 shadow-sm" aria-label="Compare mode">
       {(["temporal", "cross_modal"] as CompareMode[]).map((mode) => (
         <button
           key={mode}
           type="button"
           onClick={() => onCompareModeChange(mode)}
           disabled={disabled}
-          className={`rounded-lg px-3 py-1.5 text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-60 ${
+          className={`rounded-lg px-2.5 py-1.5 text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-60 ${
             compareMode === mode ? "bg-[#00624b] text-white shadow-sm" : "text-[#0b6048] hover:bg-[#e8f4eb]"
           }`}
         >
@@ -539,7 +542,7 @@ function TemporalResultCard({
 
   return (
     <article className="mr-auto w-full rounded-[1rem] border border-[#c2d6cd] bg-white/95 p-3.5 text-[#14314b] shadow-[0_12px_34px_rgba(16,35,58,0.09)]">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
         <div>
           <div className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#0b6048]">
             OrbiVue AI
@@ -548,24 +551,42 @@ function TemporalResultCard({
             {analysis.mode === "change_vqa" ? "Change Question" : "Temporal Change Analysis"}
           </div>
         </div>
-        <span className="rounded-full bg-[#e8f4eb] px-3 py-1 text-xs font-bold text-[#0b6048]">
-          {analysis.changes.length} changes
-        </span>
-      </div>
-
-      {hasLiveTemporalPair && (
-        <div className="mb-3 flex justify-end">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <span className="rounded-full bg-[#e8f4eb] px-3 py-1 text-xs font-bold text-[#0b6048]">
+            {analysis.changes.length} changes
+          </span>
+          {hasLiveTemporalPair && (
+            <button
+              type="button"
+              onClick={() => setShowVisualCompare((current) => !current)}
+              className="inline-flex items-center gap-2 rounded-lg border border-[#a9c9ba] bg-white px-2.5 py-1.5 text-xs font-black text-[#074d3b] shadow-sm transition hover:bg-[#dcece2]"
+              aria-label={showVisualCompare ? "Hide visual before and after comparison" : "Compare before and after images visually"}
+            >
+              <ArrowLeftRight size={15} />
+              Compare Visually
+            </button>
+          )}
           <button
             type="button"
-            onClick={() => setShowVisualCompare((current) => !current)}
+            onClick={() =>
+              onOpenReport({
+                mode: "temporal",
+                query: message.query,
+                finalAnswer: analysis.final_answer,
+                beforeImage: temporalImages.t1,
+                afterImage: temporalImages.t2,
+                generatedAt: message.generatedAt,
+                changeAnalysis: analysis,
+              })
+            }
             className="inline-flex items-center gap-2 rounded-lg border border-[#a9c9ba] bg-white px-2.5 py-1.5 text-xs font-black text-[#074d3b] shadow-sm transition hover:bg-[#dcece2]"
-            aria-label={showVisualCompare ? "Hide visual before and after comparison" : "Compare before and after images visually"}
+            aria-label="Generate OrbiVue temporal analysis report"
           >
-            <ArrowLeftRight size={15} />
-            Compare Visually
+            <FileText size={15} />
+            Generate Report
           </button>
         </div>
-      )}
+      </div>
 
       {showVisualCompare && hasLiveTemporalPair && (
         <div className="mb-3">
@@ -577,28 +598,6 @@ function TemporalResultCard({
           />
         </div>
       )}
-
-      <div className="mb-3 flex justify-end">
-        <button
-          type="button"
-          onClick={() =>
-            onOpenReport({
-              mode: "temporal",
-              query: message.query,
-              finalAnswer: analysis.final_answer,
-              beforeImage: temporalImages.t1,
-              afterImage: temporalImages.t2,
-              generatedAt: message.generatedAt,
-              changeAnalysis: analysis,
-            })
-          }
-          className="inline-flex items-center gap-2 rounded-lg border border-[#a9c9ba] bg-white px-2.5 py-1.5 text-xs font-black text-[#074d3b] shadow-sm transition hover:bg-[#dcece2]"
-          aria-label="Generate OrbiVue temporal analysis report"
-        >
-          <FileText size={15} />
-          Generate Report
-        </button>
-      </div>
 
       {shouldShowImages && (
         <div className="grid gap-3 md:grid-cols-2">
@@ -810,7 +809,7 @@ function TemporalAttachmentStrip({
           type="button"
           onClick={onSwapTemporalImages}
           disabled={disabled}
-          className="inline-flex items-center gap-2 rounded-lg border border-[#a9c9ba] bg-white px-2.5 py-1.5 text-xs font-black text-[#074d3b] shadow-sm transition hover:bg-[#dcece2] disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#a9c9ba] bg-white px-2.5 text-xs font-black text-[#074d3b] shadow-sm transition hover:bg-[#dcece2] disabled:cursor-not-allowed disabled:opacity-60"
         >
           <ArrowLeftRight size={15} />
           Swap
@@ -830,7 +829,7 @@ function TemporalAttachmentStrip({
           type="button"
           onClick={() => onReplaceTemporalImage("t2")}
           disabled={disabled || !temporalImages.t1}
-          className="inline-flex items-center gap-2 rounded-lg border border-dashed border-[#a9c9ba] bg-white/80 px-2.5 py-2 text-[0.84rem] font-black text-[#074d3b] shadow-sm transition hover:bg-[#dcece2] disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-10 items-center gap-2 rounded-lg border border-dashed border-[#a9c9ba] bg-white/80 px-2.5 text-[0.8rem] font-black text-[#074d3b] shadow-sm transition hover:bg-[#dcece2] disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Paperclip size={16} />
           Add T2 / After image
@@ -854,7 +853,7 @@ function CrossModalUploadPanel({
   disabled: boolean;
 }) {
   return (
-    <div className="grid gap-2.5 md:grid-cols-2">
+    <div className="grid gap-2 md:grid-cols-2">
       <CrossModalUploadCard
         slot="optical"
         label="OPTICAL / MULTISPECTRAL"
@@ -928,7 +927,7 @@ function CompactUploadButton({ label, onClick, disabled }: { label: string; onCl
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex items-center gap-2 rounded-lg border border-dashed border-[#a9c9ba] bg-white/80 px-2.5 py-2 text-[0.84rem] font-black text-[#074d3b] shadow-sm transition hover:bg-[#dcece2] disabled:cursor-not-allowed disabled:opacity-60"
+      className="inline-flex h-10 items-center gap-2 rounded-lg border border-dashed border-[#a9c9ba] bg-white/80 px-2.5 text-[0.8rem] font-black text-[#074d3b] shadow-sm transition hover:bg-[#dcece2] disabled:cursor-not-allowed disabled:opacity-60"
     >
       <Paperclip size={16} />
       {label}
@@ -956,7 +955,7 @@ function CrossModalUploadCard({
 }) {
   return (
     <article className="min-w-0 rounded-xl border border-[#c2d6cd] bg-white/86 p-2 shadow-sm">
-      <div className="mb-2 flex items-start justify-between gap-2.5">
+      <div className="mb-1.5 flex items-start justify-between gap-2.5">
         <div className="min-w-0">
           <h3 className="text-[0.72rem] font-black uppercase tracking-[0.14em] text-[#0b6048]">{label}</h3>
           <p className="mt-0.5 text-xs font-semibold text-[#657a8c]">{helper}</p>
@@ -969,13 +968,13 @@ function CrossModalUploadCard({
       </div>
 
       {previewUrl ? (
-        <img src={previewUrl} alt={`${label} preview`} className="block h-16 w-full rounded-lg bg-[#0b222b] object-cover" />
+        <img src={previewUrl} alt={`${label} preview`} className="block h-14 w-full rounded-lg bg-[#0b222b] object-cover" />
       ) : (
         <button
           type="button"
           onClick={onReplace}
           disabled={disabled}
-          className="flex h-16 w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#a9c9ba] bg-[#f7f4ed] text-xs font-black text-[#074d3b] transition hover:bg-[#dcece2] disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-14 w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#a9c9ba] bg-[#f7f4ed] text-xs font-black text-[#074d3b] transition hover:bg-[#dcece2] disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Paperclip size={17} />
           Upload
@@ -983,7 +982,7 @@ function CrossModalUploadCard({
       )}
 
       {file && (
-        <div className="mt-2 flex items-center justify-between gap-2">
+        <div className="mt-1.5 flex items-center justify-between gap-2">
           <span className="min-w-0 truncate text-xs font-semibold text-[#657a8c]">{file.name}</span>
           <span className="flex shrink-0 gap-2">
             <button
@@ -1025,11 +1024,11 @@ function TemporalChip({
   disabled: boolean;
 }) {
   return (
-    <div className="relative flex max-w-[310px] items-center gap-2 rounded-lg border border-[#a9c9ba] bg-[#dcece2] px-2 py-1.5 pr-8 text-[0.8rem] text-[#074d3b] shadow-sm">
+    <div className="relative flex max-w-[300px] items-center gap-2 rounded-lg border border-[#a9c9ba] bg-[#dcece2] px-2 py-1 pr-8 text-[0.78rem] text-[#074d3b] shadow-sm">
       {previewUrl ? (
-        <img src={previewUrl} alt="" className="h-11 w-11 shrink-0 rounded-md bg-[#0b222b] object-cover" />
+        <img src={previewUrl} alt="" className="h-10 w-10 shrink-0 rounded-md bg-[#0b222b] object-cover" />
       ) : (
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-white text-[#074d3b] shadow-inner">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-white text-[#074d3b] shadow-inner">
           <Paperclip size={16} />
         </span>
       )}
