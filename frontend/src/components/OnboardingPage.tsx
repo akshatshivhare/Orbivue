@@ -155,17 +155,17 @@ export function OnboardingPage({ onFinish }: OnboardingPageProps) {
       <div className="onboarding-spark onboarding-spark-a absolute right-[13%] top-[52%] hidden h-2 w-2 rounded-full bg-white shadow-[0_0_24px_8px_rgba(255,255,255,0.8)] lg:block" />
       <div className="onboarding-spark onboarding-spark-b absolute right-[35%] top-[26%] hidden h-2 w-2 rounded-full bg-white shadow-[0_0_24px_8px_rgba(255,255,255,0.8)] lg:block" />
 
-      <section className="onboarding-shell relative z-10 flex h-screen flex-col px-6 py-5 sm:px-10 lg:px-[4.8rem]">
-        <div className="onboarding-main grid flex-1 gap-5 lg:grid-cols-[minmax(700px,0.95fr)_minmax(520px,1fr)]">
-          <div className="onboarding-copy">
-          <OrbivueLogo className="onboarding-logo pt-4" />
+      <section className="onboarding-shell relative z-10 flex h-screen flex-col px-5 py-4 sm:px-8 lg:px-[4rem]">
+        <div className="onboarding-main grid flex-1 gap-4 lg:grid-cols-[minmax(620px,0.9fr)_minmax(500px,1fr)]">
+          <div className="onboarding-copy flex min-h-0 flex-col">
+          <OrbivueLogo className="onboarding-logo pt-3" />
 
-          <div className="onboarding-divider mt-14 flex items-center gap-4 lg:mt-[2.7rem]">
-            <span className="h-px w-20 bg-onboarding-orange" />
+          <div className="onboarding-divider mt-10 flex items-center gap-3 lg:mt-[2.2rem]">
+            <span className="h-px w-16 bg-onboarding-orange" />
             <span className="h-2.5 w-2.5 rounded-full bg-onboarding-orange" />
           </div>
 
-          <div className="onboarding-hero-text mt-6 max-w-[840px]">
+          <div className="onboarding-hero-text mt-5 max-w-[760px]">
             <h1 className="onboarding-headline font-serif font-semibold italic tracking-normal text-onboarding-forest">
               {isFinalSlide ? (
                 <>
@@ -192,7 +192,7 @@ export function OnboardingPage({ onFinish }: OnboardingPageProps) {
                 </>
               )}
             </h1>
-            <p className="onboarding-body mt-5 max-w-[720px] text-onboarding-ink">
+            <p className="onboarding-body mt-4 max-w-[660px] text-onboarding-ink">
               {isFinalSlide ? (
                 <>
                   OrbiVue&apos;s signature features help you explore, analyze, and prove what
@@ -229,11 +229,11 @@ export function OnboardingPage({ onFinish }: OnboardingPageProps) {
               )}
             </p>
             {isFinalSlide && (
-              <div className="onboarding-feature-list mt-5 grid max-w-[650px] grid-cols-2 gap-x-10 gap-y-2 text-base text-onboarding-ink">
+              <div className="onboarding-feature-list mt-4 grid max-w-[600px] grid-cols-2 gap-x-8 gap-y-1.5 text-[0.92rem] text-onboarding-ink">
                 {signatureFeatures.map((feature) => (
                   <span key={feature} className="flex items-center gap-3">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-onboarding-forest text-white">
-                      <Check size={14} strokeWidth={3} />
+                    <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-onboarding-forest text-white">
+                      <Check size={12} strokeWidth={3} />
                     </span>
                     {feature}
                   </span>
@@ -242,48 +242,50 @@ export function OnboardingPage({ onFinish }: OnboardingPageProps) {
             )}
             </div>
 
-          <div className="onboarding-actions mt-7 flex flex-wrap items-center gap-8">
-            <button
-              onClick={goNext}
-              className="group flex items-center gap-6 rounded-2xl bg-onboarding-forest px-5 py-3.5 text-xl font-extrabold text-white shadow-[0_20px_45px_rgba(10,74,56,0.3)] transition hover:bg-[#123f35]"
-            >
-              <span className="flex h-12 w-12 items-center justify-center rounded-full border border-white/75 transition group-hover:translate-x-1">
-                <ArrowRight size={28} />
-              </span>
-              {isFinalSlide ? "Start Exploring" : isIntroSlide ? "Enter OrbiVue" : "Continue"}
-            </button>
+          <div className="onboarding-actions mt-auto grid w-full max-w-[600px] grid-cols-[1fr_auto] items-center gap-5 pt-5">
+            <div>
             {isFinalSlide ? (
               <button
                 onClick={goBack}
-                className="flex items-center gap-3 border-b-2 border-onboarding-forest pb-2 text-lg font-extrabold text-onboarding-ink"
+                className="flex items-center gap-2 border-b-2 border-onboarding-forest pb-1.5 text-base font-extrabold text-onboarding-ink"
               >
-                <ArrowLeft size={24} />
+                <ArrowLeft size={21} />
                 Back
               </button>
             ) : (
-              <button className="flex items-center gap-3 border-b-2 border-onboarding-forest pb-2 text-lg font-extrabold text-onboarding-ink">
+              <button className="flex items-center gap-2 border-b-2 border-onboarding-forest pb-1.5 text-base font-extrabold text-onboarding-ink">
                 See how it works
-                <ArrowRight size={24} />
+                <ArrowRight size={21} />
               </button>
             )}
+            </div>
+            <button
+              onClick={goNext}
+              className="group flex h-14 min-w-[190px] items-center justify-center gap-4 rounded-xl bg-onboarding-forest px-4 text-base font-extrabold text-white shadow-[0_16px_34px_rgba(10,74,56,0.26)] transition hover:bg-[#123f35]"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/75 transition group-hover:translate-x-1">
+                <ArrowRight size={23} />
+              </span>
+              {isFinalSlide ? "Start Exploring" : isIntroSlide ? "Enter OrbiVue" : "Continue"}
+            </button>
           </div>
 
-          <div className="onboarding-progress mt-9 flex flex-wrap items-center gap-8 text-onboarding-muted">
-            <div className="flex items-center gap-3 text-xl font-semibold text-onboarding-ink">
+          <div className="onboarding-progress mt-5 flex flex-wrap items-center gap-6 text-onboarding-muted">
+            <div className="flex items-center gap-2 text-lg font-semibold text-onboarding-ink">
               <span>{currentSlide}</span>
               <span className="text-onboarding-muted">/</span>
               <span className="text-onboarding-muted">3</span>
             </div>
-            <div className="flex items-center gap-4">
-              <span className={`h-3 w-3 rounded-full ${currentSlide === 1 ? "bg-onboarding-forest" : "bg-onboarding-muted/35"}`} />
-              <span className={`h-3 w-3 rounded-full ${currentSlide === 2 ? "bg-onboarding-forest" : "bg-onboarding-muted/35"}`} />
-              <span className={`h-3 w-3 rounded-full ${currentSlide === 3 ? "bg-onboarding-forest" : "bg-onboarding-muted/35"}`} />
+            <div className="flex items-center gap-3">
+              <span className={`h-2.5 w-2.5 rounded-full ${currentSlide === 1 ? "bg-onboarding-forest" : "bg-onboarding-muted/35"}`} />
+              <span className={`h-2.5 w-2.5 rounded-full ${currentSlide === 2 ? "bg-onboarding-forest" : "bg-onboarding-muted/35"}`} />
+              <span className={`h-2.5 w-2.5 rounded-full ${currentSlide === 3 ? "bg-onboarding-forest" : "bg-onboarding-muted/35"}`} />
             </div>
-            <span className="text-base">{caption}</span>
+            <span className="text-sm">{caption}</span>
           </div>
           </div>
 
-          <div className="onboarding-feature-area relative hidden min-h-[560px] lg:block">
+          <div className="onboarding-feature-area relative hidden min-h-[500px] lg:block">
             {isFinalSlide ? (
               <>
                 <svg
@@ -318,14 +320,14 @@ export function OnboardingPage({ onFinish }: OnboardingPageProps) {
                   return (
                     <article
                       key={card.title}
-                      className={`onboarding-feature-card absolute z-10 flex w-[230px] items-center gap-3 rounded-[1.1rem] border border-white/85 bg-white/95 p-3 shadow-onboarding backdrop-blur-md xl:w-[255px] ${card.className}`}
-                    >
-                      <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${card.iconClass}`}>
-                        <Icon size={25} strokeWidth={1.9} />
+                    className={`onboarding-feature-card absolute z-10 flex w-[210px] items-center gap-2.5 rounded-[1rem] border border-white/85 bg-white/95 p-2.5 shadow-onboarding backdrop-blur-md xl:w-[235px] ${card.className}`}
+                  >
+                      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${card.iconClass}`}>
+                        <Icon size={22} strokeWidth={1.9} />
                       </span>
                       <span className="min-w-0">
                         <strong className="block text-sm font-extrabold text-onboarding-ink">{card.title}</strong>
-                        <span className="mt-1 block text-[0.72rem] leading-4 text-onboarding-muted">{card.description}</span>
+                        <span className="mt-0.5 block text-[0.68rem] leading-4 text-onboarding-muted">{card.description}</span>
                       </span>
                       <ArrowRight className="ml-auto shrink-0 text-onboarding-ink" size={16} />
                     </article>
@@ -383,14 +385,14 @@ export function OnboardingPage({ onFinish }: OnboardingPageProps) {
               return (
                 <article
                   key={card.title}
-                  className={`onboarding-feature-card absolute z-10 flex w-[250px] items-center gap-3 rounded-[1.25rem] border border-white/85 bg-white/95 p-3 shadow-onboarding backdrop-blur-md xl:w-[280px] ${card.className}`}
+                  className={`onboarding-feature-card absolute z-10 flex w-[225px] items-center gap-2.5 rounded-[1rem] border border-white/85 bg-white/95 p-2.5 shadow-onboarding backdrop-blur-md xl:w-[255px] ${card.className}`}
                 >
-                  <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full xl:h-14 xl:w-14 ${card.iconClass}`}>
-                    <Icon size={28} strokeWidth={1.9} />
+                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full xl:h-12 xl:w-12 ${card.iconClass}`}>
+                    <Icon size={24} strokeWidth={1.9} />
                   </span>
                   <span>
-                    <strong className="block text-sm font-extrabold text-onboarding-ink xl:text-[0.95rem]">{card.title}</strong>
-                    <span className="mt-1 block text-xs leading-4 text-onboarding-muted xl:text-[0.8rem]">{card.description}</span>
+                    <strong className="block text-[0.82rem] font-extrabold text-onboarding-ink xl:text-sm">{card.title}</strong>
+                    <span className="mt-0.5 block text-[0.7rem] leading-4 text-onboarding-muted xl:text-xs">{card.description}</span>
                   </span>
                 </article>
               );

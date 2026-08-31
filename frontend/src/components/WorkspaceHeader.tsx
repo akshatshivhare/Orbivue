@@ -8,7 +8,7 @@ type WorkspaceHeaderProps = {
 
 export function WorkspaceHeader({ showMenuButton, onMenuClick, onSidebarToggle }: WorkspaceHeaderProps) {
   return (
-    <header className="relative z-20 flex h-[4.5rem] items-center justify-between bg-transparent px-5 lg:px-7">
+    <header className="relative z-20 flex h-16 items-center justify-between bg-transparent px-4 lg:px-6">
       <div className="flex items-center gap-3">
         {showMenuButton && (
           <button
@@ -30,9 +30,9 @@ export function WorkspaceHeader({ showMenuButton, onMenuClick, onSidebarToggle }
         </button>
       </div>
 
-      <div className="flex items-center gap-3 text-base font-extrabold text-[#141b28]">
+      <div className="flex items-center gap-2.5 text-base font-extrabold text-[#141b28]">
         <button className="flex items-center gap-3">
-          <span className="h-12 w-12 rounded-full border border-white bg-[url('/assets/login-earth-bg.png')] bg-cover bg-center shadow-md" />
+          <span className="h-10 w-10 rounded-full border border-white bg-[url('/assets/login-earth-bg.png')] bg-cover bg-center shadow-md" />
           <ChevronDown size={18} className="hidden sm:inline" />
         </button>
       </div>

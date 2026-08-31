@@ -1028,7 +1028,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
           />
 
           {isWorkspaceMode ? (
-            <section className="flex min-h-0 flex-1 px-6 pb-5 pt-1 lg:px-7 lg:pb-6">
+            <section className="flex min-h-0 flex-1 px-5 pb-4 pt-1 lg:px-6 lg:pb-5">
               <ChatWorkspace
                 query={query}
                 onQueryChange={updateQuery}
@@ -1063,14 +1063,14 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
               />
             </section>
           ) : (
-            <section className="main-content relative flex min-h-0 flex-1 flex-col px-6 pb-5 pt-1.5">
-              <div className="main-hero max-w-[650px]">
-                <div className="inline-flex items-center gap-2 rounded-xl bg-[#e8f4eb] px-3.5 py-1.5 text-[0.82rem] font-semibold text-[#0b6048]">
+            <section className="main-content relative flex min-h-0 flex-1 flex-col px-5 pb-4 pt-1.5">
+              <div className="main-hero max-w-[600px]">
+                <div className="inline-flex items-center gap-2 rounded-lg bg-[#dcece2] px-3 py-1.5 text-[0.78rem] font-bold text-[#074d3b]">
                   <Sparkles size={15} />
                   Welcome to ORBiVUE
                 </div>
 
-                <h1 className="mt-3 text-[2.35rem] font-black leading-[1.04] tracking-normal text-[#10233a]">
+                <h1 className="mt-2.5 text-[2.18rem] font-black leading-[1.03] tracking-normal text-[#0b1d31]">
                   Ask Earth anything.
                   <br />
                   Understand <span className="text-[#0b7b5b]">change</span>
@@ -1078,7 +1078,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                   with <span className="text-[#0b7b5b]">intelligence.</span>
                 </h1>
 
-                <p className="mt-2.5 max-w-[520px] text-[0.92rem] leading-6 text-[#1f426a]">
+                <p className="mt-2 max-w-[500px] text-[0.86rem] leading-5 text-[#183958]">
                   OrbiVue combines multi-sensor data, AI models, and historical comparison to help you analyze
                   changes, monitor the environment, and make confident decisions instantly.
                 </p>
@@ -1118,7 +1118,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                 isWorkspaceMode={false}
               />
 
-              <div className="main-card-grid mt-4 grid max-w-[840px] grid-cols-4 gap-3.5">
+              <div className="main-card-grid mt-3.5 grid max-w-[790px] grid-cols-4 gap-3">
                 {actionCards.map((card) => {
                   const Icon = card.icon;
                   return (
@@ -1135,14 +1135,14 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                               }
                             : undefined
                       }
-                      className="main-action-card min-h-[128px] rounded-2xl border border-[#d8d8d2] bg-white/86 p-3.5 text-left shadow-sm backdrop-blur-sm transition hover:border-[#b7d8c8] hover:bg-white/95"
+                      className="main-action-card min-h-[112px] rounded-xl border border-[#cbcfc8] bg-white/86 p-3 text-left shadow-sm backdrop-blur-sm transition hover:border-[#9bbfae] hover:bg-white/95"
                     >
-                      <span className={`flex h-10 w-10 items-center justify-center rounded-full ${card.color}`}>
-                        <Icon size={21} strokeWidth={1.8} />
+                      <span className={`flex h-9 w-9 items-center justify-center rounded-full ${card.color}`}>
+                        <Icon size={19} strokeWidth={1.8} />
                       </span>
-                      <h2 className="mt-2.5 text-[0.92rem] font-extrabold text-[#141b28]">{card.title}</h2>
-                      <p className="mt-1 text-[0.78rem] leading-[1.18rem] text-[#1f426a]">{card.description}</p>
-                      <ArrowRight className="mt-1.5 text-[#1f426a]" size={19} />
+                      <h2 className="mt-2 text-[0.86rem] font-extrabold text-[#111827]">{card.title}</h2>
+                      <p className="mt-1 text-[0.72rem] leading-[1.08rem] text-[#183958]">{card.description}</p>
+                      <ArrowRight className="mt-1 text-[#183958]" size={17} />
                     </button>
                   );
                 })}
