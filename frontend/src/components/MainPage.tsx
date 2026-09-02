@@ -12,6 +12,7 @@ import { apiUrl } from "../config/api";
 import { ChatWorkspace } from "./ChatWorkspace";
 import { ReportPreviewModal } from "./report/ReportPreviewModal";
 import type { ReportInput } from "./report/reportUtils";
+import { SatelliteExplorer } from "./SatelliteExplorer";
 import { WorkspaceHeader } from "./WorkspaceHeader";
 import { WorkspaceSidebar } from "./WorkspaceSidebar";
 import type {
@@ -25,7 +26,9 @@ import type {
   CrossModalImagePreviews,
   CrossModalImageSlot,
   CrossModalImageState,
+  SatelliteImageryMetadata,
   TemporalImagePreviews,
+  TemporalImageryMetadata,
   TemporalImageSlot,
   TemporalImageState,
 } from "./workspaceTypes";
@@ -300,8 +303,10 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
   const [isChangeLoading, setIsChangeLoading] = useState(false);
   const [compareMode, setCompareMode] = useState<CompareMode>("temporal");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [selectedImageMetadata, setSelectedImageMetadata] = useState<SatelliteImageryMetadata | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const [temporalImages, setTemporalImages] = useState<TemporalImageState>({ t1: null, t2: null });
+  const [temporalImageMetadata, setTemporalImageMetadata] = useState<TemporalImageryMetadata>({ t1: null, t2: null });
   const [temporalPreviewUrls, setTemporalPreviewUrls] = useState<TemporalImagePreviews>({ t1: "", t2: "" });
   const [crossModalImages, setCrossModalImages] = useState<CrossModalImageState>({ optical: null, sar: null });
   const [crossModalPreviewUrls, setCrossModalPreviewUrls] = useState<CrossModalImagePreviews>({
@@ -314,6 +319,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
   const [isReportEmptyStateOpen, setIsReportEmptyStateOpen] = useState(false);
   const [hasWorkspaceOpened, setHasWorkspaceOpened] = useState(false);
   const [isCompareWorkflow, setIsCompareWorkflow] = useState(false);
+  const [isSatelliteExplorerOpen, setIsSatelliteExplorerOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -449,6 +455,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
 
     if (!isCompareWorkflow) {
       setSelectedImage(file);
+      setSelectedImageMetadata(null);
       setError("");
       compressedImageRef.current = null;
       setHasWorkspaceOpened(true);
@@ -471,7 +478,13 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
         : { t1: temporalImages.t1 ?? file, t2: temporalImages.t1 ? file : null };
 
     setTemporalImages(nextTemporalImages);
+    setTemporalImageMetadata(
+      slot === "t1"
+        ? { t1: null, t2: temporalImageMetadata.t2 }
+        : { t1: temporalImageMetadata.t1, t2: null }
+    );
     setSelectedImage(null);
+    setSelectedImageMetadata(null);
     setError("");
     compressedImageRef.current = null;
     compressedTemporalImagesRef.current[slot] = undefined;
@@ -491,6 +504,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
 
   const clearSelectedImage = () => {
     setSelectedImage(null);
+    setSelectedImageMetadata(null);
     setError("");
     compressedImageRef.current = null;
 
@@ -510,8 +524,13 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
       slot === "t1"
         ? { t1: temporalImages.t2, t2: null }
         : { t1: temporalImages.t1, t2: null };
+    const nextTemporalMetadata =
+      slot === "t1"
+        ? { t1: temporalImageMetadata.t2, t2: null }
+        : { t1: temporalImageMetadata.t1, t2: null };
 
     setTemporalImages(nextTemporalImages);
+    setTemporalImageMetadata(nextTemporalMetadata);
     setError("");
     compressedImageRef.current = null;
     compressedTemporalImagesRef.current = {};
@@ -542,6 +561,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     setCompareMode("temporal");
     setIsCompareWorkflow(true);
     setSelectedImage(null);
+    setSelectedImageMetadata(null);
     compressedImageRef.current = null;
     fileInputRef.current?.click();
   };
@@ -551,6 +571,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     setCompareMode("cross_modal");
     setIsCompareWorkflow(true);
     setSelectedImage(null);
+    setSelectedImageMetadata(null);
     compressedImageRef.current = null;
     setHasWorkspaceOpened(true);
     fileInputRef.current?.click();
@@ -562,7 +583,9 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     }
 
     const nextTemporalImages = { t1: temporalImages.t2, t2: temporalImages.t1 };
+    const nextTemporalMetadata = { t1: temporalImageMetadata.t2, t2: temporalImageMetadata.t1 };
     setTemporalImages(nextTemporalImages);
+    setTemporalImageMetadata(nextTemporalMetadata);
     setError("");
     compressedImageRef.current = null;
     compressedTemporalImagesRef.current = {};
@@ -578,17 +601,20 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     setError("");
     clearSelectedImage();
     setTemporalImages({ t1: null, t2: null });
+    setTemporalImageMetadata({ t1: null, t2: null });
     compressedTemporalImagesRef.current = {};
     analyzedPairRef.current = null;
     clearCrossModalImages();
     setCompareMode("temporal");
     setIsCompareWorkflow(false);
+    setIsSatelliteExplorerOpen(false);
     setHasWorkspaceOpened(true);
     setIsSidebarOpen(false);
   };
 
   const openAskWorkflow = () => {
     setIsCompareWorkflow(false);
+    setIsSatelliteExplorerOpen(false);
     setError("");
     setHasWorkspaceOpened(true);
     setIsSidebarOpen(false);
@@ -596,7 +622,9 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
 
   const openCompareWorkflow = () => {
     setIsCompareWorkflow(true);
+    setIsSatelliteExplorerOpen(false);
     setSelectedImage(null);
+    setSelectedImageMetadata(null);
     compressedImageRef.current = null;
     setError("");
     setHasWorkspaceOpened(true);
@@ -611,6 +639,50 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     }
 
     setIsReportEmptyStateOpen(true);
+  };
+
+  const openSatelliteExplorer = () => {
+    setIsSatelliteExplorerOpen(true);
+    setHasWorkspaceOpened(true);
+    setError("");
+    setIsSidebarOpen(false);
+  };
+
+  const useSatelliteSingleImage = (file: File, metadata: SatelliteImageryMetadata) => {
+    setSelectedImage(file);
+    setSelectedImageMetadata(metadata);
+    setTemporalImages({ t1: null, t2: null });
+    setTemporalImageMetadata({ t1: null, t2: null });
+    compressedTemporalImagesRef.current = {};
+    analyzedPairRef.current = null;
+    setCompareMode("temporal");
+    setIsCompareWorkflow(false);
+    setIsSatelliteExplorerOpen(false);
+    setQuery("");
+    setError("");
+    compressedImageRef.current = null;
+    setHasWorkspaceOpened(true);
+  };
+
+  const useSatelliteTemporalImages = (
+    beforeFile: File,
+    beforeMetadata: SatelliteImageryMetadata,
+    afterFile: File,
+    afterMetadata: SatelliteImageryMetadata
+  ) => {
+    setSelectedImage(null);
+    setSelectedImageMetadata(null);
+    compressedImageRef.current = null;
+    setTemporalImages({ t1: beforeFile, t2: afterFile });
+    setTemporalImageMetadata({ t1: beforeMetadata, t2: afterMetadata });
+    compressedTemporalImagesRef.current = {};
+    analyzedPairRef.current = null;
+    setCompareMode("temporal");
+    setIsCompareWorkflow(true);
+    setIsSatelliteExplorerOpen(false);
+    setQuery("");
+    setError("");
+    setHasWorkspaceOpened(true);
   };
 
   const closeReportPreview = () => {
@@ -824,17 +896,19 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
 
       if (!options.automatic && changeQuery.trim()) {
         const submittedTemporalImages = {
-          t1: {
-            name: temporalImages.t1.name,
-            url: createMessageImageUrl(temporalImages.t1),
-            label: "BEFORE / T1",
-          },
-          t2: {
-            name: temporalImages.t2.name,
-            url: createMessageImageUrl(temporalImages.t2),
-            label: "AFTER / T2",
-          },
-        };
+            t1: {
+              name: temporalImages.t1.name,
+              url: createMessageImageUrl(temporalImages.t1),
+              label: "BEFORE / T1",
+              date: temporalImageMetadata.t1?.date,
+            },
+            t2: {
+              name: temporalImages.t2.name,
+              url: createMessageImageUrl(temporalImages.t2),
+              label: "AFTER / T2",
+              date: temporalImageMetadata.t2?.date,
+            },
+          };
 
         setMessages((current) => [
           ...current,
@@ -844,6 +918,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
             text: changeQuery.trim(),
             imageName: "T1 / T2 temporal pair",
             temporalImages: submittedTemporalImages,
+            temporalImagery: temporalImageMetadata,
           },
         ]);
       }
@@ -879,11 +954,13 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
             name: temporalImages.t1?.name ?? "Before image",
             url: createMessageImageUrl(temporalImages.t1),
             label: "BEFORE / T1",
+            date: temporalImageMetadata.t1?.date,
           },
           t2: {
             name: temporalImages.t2?.name ?? "After image",
             url: createMessageImageUrl(temporalImages.t2),
             label: "AFTER / T2",
+            date: temporalImageMetadata.t2?.date,
           },
         };
         const reportInput: ReportInput = {
@@ -925,7 +1002,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
         setIsChangeLoading(false);
       }
     },
-    [temporalImages.t1, temporalImages.t2, temporalPreviewUrls.t1, temporalPreviewUrls.t2]
+    [temporalImageMetadata, temporalImages.t1, temporalImages.t2, temporalPreviewUrls.t1, temporalPreviewUrls.t2]
   );
 
   useEffect(() => {
@@ -995,6 +1072,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
       text: trimmedQuery,
       imageName: currentImageName,
       imageUrl: submittedImageUrl,
+      satelliteImagery: selectedImageMetadata ?? undefined,
     };
 
     setMessages((current) => [...current, userMessage]);
@@ -1067,10 +1145,12 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
           imageName: currentImageName,
           mode: analysisMode,
           boundingBoxes,
+          satelliteImagery: selectedImageMetadata ?? undefined,
         },
       ]);
       setQuery("");
       setSelectedImage(null);
+      setSelectedImageMetadata(null);
       compressedImageRef.current = null;
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -1086,7 +1166,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
   return (
     <main
       className={`main-page fixed inset-0 overflow-hidden bg-[#061b22] text-[#10233a] ${
-        isWorkspaceMode ? "workspace-mode" : "landing-shell"
+        isWorkspaceMode || isSatelliteExplorerOpen ? "workspace-mode" : "landing-shell"
       }`}
     >
       <img
@@ -1117,7 +1197,18 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
             onSidebarToggle={() => setIsSidebarCollapsed((current) => !current)}
           />
 
-          {isWorkspaceMode ? (
+          {isSatelliteExplorerOpen ? (
+            <section className="workspace-stage flex min-h-0 flex-1 items-center justify-center px-4 py-3 lg:px-6">
+              <SatelliteExplorer
+                onClose={() => {
+                  setIsSatelliteExplorerOpen(false);
+                  setHasWorkspaceOpened(true);
+                }}
+                onUseSingleImage={useSatelliteSingleImage}
+                onUseTemporalImages={useSatelliteTemporalImages}
+              />
+            </section>
+          ) : isWorkspaceMode ? (
             <section className="workspace-stage flex min-h-0 flex-1 items-center justify-center px-4 py-3 lg:px-6">
               <ChatWorkspace
                 query={query}
@@ -1127,6 +1218,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                 isChangeLoading={isChangeLoading}
                 error={error}
                 selectedImage={selectedImage}
+                selectedImageMetadata={selectedImageMetadata}
                 imagePreviewUrl={imagePreviewUrl}
                 compareMode={compareMode}
                 isCompareWorkflow={isCompareWorkflow}
@@ -1139,6 +1231,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                   setHasWorkspaceOpened(true);
                 }}
                 temporalImages={temporalImages}
+                temporalImageMetadata={temporalImageMetadata}
                 temporalPreviewUrls={temporalPreviewUrls}
                 crossModalImages={crossModalImages}
                 crossModalPreviewUrls={crossModalPreviewUrls}
@@ -1152,6 +1245,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                 onReplaceCrossModalImage={replaceCrossModalImage}
                 onRetryChangeAnalysis={retryChangeAnalysis}
                 onOpenReport={setActiveReport}
+                onOpenSatelliteExplorer={openSatelliteExplorer}
                 messages={messages}
                 isWorkspaceMode
               />
@@ -1187,6 +1281,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                 isChangeLoading={isChangeLoading}
                 error={error}
                 selectedImage={selectedImage}
+                selectedImageMetadata={selectedImageMetadata}
                 imagePreviewUrl={imagePreviewUrl}
                 compareMode={compareMode}
                 isCompareWorkflow={isCompareWorkflow}
@@ -1199,6 +1294,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                   setHasWorkspaceOpened(true);
                 }}
                 temporalImages={temporalImages}
+                temporalImageMetadata={temporalImageMetadata}
                 temporalPreviewUrls={temporalPreviewUrls}
                 crossModalImages={crossModalImages}
                 crossModalPreviewUrls={crossModalPreviewUrls}
@@ -1212,6 +1308,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                 onReplaceCrossModalImage={replaceCrossModalImage}
                 onRetryChangeAnalysis={retryChangeAnalysis}
                 onOpenReport={setActiveReport}
+                onOpenSatelliteExplorer={openSatelliteExplorer}
                 messages={messages}
                 isWorkspaceMode={false}
               />

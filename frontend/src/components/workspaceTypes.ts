@@ -19,6 +19,20 @@ export type CrossModalImageState = Record<CrossModalImageSlot, File | null>;
 
 export type CrossModalImagePreviews = Record<CrossModalImageSlot, string>;
 
+export type SatelliteImageryMetadata = {
+  locationName: string;
+  lat: number;
+  lon: number;
+  provider: string;
+  product?: string;
+  date: string;
+  cloudCover?: number | null;
+  quality?: string;
+  resolutionNote?: string;
+};
+
+export type TemporalImageryMetadata = Record<TemporalImageSlot, SatelliteImageryMetadata | null>;
+
 export type ChangeDirection =
   | "increased"
   | "decreased"
@@ -67,12 +81,14 @@ export type ChatMessage = {
   generatedAt?: string;
   imageUrl?: string;
   imageName?: string;
+  satelliteImagery?: SatelliteImageryMetadata;
   mode?: AnalysisMode;
   boundingBoxes?: BoundingBox[];
   temporalImages?: {
     t1: TemporalMessageImage;
     t2: TemporalMessageImage;
   };
+  temporalImagery?: TemporalImageryMetadata;
   crossModalImages?: {
     optical: CrossModalMessageImage;
     sar: CrossModalMessageImage;

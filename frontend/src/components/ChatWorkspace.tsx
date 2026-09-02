@@ -6,6 +6,7 @@ import {
   Check,
   FileText,
   Layers,
+  MapPin,
   type LucideIcon,
   Mic,
   Paperclip,
@@ -24,7 +25,9 @@ import type {
   CrossModalImagePreviews,
   CrossModalImageSlot,
   CrossModalImageState,
+  SatelliteImageryMetadata,
   TemporalImagePreviews,
+  TemporalImageryMetadata,
   TemporalImageSlot,
   TemporalImageState,
   TemporalMessageImage,
@@ -38,11 +41,13 @@ type ChatWorkspaceProps = {
   isChangeLoading: boolean;
   error: string;
   selectedImage: File | null;
+  selectedImageMetadata: SatelliteImageryMetadata | null;
   imagePreviewUrl: string;
   compareMode: CompareMode;
   isCompareWorkflow: boolean;
   onCompareModeChange: (mode: CompareMode) => void;
   temporalImages: TemporalImageState;
+  temporalImageMetadata: TemporalImageryMetadata;
   temporalPreviewUrls: TemporalImagePreviews;
   crossModalImages: CrossModalImageState;
   crossModalPreviewUrls: CrossModalImagePreviews;
@@ -56,6 +61,7 @@ type ChatWorkspaceProps = {
   onReplaceCrossModalImage: (slot: CrossModalImageSlot) => void;
   onRetryChangeAnalysis: () => void;
   onOpenReport: (report: ReportInput) => void;
+  onOpenSatelliteExplorer: () => void;
   messages: ChatMessage[];
   isWorkspaceMode: boolean;
 };
@@ -68,11 +74,13 @@ export function ChatWorkspace({
   isChangeLoading,
   error,
   selectedImage,
+  selectedImageMetadata,
   imagePreviewUrl,
   compareMode,
   isCompareWorkflow,
   onCompareModeChange,
   temporalImages,
+  temporalImageMetadata,
   temporalPreviewUrls,
   crossModalImages,
   crossModalPreviewUrls,
@@ -86,6 +94,7 @@ export function ChatWorkspace({
   onReplaceCrossModalImage,
   onRetryChangeAnalysis,
   onOpenReport,
+  onOpenSatelliteExplorer,
   messages,
   isWorkspaceMode,
 }: ChatWorkspaceProps) {
@@ -237,6 +246,7 @@ export function ChatWorkspace({
           {isCompareWorkflow && compareMode === "temporal" && hasTemporalImage && (
             <TemporalAttachmentStrip
               temporalImages={temporalImages}
+              temporalImageMetadata={temporalImageMetadata}
               onRemoveTemporalImage={onRemoveTemporalImage}
               onReplaceTemporalImage={onReplaceTemporalImage}
               onSwapTemporalImages={onSwapTemporalImages}
@@ -262,7 +272,15 @@ export function ChatWorkspace({
                   <Paperclip size={16} />
                 </span>
               )}
-              <span className="min-w-0 flex-1 truncate">{selectedImage.name}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate">{selectedImageMetadata?.locationName || selectedImage.name}</span>
+                {selectedImageMetadata && (
+                  <span className="block truncate text-[0.66rem] font-black uppercase tracking-[0.08em] text-[#657a8c]">
+                    {providerShortLabel(selectedImageMetadata.provider, selectedImageMetadata.product)} •{" "}
+                    {formatMetadataDate(selectedImageMetadata.date)}
+                  </span>
+                )}
+              </span>
               <button
                 type="button"
                 onClick={onClearImage}
@@ -273,6 +291,7 @@ export function ChatWorkspace({
               </button>
             </div>
           )}
+          <ComposerAction label="Location" icon={MapPin} onClick={onOpenSatelliteExplorer} />
           <ComposerAction label="Attach Area" icon={Layers} />
           <ComposerAction label="Date Range" icon={CalendarDays} />
           <ComposerAction label="Data Sources" icon={Layers} />
@@ -326,6 +345,8 @@ export function ChatWorkspace({
                   ? "Ask what complementary information the optical and SAR sensors reveal..."
                   : isCompareWorkflow && hasTemporalPair
                   ? "Ask a follow-up about changes between T1 and T2..."
+                  : selectedImageMetadata
+                  ? "Ask anything about this satellite image..."
                   : "Ask anything about changes, 3D, terrain, water, or history..."
               }
             />
@@ -392,9 +413,27 @@ function MessageAttachments({ message }: { message: ChatMessage }) {
 
   if (message.temporalImages) {
     return (
-      <div className="mb-2 flex flex-wrap gap-2">
-        <MessageThumb imageUrl={message.temporalImages.t1.url} imageName={message.temporalImages.t1.name} label="T1" />
-        <MessageThumb imageUrl={message.temporalImages.t2.url} imageName={message.temporalImages.t2.name} label="T2" />
+      <div className="mb-2">
+        {message.temporalImagery?.t1 && (
+          <div className="mb-1.5 flex items-center gap-1.5 text-[0.72rem] font-bold text-white/82">
+            <MapPin size={13} />
+            <span>{message.temporalImagery.t1.locationName}</span>
+          </div>
+        )}
+        <div className="flex flex-wrap gap-2">
+          <MessageThumb
+            imageUrl={message.temporalImages.t1.url}
+            imageName={message.temporalImages.t1.name}
+            label={message.temporalImagery?.t1 ? `T1 • ${formatMetadataDate(message.temporalImagery.t1.date)}` : "T1"}
+            metadata={message.temporalImagery?.t1 ?? undefined}
+          />
+          <MessageThumb
+            imageUrl={message.temporalImages.t2.url}
+            imageName={message.temporalImages.t2.name}
+            label={message.temporalImagery?.t2 ? `T2 • ${formatMetadataDate(message.temporalImagery.t2.date)}` : "T2"}
+            metadata={message.temporalImagery?.t2 ?? undefined}
+          />
+        </div>
       </div>
     );
   }
@@ -402,7 +441,18 @@ function MessageAttachments({ message }: { message: ChatMessage }) {
   if (message.imageUrl || message.imageName) {
     return (
       <div className="mb-2">
-        <MessageThumb imageUrl={message.imageUrl} imageName={message.imageName || "Uploaded image"} label="IMAGE" />
+        {message.satelliteImagery && (
+          <div className="mb-1.5 flex items-center gap-1.5 text-[0.72rem] font-bold text-white/82">
+            <MapPin size={13} />
+            <span>{message.satelliteImagery.locationName}</span>
+          </div>
+        )}
+        <MessageThumb
+          imageUrl={message.imageUrl}
+          imageName={message.imageName || "Uploaded image"}
+          label={message.satelliteImagery ? formatMetadataDate(message.satelliteImagery.date) : "IMAGE"}
+          metadata={message.satelliteImagery}
+        />
       </div>
     );
   }
@@ -414,10 +464,12 @@ function MessageThumb({
   imageUrl,
   imageName,
   label,
+  metadata,
 }: {
   imageUrl?: string;
   imageName: string;
   label: string;
+  metadata?: SatelliteImageryMetadata;
 }) {
   return (
     <span className="inline-flex max-w-[220px] items-center gap-2 rounded-lg bg-white/14 p-1.5 text-left text-xs font-semibold">
@@ -430,7 +482,9 @@ function MessageThumb({
       )}
       <span className="min-w-0">
         <span className="block text-[0.62rem] font-black uppercase tracking-[0.12em] opacity-75">{label}</span>
-        <span className="block truncate">{imageName}</span>
+        <span className="block truncate">
+          {metadata ? providerShortLabel(metadata.provider, metadata.product) : imageName}
+        </span>
       </span>
     </span>
   );
@@ -777,6 +831,7 @@ function ListSection({ title, items }: { title: string; items: string[] }) {
 
 function TemporalAttachmentStrip({
   temporalImages,
+  temporalImageMetadata,
   temporalPreviewUrls,
   onRemoveTemporalImage,
   onReplaceTemporalImage,
@@ -784,6 +839,7 @@ function TemporalAttachmentStrip({
   disabled,
 }: {
   temporalImages: TemporalImageState;
+  temporalImageMetadata: TemporalImageryMetadata;
   temporalPreviewUrls: TemporalImagePreviews;
   onRemoveTemporalImage: (slot: TemporalImageSlot) => void;
   onReplaceTemporalImage: (slot: TemporalImageSlot) => void;
@@ -797,7 +853,7 @@ function TemporalAttachmentStrip({
       {temporalImages.t1 && (
         <TemporalChip
           label="T1 / BEFORE"
-          fileName={temporalImages.t1.name}
+          fileName={temporalImageMetadata.t1 ? satelliteChipLabel(temporalImageMetadata.t1) : temporalImages.t1.name}
           previewUrl={temporalPreviewUrls.t1}
           onRemove={() => onRemoveTemporalImage("t1")}
           onReplace={() => onReplaceTemporalImage("t1")}
@@ -818,7 +874,7 @@ function TemporalAttachmentStrip({
       {temporalImages.t2 ? (
         <TemporalChip
           label="T2 / AFTER"
-          fileName={temporalImages.t2.name}
+          fileName={temporalImageMetadata.t2 ? satelliteChipLabel(temporalImageMetadata.t2) : temporalImages.t2.name}
           previewUrl={temporalPreviewUrls.t2}
           onRemove={() => onRemoveTemporalImage("t2")}
           onReplace={() => onReplaceTemporalImage("t2")}
@@ -1060,12 +1116,18 @@ function TemporalChip({
 function ComposerAction({
   label,
   icon: Icon,
+  onClick,
 }: {
   label: string;
   icon: LucideIcon;
+  onClick?: () => void;
 }) {
   return (
-    <button className="inline-flex items-center gap-2 rounded-lg border border-[#ccd8d3] bg-white px-2.5 py-1.5 text-[0.78rem] font-bold text-[#183958] shadow-sm">
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-2 rounded-lg border border-[#ccd8d3] bg-white px-2.5 py-1.5 text-[0.78rem] font-bold text-[#183958] shadow-sm transition hover:border-[#0b7b5b] hover:bg-[#e8f4eb]"
+    >
       <Icon size={15} />
       {label}
     </button>
@@ -1136,4 +1198,32 @@ function formatConfidence(confidence: number) {
 
 function cleanModelText(text: string) {
   return text.replace(/\\n/g, "\n").replace(/\*\*/g, "").trim();
+}
+
+function providerShortLabel(provider: string, product?: string) {
+  if (provider === "sentinel-2") {
+    return `Sentinel-2${product ? ` ${product}` : ""}`;
+  }
+
+  if (provider === "nasa-viirs") {
+    return "NASA VIIRS";
+  }
+
+  return product ? `${provider} ${product}` : provider;
+}
+
+function formatMetadataDate(value?: string) {
+  if (!value) {
+    return "Satellite image";
+  }
+
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(`${value}T00:00:00`));
+}
+
+function satelliteChipLabel(metadata: SatelliteImageryMetadata) {
+  return `${metadata.locationName} • ${providerShortLabel(metadata.provider, metadata.product)} • ${formatMetadataDate(metadata.date)}`;
 }
