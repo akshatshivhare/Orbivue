@@ -14,6 +14,7 @@ from .routes.analyze import router as analyze_router
 from .routes.change_analysis import router as change_analysis_router
 from .routes.cross_modal import router as cross_modal_router
 from .routes.general import router as general_router
+from .routes.location_imagery import router as location_imagery_router
 from .routes.orchestrate import router as orchestrate_router
 
 app = FastAPI(title="SatQuery AI Backend", version="0.1.0")
@@ -30,6 +31,7 @@ app.include_router(analyze_router)
 app.include_router(change_analysis_router)
 app.include_router(cross_modal_router)
 app.include_router(general_router)
+app.include_router(location_imagery_router)
 app.include_router(orchestrate_router)
 
 

@@ -1,10 +1,12 @@
 from pathlib import Path
-from dotenv import load_dotenv
 import os
 import re
-from pathlib import Path
 
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover - only used in minimal tooling environments.
+    def load_dotenv(*_args: object, **_kwargs: object) -> bool:
+        return False
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(PROJECT_ROOT / ".env", override=False)
@@ -31,6 +33,19 @@ ORBIVUE_TEMPORAL_API_URL = os.getenv("ORBIVUE_TEMPORAL_API_URL", "").strip().rst
 ORBIVUE_TEMPORAL_API_KEY = os.getenv("ORBIVUE_TEMPORAL_API_KEY")
 ORBIVUE_CROSS_MODAL_API_URL = os.getenv("ORBIVUE_CROSS_MODAL_API_URL", "").strip().rstrip("/")
 ORBIVUE_CROSS_MODAL_API_KEY = os.getenv("ORBIVUE_CROSS_MODAL_API_KEY")
+COPERNICUS_CLIENT_ID = os.getenv("COPERNICUS_CLIENT_ID")
+COPERNICUS_CLIENT_SECRET = os.getenv("COPERNICUS_CLIENT_SECRET")
+LOCATION_IMAGERY_AOI_KM = float(os.getenv("LOCATION_IMAGERY_AOI_KM", "25"))
+LOCATION_IMAGERY_MAX_RANGE_DAYS = int(os.getenv("LOCATION_IMAGERY_MAX_RANGE_DAYS", "90"))
+LOCATION_IMAGERY_LATEST_LOOKBACK_DAYS = int(os.getenv("LOCATION_IMAGERY_LATEST_LOOKBACK_DAYS", "14"))
+SENTINEL2_LATEST_LOOKBACK_DAYS = int(os.getenv("SENTINEL2_LATEST_LOOKBACK_DAYS", "30"))
+SENTINEL2_GOOD_CLOUD_MAX = float(os.getenv("SENTINEL2_GOOD_CLOUD_MAX", "20"))
+SENTINEL2_FAIR_CLOUD_MAX = float(os.getenv("SENTINEL2_FAIR_CLOUD_MAX", "50"))
+LOCATION_IMAGERY_PREVIEW_SIZE = int(os.getenv("LOCATION_IMAGERY_PREVIEW_SIZE", "768"))
+LOCATION_IMAGERY_USER_AGENT = os.getenv(
+    "LOCATION_IMAGERY_USER_AGENT",
+    "OrbiVue/0.1 location-imagery-prototype",
+)
 
 DEFAULT_ALLOWED_ORIGINS = [
     "https://orbivue.vercel.app",
