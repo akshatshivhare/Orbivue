@@ -8,6 +8,9 @@ import httpx
 from ...config import ORBIVUE_CROSS_MODAL_API_KEY, ORBIVUE_CROSS_MODAL_API_URL
 from ..gemini_client import GeminiAnalysisError
 
+ORBIVUE_CROSS_MODAL_TIMEOUT_SECONDS = 600.0
+ORBIVUE_CONNECT_TIMEOUT_SECONDS = 30.0
+
 
 class OrbiVueCrossModalProvider:
     name = "OrbiVue Cross-Modal"
@@ -36,7 +39,12 @@ class OrbiVueCrossModalProvider:
         try:
             optical_bytes = optical_image_path.read_bytes()
             sar_bytes = sar_image_path.read_bytes()
-            async with httpx.AsyncClient(timeout=httpx.Timeout(180.0)) as client:
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(
+                    ORBIVUE_CROSS_MODAL_TIMEOUT_SECONDS,
+                    connect=ORBIVUE_CONNECT_TIMEOUT_SECONDS,
+                )
+            ) as client:
                 response = await client.post(
                     cross_modal_url,
                     headers={"X-API-Key": ORBIVUE_CROSS_MODAL_API_KEY},

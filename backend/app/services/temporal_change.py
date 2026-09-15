@@ -2,7 +2,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from ..schemas.change_analysis import ChangeAnalysisResponse, ChangeDirection, ChangeItem
+from ..schemas.change_analysis import ChangeAnalysisResponse, ChangeDirection, ChangeGuardMetadata, ChangeItem
 from .gemini_client import (
     GeminiAnalysisError,
     error_type,
@@ -41,6 +41,63 @@ def _normalize_string_list(value: Any) -> list[str]:
     if not isinstance(value, list):
         return []
     return [str(item).strip() for item in value if str(item).strip()]
+
+
+def _normalize_optional_float(value: Any) -> float | None:
+    if value is None:
+        return None
+
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _normalize_change_guard(value: Any) -> ChangeGuardMetadata | None:
+    if not isinstance(value, dict):
+        return None
+
+    guard: ChangeGuardMetadata = {}
+    for key in (
+        "status",
+        "semantic_verification",
+        "normalization_method",
+        "alignment_warning",
+    ):
+        raw_value = value.get(key)
+        if raw_value is None and key == "alignment_warning":
+            guard[key] = None  # type: ignore[literal-required]
+        elif isinstance(raw_value, str) and raw_value.strip():
+            guard[key] = raw_value.strip()  # type: ignore[literal-required]
+
+    for key in ("qwen_called", "exact_match", "dimension_normalized"):
+        raw_value = value.get(key)
+        if isinstance(raw_value, bool):
+            guard[key] = raw_value  # type: ignore[literal-required]
+
+    for key in (
+        "mean_absolute_difference",
+        "changed_pixel_fraction",
+        "pixel_change_threshold",
+        "near_identical_mean_threshold",
+        "near_identical_fraction_threshold",
+        "aspect_ratio_t1",
+        "aspect_ratio_t2",
+        "aspect_ratio_relative_difference",
+    ):
+        if key in value:
+            guard[key] = _normalize_optional_float(value.get(key))  # type: ignore[literal-required]
+
+    for key in ("original_size_t1", "original_size_t2", "comparison_size"):
+        raw_value = value.get(key)
+        if (
+            isinstance(raw_value, list)
+            and len(raw_value) == 2
+            and all(isinstance(item, int) for item in raw_value)
+        ):
+            guard[key] = raw_value  # type: ignore[literal-required]
+
+    return guard or None
 
 
 def _normalize_change_response(raw_response: Any, *, is_follow_up: bool) -> ChangeAnalysisResponse:
@@ -88,7 +145,7 @@ def _normalize_change_response(raw_response: Any, *, is_follow_up: bool) -> Chan
     if not final_answer:
         final_answer = summary
 
-    return {
+    response: ChangeAnalysisResponse = {
         "mode": "change_vqa" if is_follow_up else "change_analysis",
         "summary": summary,
         "final_answer": final_answer,
@@ -97,6 +154,11 @@ def _normalize_change_response(raw_response: Any, *, is_follow_up: bool) -> Chan
         "limitations": _normalize_string_list(raw_response.get("limitations")),
         "change_map": None,
     }
+    change_guard = _normalize_change_guard(raw_response.get("change_guard"))
+    if change_guard is not None:
+        response["change_guard"] = change_guard
+
+    return response
 
 
 def _build_temporal_prompt(

@@ -9,6 +9,9 @@ import httpx
 from ...config import ORBIVUE_GROUNDING_API_KEY, ORBIVUE_GROUNDING_API_URL
 from ..gemini_client import GeminiAnalysisError
 
+ORBIVUE_GROUNDING_TIMEOUT_SECONDS = 300.0
+ORBIVUE_CONNECT_TIMEOUT_SECONDS = 30.0
+
 
 class OrbiVueGroundingProvider:
     name = "OrbiVue Grounding"
@@ -54,7 +57,12 @@ class OrbiVueGroundingProvider:
 
         try:
             image_bytes = image_path.read_bytes()
-            async with httpx.AsyncClient(timeout=httpx.Timeout(180.0)) as client:
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(
+                    ORBIVUE_GROUNDING_TIMEOUT_SECONDS,
+                    connect=ORBIVUE_CONNECT_TIMEOUT_SECONDS,
+                )
+            ) as client:
                 response = await client.post(
                     ground_url,
                     headers={"X-API-Key": ORBIVUE_GROUNDING_API_KEY},

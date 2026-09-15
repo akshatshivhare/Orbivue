@@ -9,6 +9,9 @@ import httpx
 from ...config import ORBIVUE_TEMPORAL_API_KEY, ORBIVUE_TEMPORAL_API_URL
 from ..gemini_client import GeminiAnalysisError
 
+ORBIVUE_TEMPORAL_TIMEOUT_SECONDS = 600.0
+ORBIVUE_CONNECT_TIMEOUT_SECONDS = 30.0
+
 
 class OrbiVueTemporalProvider:
     name = "OrbiVue Temporal"
@@ -55,7 +58,12 @@ class OrbiVueTemporalProvider:
         try:
             image_t1_bytes = image_t1_path.read_bytes()
             image_t2_bytes = image_t2_path.read_bytes()
-            async with httpx.AsyncClient(timeout=httpx.Timeout(180.0)) as client:
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(
+                    ORBIVUE_TEMPORAL_TIMEOUT_SECONDS,
+                    connect=ORBIVUE_CONNECT_TIMEOUT_SECONDS,
+                )
+            ) as client:
                 response = await client.post(
                     change_url,
                     headers={"X-API-Key": ORBIVUE_TEMPORAL_API_KEY},
@@ -124,12 +132,15 @@ class OrbiVueTemporalProvider:
                 user_message="OrbiVue temporal provider returned an incomplete response.",
             )
 
-        return json.dumps(
-            {
-                "mode": "temporal",
-                "final_answer": final_answer.strip(),
-            }
-        )
+        provider_payload: dict[str, Any] = {
+            "mode": "temporal",
+            "final_answer": final_answer.strip(),
+        }
+        change_guard = payload.get("change_guard")
+        if isinstance(change_guard, dict):
+            provider_payload["change_guard"] = change_guard
+
+        return json.dumps(provider_payload)
 
 
 def _extract_user_query(prompt: str) -> str:

@@ -25,14 +25,19 @@ OPENROUTER_VISION_MODEL = os.getenv(
     "OPENROUTER_VISION_MODEL",
     "qwen/qwen2.5-vl-32b-instruct:free",
 )
-ORBIVUE_API_URL = os.getenv("ORBIVUE_API_URL", "").strip().rstrip("/")
-ORBIVUE_API_KEY = os.getenv("ORBIVUE_API_KEY")
-ORBIVUE_GROUNDING_API_URL = os.getenv("ORBIVUE_GROUNDING_API_URL", "").strip().rstrip("/")
-ORBIVUE_GROUNDING_API_KEY = os.getenv("ORBIVUE_GROUNDING_API_KEY")
-ORBIVUE_TEMPORAL_API_URL = os.getenv("ORBIVUE_TEMPORAL_API_URL", "").strip().rstrip("/")
-ORBIVUE_TEMPORAL_API_KEY = os.getenv("ORBIVUE_TEMPORAL_API_KEY")
-ORBIVUE_CROSS_MODAL_API_URL = os.getenv("ORBIVUE_CROSS_MODAL_API_URL", "").strip().rstrip("/")
-ORBIVUE_CROSS_MODAL_API_KEY = os.getenv("ORBIVUE_CROSS_MODAL_API_KEY")
+def _env_or_default(name: str, default: str = "") -> str:
+    value = os.getenv(name)
+    return value.strip() if value and value.strip() else default
+
+
+ORBIVUE_API_URL = _env_or_default("ORBIVUE_API_URL").rstrip("/")
+ORBIVUE_API_KEY = _env_or_default("ORBIVUE_API_KEY")
+ORBIVUE_GROUNDING_API_URL = _env_or_default("ORBIVUE_GROUNDING_API_URL", ORBIVUE_API_URL).rstrip("/")
+ORBIVUE_GROUNDING_API_KEY = _env_or_default("ORBIVUE_GROUNDING_API_KEY", ORBIVUE_API_KEY)
+ORBIVUE_TEMPORAL_API_URL = _env_or_default("ORBIVUE_TEMPORAL_API_URL", ORBIVUE_API_URL).rstrip("/")
+ORBIVUE_TEMPORAL_API_KEY = _env_or_default("ORBIVUE_TEMPORAL_API_KEY", ORBIVUE_API_KEY)
+ORBIVUE_CROSS_MODAL_API_URL = _env_or_default("ORBIVUE_CROSS_MODAL_API_URL", ORBIVUE_API_URL).rstrip("/")
+ORBIVUE_CROSS_MODAL_API_KEY = _env_or_default("ORBIVUE_CROSS_MODAL_API_KEY", ORBIVUE_API_KEY)
 COPERNICUS_CLIENT_ID = os.getenv("COPERNICUS_CLIENT_ID")
 COPERNICUS_CLIENT_SECRET = os.getenv("COPERNICUS_CLIENT_SECRET")
 LOCATION_IMAGERY_AOI_KM = float(os.getenv("LOCATION_IMAGERY_AOI_KM", "25"))

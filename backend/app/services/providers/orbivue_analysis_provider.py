@@ -8,6 +8,9 @@ import httpx
 from ...config import ORBIVUE_API_KEY, ORBIVUE_API_URL
 from ..gemini_client import GeminiAnalysisError
 
+ORBIVUE_ANALYSIS_TIMEOUT_SECONDS = 600.0
+ORBIVUE_CONNECT_TIMEOUT_SECONDS = 30.0
+
 
 class OrbiVueVisionProvider:
     name = "OrbiVue"
@@ -46,16 +49,21 @@ class OrbiVueVisionProvider:
                 user_message="OrbiVue analysis provider is not configured.",
             )
 
-        predict_url = f"{ORBIVUE_API_URL}/predict"
+        analyze_url = f"{ORBIVUE_API_URL}/analyze"
         request_started_at = time.perf_counter()
         print("[SatQuery OrbiVue] request type: analysis")
-        print("[SatQuery OrbiVue] endpoint:", predict_url)
+        print("[SatQuery OrbiVue] endpoint:", analyze_url)
 
         try:
             image_bytes = image_path.read_bytes()
-            async with httpx.AsyncClient(timeout=httpx.Timeout(180.0)) as client:
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(
+                    ORBIVUE_ANALYSIS_TIMEOUT_SECONDS,
+                    connect=ORBIVUE_CONNECT_TIMEOUT_SECONDS,
+                )
+            ) as client:
                 response = await client.post(
-                    predict_url,
+                    analyze_url,
                     headers={"X-API-Key": ORBIVUE_API_KEY},
                     data={"query": user_query},
                     files={
