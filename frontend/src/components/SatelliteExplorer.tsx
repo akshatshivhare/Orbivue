@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import {
   AlertTriangle,
   CalendarDays,
@@ -429,6 +429,7 @@ export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImag
       if (selectedDates.length === 1) {
         const [dateSelection] = selectedDates;
         const file = await fetchPreviewFile(dateSelection);
+        setSelectionNotice("Selected imagery loaded into the workspace.");
         onUseSingleImage(file, buildMetadata(dateSelection));
         return;
       }
@@ -438,6 +439,7 @@ export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImag
         fetchPreviewFile(beforeDate),
         fetchPreviewFile(afterDate),
       ]);
+      setSelectionNotice("Selected dates loaded into the workspace for comparison.");
       onUseTemporalImages(beforeFile, buildMetadata(beforeDate), afterFile, buildMetadata(afterDate));
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Preview fetch failed. Please retry.");
@@ -553,7 +555,7 @@ export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImag
               <img
                 src={previewUrl}
                 alt="Latest satellite preview"
-                className="block aspect-video w-full rounded-lg bg-[#0b222b] object-cover"
+                className="block aspect-video w-full rounded-lg bg-[#0b222b] object-contain"
               />
             ) : (
               <div className="flex aspect-video items-center justify-center rounded-lg border border-dashed border-[#a9c9ba] bg-[#f7f4ed] text-sm font-bold text-[#657a8c]">
@@ -586,7 +588,7 @@ export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImag
               className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#00624b] px-3 py-2 text-sm font-black text-white shadow-sm transition hover:bg-[#004d3b] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <CloudSun size={16} />
-              Use Latest Image
+              Select latest date
             </button>
           </section>
 
@@ -687,7 +689,7 @@ export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImag
               className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#00624b] px-3 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-[#004d3b] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {status.using ? <Loader2 size={17} className="animate-spin" /> : <CalendarDays size={17} />}
-              {selectedDates.length === 2 ? "Compare Selected Dates" : "Use Selected Image"}
+              {selectedDates.length === 2 ? "Load dates for comparison" : "Load image into analysis"}
             </button>
           </section>
 
@@ -749,10 +751,28 @@ function SimpleOsmMap({
     });
   };
 
+  const selectCenterPoint = () => {
+    onSelectLocation({
+      display_name: `Selected map point near ${center.lat.toFixed(4)}, ${center.lon.toFixed(4)}`,
+      lat: center.lat,
+      lon: center.lon,
+    });
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    event.preventDefault();
+    selectCenterPoint();
+  };
+
   return (
     <div
       ref={containerRef}
       onPointerDown={handlePointerDown}
+      onKeyDown={handleKeyDown}
       className="relative min-h-[300px] flex-1 cursor-crosshair overflow-hidden rounded-xl border border-[#a9c9ba] bg-[#dcece2] shadow-inner"
       aria-label="Select a location from the map"
       role="button"

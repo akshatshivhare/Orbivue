@@ -13,20 +13,20 @@ type WorkspaceSidebarProps = {
   activeSection: "ask" | "compare";
 };
 
-const navItems: Array<{ label: string; icon: LucideIcon; section?: "ask" | "compare" }> = [
+const navItems: Array<{ label: string; icon: LucideIcon; section?: "ask" | "compare"; comingSoon?: boolean }> = [
   { label: "Ask OrbiVue", icon: Sparkles, section: "ask" },
   { label: "Compare", icon: Copy, section: "compare" },
-  { label: "Time", icon: Clock3 },
-  { label: "Reports", icon: FileText },
-  { label: "Alerts", icon: Bell },
+  { label: "Time", icon: Clock3, comingSoon: true },
+  { label: "Reports", icon: FileText, comingSoon: true },
+  { label: "Alerts", icon: Bell, comingSoon: true },
 ];
 
 const recentChats = [
-  { title: "Amazon Rainforest", subtitle: "Deforestation Analysis", date: "Today" },
-  { title: "Coastal Erosion", subtitle: "Change Over Time", date: "Yesterday" },
-  { title: "Himalayan Glacier", subtitle: "Retreat Study", date: "May 13" },
-  { title: "Urban Expansion", subtitle: "Global Trends", date: "May 12" },
-  { title: "Coral Reef Bleaching", subtitle: "Impact Assessment", date: "May 10" },
+  { title: "Amazon Rainforest", subtitle: "Deforestation Analysis" },
+  { title: "Coastal Erosion", subtitle: "Change Over Time" },
+  { title: "Himalayan Glacier", subtitle: "Retreat Study" },
+  { title: "Urban Expansion", subtitle: "Global Trends" },
+  { title: "Coral Reef Bleaching", subtitle: "Impact Assessment" },
 ];
 
 export function WorkspaceSidebar({
@@ -97,17 +97,26 @@ export function WorkspaceSidebar({
                       ? onOpenCompare
                       : undefined
                 }
+                disabled={item.comingSoon}
                 className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[0.82rem] font-semibold transition ${
                   isCollapsed ? "lg:justify-center lg:px-0" : ""
                 } ${
+                  item.comingSoon
+                    ? "cursor-not-allowed text-[#8a98a2] opacity-70"
+                    :
                   item.section && activeSection === item.section
                     ? "bg-[#e8f2ed] text-[#005b46]"
                     : "text-[#263c50] hover:bg-[#f3f7f3]"
                 }`}
-                title={item.label}
+                title={item.comingSoon ? `${item.label} coming soon` : item.label}
               >
                 <Icon size={17} strokeWidth={1.9} />
                 <span className={isCollapsed ? "lg:hidden" : ""}>{item.label}</span>
+                {item.comingSoon && !isCollapsed && (
+                  <span className="ml-auto rounded-full bg-[#f3f1ec] px-1.5 py-0.5 text-[0.56rem] font-black uppercase tracking-[0.08em]">
+                    Soon
+                  </span>
+                )}
               </button>
             );
           })}
@@ -115,7 +124,7 @@ export function WorkspaceSidebar({
 
         <div className={`mt-4 border-t border-[#d8ddd7] pt-3 ${isCollapsed ? "lg:hidden" : ""}`}>
           <div className="mb-2.5 flex items-center justify-between text-[0.82rem] font-bold">
-            <span>Recent chats</span>
+            <span>Example prompts</span>
             <span className="text-lg leading-none">⌃</span>
           </div>
           <div className="space-y-1.5">
@@ -134,7 +143,7 @@ export function WorkspaceSidebar({
                   <span className="block text-[0.76rem] font-semibold leading-4 text-[#10233a]">
                     {chat.subtitle}
                   </span>
-                  <span className="mt-0.5 block text-[0.7rem] text-[#637487]">{chat.date}</span>
+                  <span className="mt-0.5 block text-[0.7rem] text-[#637487]">Example</span>
                 </span>
               </button>
             ))}
@@ -143,15 +152,15 @@ export function WorkspaceSidebar({
 
         <button
           type="button"
-          onClick={isCollapsed ? onToggleCollapse : undefined}
+          onClick={onToggleCollapse}
           className={`mt-auto flex h-9 items-center justify-between rounded-lg border border-[#d8ddd7] bg-white px-3 text-[0.82rem] font-semibold text-[#10233a] shadow-sm ${
             isCollapsed ? "lg:justify-center lg:px-0" : ""
           }`}
-          title={isCollapsed ? "Expand sidebar" : "View all chats"}
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           <span className="flex items-center gap-2">
             <FileText size={17} />
-            <span className={isCollapsed ? "lg:hidden" : ""}>View all chats</span>
+            <span className={isCollapsed ? "lg:hidden" : ""}>Collapse sidebar</span>
           </span>
           <ChevronRight size={18} className={isCollapsed ? "lg:hidden" : ""} />
         </button>

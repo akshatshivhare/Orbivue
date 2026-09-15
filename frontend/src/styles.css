@@ -279,6 +279,15 @@
   outline-offset: 3px;
 }
 
+.chat-history,
+.orbivue-answer {
+  overflow-wrap: anywhere;
+}
+
+.orbivue-answer {
+  user-select: text;
+}
+
 @media (max-height: 940px) and (min-width: 1024px) {
   .main-header {
     height: 4.25rem;
@@ -680,5 +689,26 @@
   .main-footer > div {
     justify-content: flex-start;
     text-align: left;
+  }
+
+  .chat-history {
+    padding-right: 0.15rem;
+  }
+
+  .before-after-slider {
+    height: clamp(220px, 42svh, 390px);
+  }
+}
+
+@media (max-width: 520px) {
+  .workspace-chat-card,
+  .workspace-chat-card-empty,
+  .workspace-chat-card-active {
+    height: calc(100svh - 7.6rem);
+    min-height: min(70svh, 560px);
+  }
+
+  .before-after-slider {
+    height: clamp(190px, 36svh, 320px);
   }
 }

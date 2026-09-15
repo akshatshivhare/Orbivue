@@ -4,7 +4,6 @@ import {
   BarChart3,
   Box,
   Clock3,
-  ShieldCheck,
   Sparkles,
   Trees,
 } from "lucide-react";
@@ -20,6 +19,7 @@ import type {
   BoundingBox,
   ChangeAnalysisPayload,
   ChangeDirection,
+  ChangeGuardPayload,
   ChangeItem,
   ChatMessage,
   CompareMode,
@@ -65,10 +65,17 @@ const ANALYSIS_IMAGE_QUALITY = 0.86;
 const SINGLE_ANALYSIS_ENDPOINT = apiUrl("/api/analyze");
 const CHANGE_ANALYSIS_ENDPOINT = apiUrl("/api/change-analyze");
 const CROSS_MODAL_ENDPOINT = apiUrl("/api/cross-modal");
+const DEBUG_LOGS = import.meta.env.DEV;
 
 type MainPageProps = {
   userName?: string;
 };
+
+function debugLog(...args: unknown[]) {
+  if (DEBUG_LOGS) {
+    console.log(...args);
+  }
+}
 
 async function compressImageForAnalysis(file: File): Promise<File> {
   if (!file.type.startsWith("image/") || file.type.includes("tiff")) {
@@ -218,6 +225,63 @@ function normalizeTextArray(value: unknown): string[] {
   });
 }
 
+function normalizeOptionalNumber(value: unknown): number | null {
+  const normalized = Number(value);
+  return Number.isFinite(normalized) ? normalized : null;
+}
+
+function normalizeOptionalBoolean(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function normalizeOptionalString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function normalizeSizeTuple(value: unknown): [number, number] | null {
+  if (!Array.isArray(value) || value.length < 2) {
+    return null;
+  }
+
+  const width = Number(value[0]);
+  const height = Number(value[1]);
+
+  if (!Number.isFinite(width) || !Number.isFinite(height)) {
+    return null;
+  }
+
+  return [width, height];
+}
+
+function normalizeChangeGuard(value: unknown): ChangeGuardPayload | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const source = value as Record<string, unknown>;
+
+  return {
+    status: normalizeOptionalString(source.status) ?? undefined,
+    qwen_called: normalizeOptionalBoolean(source.qwen_called),
+    exact_match: normalizeOptionalBoolean(source.exact_match),
+    mean_absolute_difference: normalizeOptionalNumber(source.mean_absolute_difference),
+    changed_pixel_fraction: normalizeOptionalNumber(source.changed_pixel_fraction),
+    pixel_change_threshold: normalizeOptionalNumber(source.pixel_change_threshold),
+    near_identical_mean_threshold: normalizeOptionalNumber(source.near_identical_mean_threshold),
+    near_identical_fraction_threshold: normalizeOptionalNumber(source.near_identical_fraction_threshold),
+    semantic_verification: normalizeOptionalString(source.semantic_verification) ?? undefined,
+    dimension_normalized: normalizeOptionalBoolean(source.dimension_normalized),
+    original_size_t1: normalizeSizeTuple(source.original_size_t1),
+    original_size_t2: normalizeSizeTuple(source.original_size_t2),
+    comparison_size: normalizeSizeTuple(source.comparison_size),
+    normalization_method: normalizeOptionalString(source.normalization_method),
+    aspect_ratio_t1: normalizeOptionalNumber(source.aspect_ratio_t1),
+    aspect_ratio_t2: normalizeOptionalNumber(source.aspect_ratio_t2),
+    aspect_ratio_relative_difference: normalizeOptionalNumber(source.aspect_ratio_relative_difference),
+    alignment_warning: normalizeOptionalString(source.alignment_warning),
+  };
+}
+
 function normalizeChangeItems(value: unknown): ChangeItem[] {
   if (!Array.isArray(value)) {
     return [];
@@ -280,6 +344,7 @@ function normalizeChangeAnalysisResponse(data: unknown): ChangeAnalysisPayload {
     unchanged: normalizeTextArray(source.unchanged),
     limitations: normalizeTextArray(source.limitations),
     change_map: typeof source.change_map === "string" ? source.change_map : null,
+    change_guard: normalizeChangeGuard(source.change_guard),
   };
 }
 
@@ -443,8 +508,8 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
       setHasWorkspaceOpened(true);
       compressedCrossModalImagesRef.current[slot] = undefined;
 
-      console.log(`[OrbiVue CrossModal] ${slot === "optical" ? "Optical" : "SAR"} attached:`, file.name);
-      console.log("[OrbiVue CrossModal] pair ready:", Boolean(nextCrossModalImages.optical && nextCrossModalImages.sar));
+      debugLog(`[OrbiVue CrossModal] ${slot === "optical" ? "Optical" : "SAR"} attached:`, file.name);
+      debugLog("[OrbiVue CrossModal] pair ready:", Boolean(nextCrossModalImages.optical && nextCrossModalImages.sar));
 
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -490,8 +555,8 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     compressedTemporalImagesRef.current[slot] = undefined;
     analyzedPairRef.current = null;
 
-    console.log(`[OrbiVue Change] ${slot === "t1" ? "T1 attached" : "T2 attached"}:`, file.name);
-    console.log("[OrbiVue Change] temporal mode active:", Boolean(nextTemporalImages.t1 && nextTemporalImages.t2));
+    debugLog(`[OrbiVue Change] ${slot === "t1" ? "T1 attached" : "T2 attached"}:`, file.name);
+    debugLog("[OrbiVue Change] temporal mode active:", Boolean(nextTemporalImages.t1 && nextTemporalImages.t2));
 
     if (file) {
       setHasWorkspaceOpened(true);
@@ -591,7 +656,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     compressedTemporalImagesRef.current = {};
     analyzedPairRef.current = null;
     setHasWorkspaceOpened(true);
-    console.log("[OrbiVue Change] temporal pair swapped");
+    debugLog("[OrbiVue Change] temporal pair swapped");
   };
 
   const startNewChat = () => {
@@ -754,12 +819,12 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     }
 
     if (!crossModalImages.optical) {
-      alert("Please attach an optical image first!");
+      setError("Upload an optical image to continue.");
       return;
     }
 
     if (!crossModalImages.sar) {
-      alert("Please attach a SAR image first!");
+      setError("Upload a SAR image to continue.");
       return;
     }
 
@@ -801,8 +866,8 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     ]);
 
     try {
-      console.log("[OrbiVue CrossModal] submitting analysis");
-      console.log("[OrbiVue CrossModal] endpoint:", CROSS_MODAL_ENDPOINT);
+      debugLog("[OrbiVue CrossModal] submitting analysis");
+      debugLog("[OrbiVue CrossModal] endpoint:", CROSS_MODAL_ENDPOINT);
 
       const [opticalImage, sarImage] = await Promise.all([
         getCompressedCrossModalImage("optical", crossModalImages.optical),
@@ -820,7 +885,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
       });
       const data = await response.json();
 
-      console.log("[OrbiVue CrossModal] response:", data);
+      debugLog("[OrbiVue CrossModal] response:", data);
 
       if (!response.ok) {
         throw new Error(data.detail || data.final_answer || "Cross-modal analysis request failed.");
@@ -865,9 +930,9 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
       setQuery("");
     } catch (requestError) {
       setError(
-        requestError instanceof Error
-          ? `Cross-modal analysis could not be completed. ${requestError.message}`
-          : "Cross-modal analysis could not be completed."
+        requestError instanceof Error && requestError.message.toLowerCase().includes("timeout")
+          ? "The satellite AI is taking longer than expected to start. Please retry in a moment."
+          : "Cross-sensor analysis could not be completed."
       );
     } finally {
       submitLockRef.current = false;
@@ -888,11 +953,11 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
       setHasWorkspaceOpened(true);
 
       if (options.automatic) {
-        console.log("[OrbiVue Change] auto compare triggered:", currentPairKey);
+        debugLog("[OrbiVue Change] auto compare triggered:", currentPairKey);
       } else {
-        console.log("[OrbiVue Change] follow-up query:", changeQuery);
+        debugLog("[OrbiVue Change] follow-up query:", changeQuery);
       }
-      console.log("[OrbiVue Change] endpoint:", CHANGE_ANALYSIS_ENDPOINT);
+      debugLog("[OrbiVue Change] endpoint:", CHANGE_ANALYSIS_ENDPOINT);
 
       if (!options.automatic && changeQuery.trim()) {
         const submittedTemporalImages = {
@@ -940,8 +1005,8 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
         });
         const data = await response.json();
 
-        console.log("[OrbiVue Change] response received");
-        console.log("[OrbiVue Change] response:", data);
+        debugLog("[OrbiVue Change] response received");
+        debugLog("[OrbiVue Change] response:", data);
 
         if (!response.ok) {
           throw new Error(data.detail || data.final_answer || "Change analysis request failed.");
@@ -993,9 +1058,9 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
       } catch (requestError) {
         analyzedPairRef.current = null;
         setError(
-          requestError instanceof Error
-            ? `Change analysis could not be completed. ${requestError.message}`
-            : "Change analysis could not be completed."
+          requestError instanceof Error && requestError.message.toLowerCase().includes("timeout")
+            ? "The satellite AI is taking longer than expected to start. Please retry in a moment."
+            : "Temporal comparison could not be completed. Please try again."
         );
       } finally {
         changeSubmitLockRef.current = false;
@@ -1040,6 +1105,11 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
       return;
     }
 
+    if (isCompareWorkflow && compareMode === "temporal" && !hasTemporalPair) {
+      setError("Add both BEFORE and AFTER images to compare.");
+      return;
+    }
+
     if (isCompareWorkflow && hasTemporalPair) {
       if (!trimmedQuery || isBusy || changeSubmitLockRef.current) {
         return;
@@ -1050,7 +1120,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     }
 
     if (!selectedImage) {
-      alert("Please attach an image first!");
+      setError("Upload an image to continue.");
       return;
     }
 
@@ -1078,9 +1148,9 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     setMessages((current) => [...current, userMessage]);
 
     try {
-      console.log("[OrbiVue] submitting analysis");
-      console.log("[OrbiVue] query:", trimmedQuery);
-      console.log("[OrbiVue] image attached:", Boolean(selectedImage));
+      debugLog("[OrbiVue] submitting analysis");
+      debugLog("[OrbiVue] query:", trimmedQuery);
+      debugLog("[OrbiVue] image attached:", Boolean(selectedImage));
 
       const formData = new FormData();
       let imageForAnalysis =
@@ -1104,8 +1174,8 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
 
       const data = await response.json();
 
-      console.log("[OrbiVue] response mode:", data?.mode);
-      console.log("[OrbiVue] response:", data);
+      debugLog("[OrbiVue] response mode:", data?.mode);
+      debugLog("[OrbiVue] response:", data);
 
       if (!response.ok) {
         throw new Error(data.detail || "Analysis request failed.");
@@ -1156,7 +1226,11 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
         fileInputRef.current.value = "";
       }
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Unable to reach analysis backend.");
+      setError(
+        requestError instanceof Error && requestError.message.toLowerCase().includes("timeout")
+          ? "The satellite AI is taking longer than expected to start. Please retry in a moment."
+          : "ORBIVUE could not reach the analysis service. Please try again."
+      );
     } finally {
       submitLockRef.current = false;
       setIsLoading(false);
@@ -1316,13 +1390,18 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
               <div className="main-card-grid mt-3.5 grid max-w-[790px] grid-cols-4 gap-3">
                 {actionCards.map((card) => {
                   const Icon = card.icon;
+                  const isComingSoon = card.title === "3D & Terrain";
                   return (
                     <button
                       type="button"
                       key={card.title}
                       onClick={
-                        card.title === "Generate Reports"
+                        isComingSoon
+                          ? undefined
+                          : card.title === "Generate Reports"
                           ? openLatestReportFromHome
+                          : card.title === "Analyze Changes"
+                            ? openAskWorkflow
                           : card.title === "Compare Over Time"
                             ? () => {
                                 setIsCompareWorkflow(true);
@@ -1333,12 +1412,25 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                               }
                             : undefined
                       }
-                      className="main-action-card min-h-[112px] rounded-xl border border-[#cbcfc8] bg-white/86 p-3 text-left shadow-sm backdrop-blur-sm transition hover:border-[#9bbfae] hover:bg-white/95"
+                      disabled={isComingSoon}
+                      className={`main-action-card min-h-[112px] rounded-xl border border-[#cbcfc8] bg-white/86 p-3 text-left shadow-sm backdrop-blur-sm transition ${
+                        isComingSoon
+                          ? "cursor-not-allowed opacity-72"
+                          : "hover:border-[#9bbfae] hover:bg-white/95"
+                      }`}
+                      title={isComingSoon ? `${card.title} coming soon` : card.title}
                     >
                       <span className={`flex h-9 w-9 items-center justify-center rounded-full ${card.color}`}>
                         <Icon size={19} strokeWidth={1.8} />
                       </span>
-                      <h2 className="mt-2 text-[0.86rem] font-extrabold text-[#111827]">{card.title}</h2>
+                      <h2 className="mt-2 flex items-center gap-2 text-[0.86rem] font-extrabold text-[#111827]">
+                        {card.title}
+                        {isComingSoon && (
+                          <span className="rounded-full bg-[#f3f1ec] px-1.5 py-0.5 text-[0.56rem] font-black uppercase tracking-[0.08em] text-[#657a8c]">
+                            Soon
+                          </span>
+                        )}
+                      </h2>
                       <p className="mt-1 text-[0.72rem] leading-[1.08rem] text-[#183958]">{card.description}</p>
                       <ArrowRight className="mt-1 text-[#183958]" size={17} />
                     </button>
@@ -1348,21 +1440,14 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
             </section>
           )}
 
-          <footer className="main-footer relative z-10 grid h-[3.4rem] grid-cols-3 items-center bg-[#005742] px-8 text-sm text-white/85">
+          <footer className="main-footer relative z-10 grid h-[3.4rem] grid-cols-2 items-center bg-[#005742] px-8 text-sm text-white/85">
             <div className="flex items-center gap-3">
-              <span>Data Sources</span>
-              <span className="h-2.5 w-2.5 rounded-full bg-[#37c861]" />
-              <span>Live</span>
+              <span>ORBIVUE Earth intelligence workspace</span>
             </div>
-            <div className="text-center">Last updated: May 15, 2026, 10:31 AM IST</div>
             <div className="flex items-center justify-end gap-9">
               <span>Privacy</span>
               <span>Terms</span>
               <span>Feedback</span>
-              <span className="flex items-center gap-3">
-                <ShieldCheck size={22} />
-                All systems normal
-              </span>
             </div>
           </footer>
         </div>

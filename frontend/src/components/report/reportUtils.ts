@@ -1,4 +1,10 @@
-import type { BoundingBox, ChangeAnalysisPayload, CrossModalMessageImage, TemporalMessageImage } from "../workspaceTypes";
+import type {
+  BoundingBox,
+  ChangeAnalysisPayload,
+  ChangeGuardPayload,
+  CrossModalMessageImage,
+  TemporalMessageImage,
+} from "../workspaceTypes";
 
 export type ReportMode = "analysis" | "grounding" | "temporal" | "cross_modal";
 
@@ -161,7 +167,7 @@ export function findingsForReport(report: ReportInput): Finding[] {
   if (report.mode === "grounding") {
     const boxes = report.boundingBoxes ?? [];
     if (!boxes.length) {
-      return [{ label: "Detection summary", text: "No verified regions were returned for this grounding request." }];
+      return [{ label: "Detection summary", text: "No confident localization was produced for this query." }];
     }
 
     return boxes.map((box, index) => ({
@@ -181,6 +187,44 @@ export function findingsForReport(report: ReportInput): Finding[] {
     label: `Finding ${index + 1}`,
     text,
   }));
+}
+
+export function temporalGuardStatusLabel(guard?: ChangeGuardPayload | null): string {
+  switch (guard?.status) {
+    case "no_measurable_change":
+      return "No measurable visible change";
+    case "measurable_difference":
+      return "Visible image-space change detected";
+    case "incompatible":
+      return "Comparison unavailable";
+    default:
+      return "Temporal comparison complete";
+  }
+}
+
+export function temporalSemanticVerificationLabel(guard?: ChangeGuardPayload | null): string {
+  switch (guard?.semantic_verification) {
+    case "deterministic_no_change":
+      return "Verified by deterministic image comparison";
+    case "model_generated_unverified":
+      return "Semantic interpretation is AI-generated and not independently verified.";
+    default:
+      return "Semantic verification not provided";
+  }
+}
+
+export function formatGuardNumber(value?: number | null): string {
+  return typeof value === "number" && Number.isFinite(value)
+    ? value.toFixed(5).replace(/0+$/, "").replace(/\.$/, "")
+    : "Not provided";
+}
+
+export function formatGuardPixelFraction(value?: number | null): string {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return "Not provided";
+  }
+
+  return `${(value * 100).toFixed(value < 0.01 ? 3 : 2)}% of compared pixels`;
 }
 
 function explicitGroundingCounts(boxes: BoundingBox[]): ChartDatum[] {

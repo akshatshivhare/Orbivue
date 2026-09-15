@@ -9,8 +9,12 @@ import {
   chartDataForReport,
   chartTitleForMode,
   findingsForReport,
+  formatGuardNumber,
+  formatGuardPixelFraction,
   formatGeneratedAt,
   reportTypeLabel,
+  temporalGuardStatusLabel,
+  temporalSemanticVerificationLabel,
   type ReportInput,
 } from "./reportUtils";
 
@@ -76,6 +80,10 @@ export function AnalysisReport({ report }: AnalysisReportProps) {
 
       <ReportImages report={report} />
 
+      {report.mode === "temporal" && report.changeAnalysis?.change_guard && (
+        <TemporalGuardReportSection report={report} />
+      )}
+
       {report.mode === "grounding" && (
         <section className="analysis-report-section">
           <div className="analysis-report-section-heading">
@@ -87,7 +95,7 @@ export function AnalysisReport({ report }: AnalysisReportProps) {
               ? `${report.boundingBoxes?.length ?? 0} verified region${
                   (report.boundingBoxes?.length ?? 0) === 1 ? "" : "s"
                 } returned for this grounding request.`
-              : "No verified regions were returned for this grounding request."}
+              : "No confident localization was produced for this query."}
           </p>
         </section>
       )}
@@ -102,6 +110,48 @@ export function AnalysisReport({ report }: AnalysisReportProps) {
         </p>
       </section>
     </article>
+  );
+}
+
+function TemporalGuardReportSection({ report }: { report: ReportInput }) {
+  const guard = report.changeAnalysis?.change_guard;
+
+  if (!guard) {
+    return null;
+  }
+
+  return (
+    <section className="analysis-report-section">
+      <div className="analysis-report-section-heading">
+        <h3>Temporal comparison status</h3>
+        <span>Guard result</span>
+      </div>
+      <div className="analysis-report-findings">
+        <article>
+          <strong>{temporalGuardStatusLabel(guard)}</strong>
+          <p>{temporalSemanticVerificationLabel(guard)}</p>
+        </article>
+        {guard.dimension_normalized && (
+          <article>
+            <strong>Image normalization</strong>
+            <p>Images were normalized to a common resolution for comparison. This does not establish geospatial registration.</p>
+          </article>
+        )}
+        {guard.alignment_warning && (
+          <article>
+            <strong>Alignment note</strong>
+            <p>{guard.alignment_warning}</p>
+          </article>
+        )}
+        <article>
+          <strong>Image-space metrics</strong>
+          <p>
+            Mean image difference: {formatGuardNumber(guard.mean_absolute_difference)}. Changed pixel fraction:{" "}
+            {formatGuardPixelFraction(guard.changed_pixel_fraction)}.
+          </p>
+        </article>
+      </div>
+    </section>
   );
 }
 

@@ -6,7 +6,9 @@ if (import.meta.env.PROD && !configuredApiUrl) {
 
 export const API_BASE_URL = configuredApiUrl || "http://127.0.0.1:8000";
 
-console.log("[OrbiVue API] base URL:", API_BASE_URL);
+if (import.meta.env.DEV) {
+  console.log("[OrbiVue API] base URL:", API_BASE_URL);
+}
 
 export function apiUrl(path: string) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;

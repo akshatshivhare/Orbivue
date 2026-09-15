@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import {
+  AlertTriangle,
   ArrowLeftRight,
   ArrowRight,
   CalendarDays,
@@ -8,6 +9,7 @@ import {
   Layers,
   MapPin,
   type LucideIcon,
+  Info,
   Mic,
   Paperclip,
   RefreshCw,
@@ -20,6 +22,7 @@ import { GroundingPreview } from "./GroundingPreview";
 import type { ReportInput } from "./report/reportUtils";
 import type {
   ChangeAnalysisPayload,
+  ChangeGuardPayload,
   ChatMessage,
   CompareMode,
   CrossModalImagePreviews,
@@ -105,6 +108,12 @@ export function ChatWorkspace({
   const hasActiveWorkspaceContent = Boolean(messages.length > 0 || error || isLoading || hasTemporalPair || hasCrossModalPair);
   const messageHistoryRef = useRef<HTMLDivElement | null>(null);
   const previousMessageCountRef = useRef(messages.length);
+  const loadingMode = isChangeLoading
+    ? "temporal"
+    : isCompareWorkflow && compareMode === "cross_modal"
+      ? "cross_modal"
+      : inferSingleImageLoadingMode(query);
+  const loadingMessage = useLoadingMessage(isLoading, loadingMode);
 
   useEffect(() => {
     const history = messageHistoryRef.current;
@@ -162,8 +171,6 @@ export function ChatWorkspace({
                 <TemporalResultCard
                   key={message.id}
                   message={message}
-                  currentTemporalImages={temporalImages}
-                  currentTemporalPreviewUrls={temporalPreviewUrls}
                   onOpenReport={onOpenReport}
                 />
               ) : message.role === "assistant" && message.imageUrl ? (
@@ -181,7 +188,11 @@ export function ChatWorkspace({
                     {message.role === "user" ? "User" : "OrbiVue AI"}
                   </div>
                   {message.role === "user" && <MessageAttachments message={message} />}
-                  <pre className="whitespace-pre-wrap font-sans">{message.text}</pre>
+                  {message.role === "assistant" ? (
+                    <ModelText text={message.text} />
+                  ) : (
+                    <pre className="whitespace-pre-wrap break-words font-sans">{message.text}</pre>
+                  )}
                 </article>
               )
             )}
@@ -189,17 +200,16 @@ export function ChatWorkspace({
             {isLoading && (
               <article className="mr-auto max-w-[86%] rounded-xl border border-[#ccd8d3] bg-white/92 px-3.5 py-2.5 text-sm font-semibold text-[#14314b] shadow-sm">
                 <span className="mr-2 inline-block h-3 w-3 animate-spin rounded-full border-2 border-[#0b7b5b]/35 border-t-[#0b7b5b]" />
-                {isChangeLoading
-                  ? "Comparing T1 and T2..."
-                  : isCompareWorkflow && compareMode === "cross_modal"
-                    ? "Analyzing optical and SAR imagery..."
-                    : "OrbiVue is analyzing..."}
+                {loadingMessage}
               </article>
             )}
 
             {error && (
               <article className="mr-auto max-w-[86%] rounded-xl border border-[#e7aaa4] bg-[#fff4f1] px-3.5 py-2.5 text-sm font-semibold text-[#9b1c13] shadow-sm">
-                <div>{error}</div>
+                <div className="flex items-start gap-2">
+                  <AlertTriangle size={17} className="mt-0.5 shrink-0" />
+                  <span>{error}</span>
+                </div>
                 {compareMode === "temporal" && hasTemporalPair && (
                   <button
                     type="button"
@@ -292,9 +302,9 @@ export function ChatWorkspace({
             </div>
           )}
           <ComposerAction label="Location" icon={MapPin} onClick={onOpenSatelliteExplorer} />
-          <ComposerAction label="Attach Area" icon={Layers} />
-          <ComposerAction label="Date Range" icon={CalendarDays} />
-          <ComposerAction label="Data Sources" icon={Layers} />
+          <ComposerAction label="Attach Area" icon={Layers} comingSoon />
+          <ComposerAction label="Date Range" icon={CalendarDays} comingSoon />
+          <ComposerAction label="Data Sources" icon={Layers} comingSoon />
           {isWorkspaceMode && (
             <div className="ml-auto flex items-center gap-3">
               <ComposerIconButtons
@@ -490,6 +500,84 @@ function MessageThumb({
   );
 }
 
+type LoadingMode = "analysis" | "grounding" | "temporal" | "cross_modal";
+
+const LOADING_MESSAGES: Record<LoadingMode, string[]> = {
+  analysis: ["Preparing satellite AI...", "Loading vision specialist...", "Analyzing imagery..."],
+  grounding: ["Preparing visual grounding...", "Locating requested feature...", "Verifying candidate regions..."],
+  temporal: ["Preparing temporal analysis...", "Checking image compatibility...", "Comparing imagery..."],
+  cross_modal: [
+    "Preparing cross-sensor analysis...",
+    "Reading optical and SAR inputs...",
+    "Comparing sensor evidence...",
+  ],
+};
+
+function inferSingleImageLoadingMode(query: string): LoadingMode {
+  return /\b(where|locate|find|highlight|detect|show|ground)\b/i.test(query) ? "grounding" : "analysis";
+}
+
+function useLoadingMessage(isLoading: boolean, mode: LoadingMode) {
+  const [stage, setStage] = useState(0);
+
+  useEffect(() => {
+    setStage(0);
+
+    if (!isLoading) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setStage((current) => (current + 1) % LOADING_MESSAGES[mode].length);
+    }, 1800);
+
+    return () => window.clearInterval(timer);
+  }, [isLoading, mode]);
+
+  return LOADING_MESSAGES[mode][stage] ?? LOADING_MESSAGES[mode][0];
+}
+
+function ModelText({ text, className = "" }: { text: string; className?: string }) {
+  const blocks = cleanModelText(text)
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+
+  if (!blocks.length) {
+    return <p className={className}>No response text was returned.</p>;
+  }
+
+  return (
+    <div className={`orbivue-answer space-y-2 text-[0.86rem] leading-6 text-[#14314b] ${className}`}>
+      {blocks.map((block, blockIndex) => {
+        const lines = block.split(/\n/).map((line) => line.trim()).filter(Boolean);
+        const bulletLines = lines
+          .map((line) => line.match(/^[-*•]\s+(.+)$/)?.[1]?.trim())
+          .filter((line): line is string => Boolean(line));
+
+        if (bulletLines.length === lines.length && bulletLines.length > 0) {
+          return (
+            <ul key={`block-${blockIndex}`} className="space-y-1.5">
+              {bulletLines.map((line, lineIndex) => (
+                <li key={`${blockIndex}-${lineIndex}`} className="flex gap-2">
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#0b7b5b]" />
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ul>
+          );
+        }
+
+        return (
+          <p key={`block-${blockIndex}`} className="whitespace-pre-wrap break-words">
+            {block}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 function AssistantResultCard({
   message,
   onOpenReport,
@@ -506,13 +594,17 @@ function AssistantResultCard({
       <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
         <div>
           <div className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#0b6048]">
-            OrbiVue AI
+            ORBIVUE ANALYSIS
           </div>
-          <div className="mt-1 text-base font-black text-[#0b1d31]">{modeLabel}</div>
+          <div className="mt-1 text-base font-black text-[#0b1d31]">
+            {message.mode === "grounding" ? modeLabel : "Scene Understanding"}
+          </div>
         </div>
-        <span className="rounded-full bg-[#e8f4eb] px-3 py-1 text-xs font-bold text-[#0b6048]">
-          {message.mode === "grounding" ? `${boxes.length} highlighted` : "No boxes"}
-        </span>
+        {message.mode === "grounding" && (
+          <span className="rounded-full bg-[#e8f4eb] px-3 py-1 text-xs font-bold text-[#0b6048]">
+            {boxes.length > 0 ? `${boxes.length} localized` : "Localization unavailable"}
+          </span>
+        )}
       </div>
 
       <div className="grid gap-3 lg:grid-cols-[minmax(220px,39%)_minmax(0,61%)]">
@@ -525,8 +617,16 @@ function AssistantResultCard({
           />
         </div>
         <div className="min-w-0 rounded-xl border border-[#ccd8d3] bg-[#f7f4ed] p-2.5">
-          <div className="mb-2 text-sm font-extrabold text-[#0b1d31]">AI analysis / explanation</div>
-          <pre className="whitespace-pre-wrap font-sans text-[0.84rem] leading-5 text-[#14314b]">{message.text}</pre>
+          <div className="mb-2 text-sm font-extrabold text-[#0b1d31]">
+            {message.mode === "grounding" ? "Localization result" : "Analysis result"}
+          </div>
+          {message.mode === "grounding" && boxes.length === 0 ? (
+            <p className="text-[0.86rem] leading-6 text-[#14314b]">
+              No confident localization was produced for this query.
+            </p>
+          ) : (
+            <ModelText text={message.text} />
+          )}
         </div>
       </div>
 
@@ -562,37 +662,23 @@ function AssistantResultCard({
 
 function TemporalResultCard({
   message,
-  currentTemporalImages,
-  currentTemporalPreviewUrls,
   onOpenReport,
 }: {
   message: ChatMessage;
-  currentTemporalImages: TemporalImageState;
-  currentTemporalPreviewUrls: TemporalImagePreviews;
   onOpenReport: (report: ReportInput) => void;
 }) {
   const analysis = message.changeAnalysis;
   const temporalImages = message.temporalImages;
   const shouldShowImages = message.showTemporalImages !== false;
   const [showVisualCompare, setShowVisualCompare] = useState(false);
-  const hasLiveTemporalPair = Boolean(
-    currentTemporalImages.t1 &&
-      currentTemporalImages.t2 &&
-      currentTemporalPreviewUrls.t1 &&
-      currentTemporalPreviewUrls.t2
-  );
-
-  useEffect(() => {
-    if (!hasLiveTemporalPair) {
-      setShowVisualCompare(false);
-    }
-  }, [hasLiveTemporalPair]);
 
   if (!analysis || !temporalImages) {
     return null;
   }
 
   const showSummary = analysis.summary && analysis.summary !== analysis.final_answer;
+  const canCompareSavedImages = Boolean(temporalImages.t1.url && temporalImages.t2.url);
+  const guard = analysis.change_guard;
 
   return (
     <article className="mr-auto w-full rounded-[1rem] border border-[#c2d6cd] bg-white/95 p-3.5 text-[#14314b] shadow-[0_12px_34px_rgba(16,35,58,0.09)]">
@@ -609,7 +695,7 @@ function TemporalResultCard({
           <span className="rounded-full bg-[#e8f4eb] px-3 py-1 text-xs font-bold text-[#0b6048]">
             {analysis.changes.length} changes
           </span>
-          {hasLiveTemporalPair && (
+          {canCompareSavedImages && (
             <button
               type="button"
               onClick={() => setShowVisualCompare((current) => !current)}
@@ -642,14 +728,17 @@ function TemporalResultCard({
         </div>
       </div>
 
-      {showVisualCompare && hasLiveTemporalPair && (
+      {guard && <TemporalGuardSummary guard={guard} />}
+
+      {showVisualCompare && canCompareSavedImages && (
         <div className="mb-3">
           <BeforeAfterSlider
-            beforeUrl={currentTemporalPreviewUrls.t1}
-            afterUrl={currentTemporalPreviewUrls.t2}
+            beforeUrl={temporalImages.t1.url}
+            afterUrl={temporalImages.t2.url}
             beforeLabel="BEFORE / T1"
             afterLabel="AFTER / T2"
           />
+          {guard?.dimension_normalized && <TemporalNormalizationNote />}
         </div>
       )}
 
@@ -665,9 +754,7 @@ function TemporalResultCard({
           OrbiVue Change Analysis
         </div>
         {showSummary && <p className="mt-2 text-sm leading-6 text-[#173452]">{analysis.summary}</p>}
-        <pre className="mt-2 whitespace-pre-wrap font-sans text-[0.86rem] leading-5 text-[#14314b]">
-          {analysis.final_answer}
-        </pre>
+        <ModelText text={analysis.final_answer} className="mt-2" />
       </div>
 
       {analysis.changes.length > 0 && (
@@ -688,6 +775,8 @@ function TemporalResultCard({
       {analysis.limitations.length > 0 && (
         <ListSection title="Limitations" items={analysis.limitations} />
       )}
+
+      {guard && <TemporalGuardDetails guard={guard} />}
     </article>
   );
 }
@@ -707,6 +796,146 @@ function TemporalImagePreview({ image }: { image: TemporalMessageImage }) {
       <img src={image.url} alt={`${image.label} preview`} className="block max-h-[230px] w-full rounded-lg object-contain" />
     </figure>
   );
+}
+
+function TemporalGuardSummary({ guard }: { guard: ChangeGuardPayload }) {
+  const summary = temporalGuardSummary(guard);
+
+  return (
+    <section className={`mb-3 rounded-xl border px-3 py-2.5 ${summary.className}`}>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="text-sm font-black text-[#10233a]">{summary.label}</div>
+          {summary.semanticNote && <p className="mt-1 text-xs font-bold leading-5 opacity-80">{summary.semanticNote}</p>}
+        </div>
+        <span className="rounded-full bg-white/78 px-2.5 py-1 text-[0.68rem] font-black uppercase tracking-[0.1em]">
+          Temporal guard
+        </span>
+      </div>
+      {guard.dimension_normalized && <TemporalNormalizationNote className="mt-2" />}
+      {guard.alignment_warning && (
+        <p className="mt-2 flex items-start gap-2 rounded-lg bg-white/70 px-2.5 py-2 text-xs font-bold leading-5">
+          <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+          <span>{guard.alignment_warning}</span>
+        </p>
+      )}
+    </section>
+  );
+}
+
+function TemporalNormalizationNote({ className = "" }: { className?: string }) {
+  return (
+    <p className={`flex items-start gap-2 rounded-lg border border-[#c9ddd4] bg-white/78 px-2.5 py-2 text-xs font-bold leading-5 text-[#456172] ${className}`}>
+      <Info size={15} className="mt-0.5 shrink-0 text-[#0b6048]" />
+      <span>Images were normalized to a common resolution for comparison. This does not establish geospatial registration.</span>
+    </p>
+  );
+}
+
+function TemporalGuardDetails({ guard }: { guard: ChangeGuardPayload }) {
+  const rows = [
+    ["Mean image difference", formatNullableNumber(guard.mean_absolute_difference)],
+    ["Changed pixel fraction", formatPixelFraction(guard.changed_pixel_fraction)],
+    ["Exact image match", formatBoolean(guard.exact_match)],
+    ["Dimension normalized", formatBoolean(guard.dimension_normalized)],
+    ["Comparison resolution", formatSize(guard.comparison_size)],
+    ["Qwen called", formatBoolean(guard.qwen_called)],
+    ["Semantic interpretation", temporalSemanticLabel(guard.semantic_verification)],
+    ["Normalization method", guard.normalization_method || "Not provided"],
+    ["Original T1 size", formatSize(guard.original_size_t1)],
+    ["Original T2 size", formatSize(guard.original_size_t2)],
+    ["Pixel change threshold", formatNullableNumber(guard.pixel_change_threshold)],
+    ["Near-identical mean threshold", formatNullableNumber(guard.near_identical_mean_threshold)],
+    ["Near-identical fraction threshold", formatPixelFraction(guard.near_identical_fraction_threshold)],
+  ].filter(([, value]) => value !== "Not provided");
+
+  if (!rows.length) {
+    return null;
+  }
+
+  return (
+    <details className="mt-3 rounded-xl border border-[#ccd8d3] bg-white/82 p-3 text-[#14314b]">
+      <summary className="cursor-pointer text-sm font-black text-[#10233a]">Analysis details</summary>
+      <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
+        {rows.map(([label, value]) => (
+          <div key={label} className="rounded-lg bg-[#f7f4ed] px-2.5 py-2">
+            <dt className="font-black uppercase tracking-[0.1em] text-[#657a8c]">{label}</dt>
+            <dd className="mt-0.5 font-bold text-[#14314b]">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </details>
+  );
+}
+
+function temporalGuardSummary(guard: ChangeGuardPayload) {
+  const semanticNote = temporalSemanticLabel(guard.semantic_verification);
+
+  switch (guard.status) {
+    case "no_measurable_change":
+      return {
+        label: "No measurable visible change",
+        semanticNote,
+        className: "border-[#b7d8c8] bg-[#e8f4eb] text-[#0b6048]",
+      };
+    case "measurable_difference":
+      return {
+        label: "Visible image-space change detected",
+        semanticNote,
+        className: "border-[#f1c36d] bg-[#fff7e5] text-[#8a4b00]",
+      };
+    case "incompatible":
+      return {
+        label: "Comparison unavailable",
+        semanticNote,
+        className: "border-[#d8ddd7] bg-[#f1f3f1] text-[#4d5f6d]",
+      };
+    default:
+      return {
+        label: "Temporal comparison complete",
+        semanticNote,
+        className: "border-[#c9ddd4] bg-[#f7f4ed] text-[#456172]",
+      };
+  }
+}
+
+function temporalSemanticLabel(value?: string) {
+  switch (value) {
+    case "deterministic_no_change":
+      return "Verified by deterministic image comparison";
+    case "model_generated_unverified":
+      return "Semantic interpretation is AI-generated and not independently verified.";
+    default:
+      return value ? value.replace(/_/g, " ") : "Not provided";
+  }
+}
+
+function formatNullableNumber(value?: number | null) {
+  return typeof value === "number" && Number.isFinite(value) ? value.toFixed(5).replace(/0+$/, "").replace(/\.$/, "") : "Not provided";
+}
+
+function formatPixelFraction(value?: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return "Not provided";
+  }
+
+  return `${(value * 100).toFixed(value < 0.01 ? 3 : 2)}% of compared pixels`;
+}
+
+function formatBoolean(value?: boolean) {
+  if (value === true) {
+    return "Yes";
+  }
+
+  if (value === false) {
+    return "No";
+  }
+
+  return "Not provided";
+}
+
+function formatSize(value?: [number, number] | null) {
+  return value ? `${Math.round(value[0])} x ${Math.round(value[1])} px` : "Not provided";
 }
 
 function CrossModalResultCard({
@@ -745,9 +974,7 @@ function CrossModalResultCard({
         <div className="text-sm font-extrabold uppercase tracking-[0.12em] text-[#0b6048]">
           OrbiVue Cross-Modal Analysis
         </div>
-        <pre className="mt-2 whitespace-pre-wrap font-sans text-[0.86rem] leading-5 text-[#14314b]">
-          {cleanModelText(message.text)}
-        </pre>
+        <ModelText text={message.text} className="mt-2" />
       </div>
 
       <div className="mt-4">
@@ -1024,7 +1251,7 @@ function CrossModalUploadCard({
       </div>
 
       {previewUrl ? (
-        <img src={previewUrl} alt={`${label} preview`} className="block h-14 w-full rounded-lg bg-[#0b222b] object-cover" />
+        <img src={previewUrl} alt={`${label} preview`} className="block h-20 w-full rounded-lg bg-[#0b222b] object-contain" />
       ) : (
         <button
           type="button"
@@ -1117,19 +1344,28 @@ function ComposerAction({
   label,
   icon: Icon,
   onClick,
+  comingSoon = false,
 }: {
   label: string;
   icon: LucideIcon;
   onClick?: () => void;
+  comingSoon?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-2 rounded-lg border border-[#ccd8d3] bg-white px-2.5 py-1.5 text-[0.78rem] font-bold text-[#183958] shadow-sm transition hover:border-[#0b7b5b] hover:bg-[#e8f4eb]"
+      disabled={comingSoon}
+      title={comingSoon ? `${label} coming soon` : undefined}
+      className={`inline-flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-[0.78rem] font-bold shadow-sm transition ${
+        comingSoon
+          ? "cursor-not-allowed border-[#d8ddd7] bg-[#f3f1ec] text-[#7b8a94] opacity-75"
+          : "border-[#ccd8d3] bg-white text-[#183958] hover:border-[#0b7b5b] hover:bg-[#e8f4eb]"
+      }`}
     >
       <Icon size={15} />
       {label}
+      {comingSoon && <span className="rounded-full bg-white/80 px-1.5 py-0.5 text-[0.58rem] font-black uppercase tracking-[0.08em]">Soon</span>}
     </button>
   );
 }
@@ -1155,7 +1391,13 @@ function ComposerIconButtons({
       >
         <Paperclip size={18} />
       </button>
-      <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#ccd8d3] bg-white text-[#0f2338] shadow-sm">
+      <button
+        type="button"
+        disabled
+        title="Voice coming soon"
+        className="flex h-9 w-9 shrink-0 cursor-not-allowed items-center justify-center rounded-full border border-[#d8ddd7] bg-[#f3f1ec] text-[#7b8a94] shadow-sm"
+        aria-label="Voice input coming soon"
+      >
         <Mic size={18} />
       </button>
       <button

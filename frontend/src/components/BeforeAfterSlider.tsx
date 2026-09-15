@@ -21,11 +21,11 @@ export function BeforeAfterSlider({
   }, [beforeUrl, afterUrl]);
 
   return (
-    <section className="rounded-xl border border-[#c9ddd4] bg-[#fbfaf6]/95 p-2.5 shadow-sm">
+    <section className="select-none rounded-xl border border-[#c9ddd4] bg-[#fbfaf6]/95 p-2.5 shadow-sm">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="text-[0.82rem] font-black text-[#10233a]">Visual comparison</h3>
-          <p className="mt-0.5 text-xs font-semibold text-[#657a8c]">Drag the divider to reveal T2 over T1.</p>
+          <p className="mt-0.5 text-xs font-semibold text-[#657a8c]">Drag the handle to compare before and after imagery.</p>
         </div>
         <button
           type="button"
@@ -38,7 +38,7 @@ export function BeforeAfterSlider({
         </button>
       </div>
 
-      <div className="before-after-slider relative isolate mx-auto h-[clamp(250px,38vh,470px)] overflow-hidden rounded-xl border border-[#d8e1dc] bg-[#0d2730] shadow-inner">
+      <div className="before-after-slider relative isolate mx-auto h-[clamp(240px,38vh,470px)] overflow-hidden rounded-xl border border-[#d8e1dc] bg-[#0d2730] shadow-inner">
         <img
           src={beforeUrl}
           alt={`${beforeLabel} comparison image`}
@@ -58,10 +58,10 @@ export function BeforeAfterSlider({
           />
         </div>
 
-        <span className="absolute left-3 top-3 rounded-full bg-[#10233a]/78 px-3 py-1 text-[0.68rem] font-black uppercase tracking-[0.12em] text-white shadow-sm">
+        <span className="absolute left-3 top-3 rounded-full bg-[#10233a]/82 px-3 py-1 text-[0.68rem] font-black uppercase tracking-[0.12em] text-white shadow-sm backdrop-blur-sm">
           {beforeLabel}
         </span>
-        <span className="absolute right-3 top-3 rounded-full bg-[#00624b]/84 px-3 py-1 text-[0.68rem] font-black uppercase tracking-[0.12em] text-white shadow-sm">
+        <span className="absolute right-3 top-3 rounded-full bg-[#00624b]/88 px-3 py-1 text-[0.68rem] font-black uppercase tracking-[0.12em] text-white shadow-sm backdrop-blur-sm">
           {afterLabel}
         </span>
 
@@ -80,7 +80,7 @@ export function BeforeAfterSlider({
           max="100"
           value={position}
           onChange={(event) => setPosition(Number(event.target.value))}
-          className="before-after-range absolute inset-0 z-20 h-full w-full cursor-ew-resize opacity-0"
+          className="before-after-range absolute inset-0 z-20 h-full w-full cursor-ew-resize touch-none opacity-0"
           aria-label="Reveal after image over before image"
         />
       </div>

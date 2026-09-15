@@ -50,6 +50,31 @@ export type ChangeItem = {
   confidence?: number | null;
 };
 
+export type ChangeGuardStatus = "no_measurable_change" | "measurable_difference" | "incompatible" | string;
+
+export type SemanticVerificationStatus = "deterministic_no_change" | "model_generated_unverified" | string;
+
+export type ChangeGuardPayload = {
+  status?: ChangeGuardStatus;
+  qwen_called?: boolean;
+  exact_match?: boolean;
+  mean_absolute_difference?: number | null;
+  changed_pixel_fraction?: number | null;
+  pixel_change_threshold?: number | null;
+  near_identical_mean_threshold?: number | null;
+  near_identical_fraction_threshold?: number | null;
+  semantic_verification?: SemanticVerificationStatus;
+  dimension_normalized?: boolean;
+  original_size_t1?: [number, number] | null;
+  original_size_t2?: [number, number] | null;
+  comparison_size?: [number, number] | null;
+  normalization_method?: string | null;
+  aspect_ratio_t1?: number | null;
+  aspect_ratio_t2?: number | null;
+  aspect_ratio_relative_difference?: number | null;
+  alignment_warning?: string | null;
+};
+
 export type ChangeAnalysisPayload = {
   mode: "change_analysis" | "change_vqa";
   summary: string;
@@ -58,6 +83,7 @@ export type ChangeAnalysisPayload = {
   unchanged: string[];
   limitations: string[];
   change_map?: string | null;
+  change_guard?: ChangeGuardPayload | null;
 };
 
 export type TemporalMessageImage = {
