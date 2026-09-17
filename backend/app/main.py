@@ -35,6 +35,11 @@ app.include_router(location_imagery_router)
 app.include_router(orchestrate_router)
 
 
+@app.get("/health")
+def public_health() -> dict[str, str]:
+    return {"status": "ok", "service": "orbivue-backend"}
+
+
 @app.on_event("startup")
 async def log_config_status() -> None:
     print("[SatQuery Config] Gemini API key loaded:", gemini_api_key_loaded())

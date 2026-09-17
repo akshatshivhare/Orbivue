@@ -51,6 +51,7 @@ LOCATION_IMAGERY_USER_AGENT = os.getenv(
     "LOCATION_IMAGERY_USER_AGENT",
     "OrbiVue/0.1 location-imagery-prototype",
 )
+MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(25 * 1024 * 1024)))
 
 DEFAULT_ALLOWED_ORIGINS = [
     "https://orbivue.vercel.app",

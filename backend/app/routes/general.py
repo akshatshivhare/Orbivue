@@ -1,9 +1,10 @@
 from typing import Any
 from uuid import uuid4
 
-from fastapi import APIRouter, File, Query, UploadFile
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import HTMLResponse
 
+from ..config import MAX_UPLOAD_BYTES
 from ..schemas.analysis import DemoLoginRequest
 
 router = APIRouter()
@@ -30,6 +31,10 @@ def demo_login(payload: DemoLoginRequest) -> dict[str, Any]:
 @router.post("/api/upload")
 async def upload(file: UploadFile = File(...)) -> dict[str, Any]:
     content = await file.read()
+    if len(content) > MAX_UPLOAD_BYTES:
+        max_size_mb = MAX_UPLOAD_BYTES / (1024 * 1024)
+        raise HTTPException(status_code=413, detail=f"Upload must be {max_size_mb:.0f} MB or smaller.")
+
     extension = (file.filename or "upload").rsplit(".", 1)[-1].lower()
     return {
         "status": "ok",

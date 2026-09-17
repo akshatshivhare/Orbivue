@@ -4,6 +4,8 @@ from pathlib import Path
 
 from fastapi import HTTPException, UploadFile
 
+from ..config import MAX_UPLOAD_BYTES
+
 VALID_IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".geotiff", ".webp"}
 
 
@@ -22,6 +24,10 @@ async def save_upload_to_temp(upload: UploadFile | None, label: str) -> SavedUpl
     content = await upload.read()
     if not content:
         raise HTTPException(status_code=400, detail=f"{label} image file is empty.")
+
+    if len(content) > MAX_UPLOAD_BYTES:
+        max_size_mb = MAX_UPLOAD_BYTES / (1024 * 1024)
+        raise HTTPException(status_code=413, detail=f"{label} image must be {max_size_mb:.0f} MB or smaller.")
 
     content_type = upload.content_type or ""
     suffix = Path(upload.filename).suffix or ".jpg"
