@@ -269,9 +269,9 @@ export function ChatWorkspace({
             />
           )}
           {!isCompareWorkflow && selectedImage && (
-            <div className="relative flex max-w-[280px] items-center gap-2 rounded-lg border border-[#a9c9ba] bg-[#dcece2] px-2 py-1.5 pr-8 text-[0.8rem] font-semibold text-[#074d3b] shadow-sm">
+            <div className="orbivue-attachment-chip orbivue-selected-image-chip relative flex max-w-[280px] items-center gap-2 rounded-lg border border-[#a9c9ba] bg-[#dcece2] px-2 py-1.5 pr-8 text-[0.8rem] font-semibold text-[#074d3b] shadow-sm">
               {imagePreviewUrl && selectedImage.type.startsWith("image/") ? (
-                <img src={imagePreviewUrl} alt="" className="h-11 w-11 shrink-0 rounded-md bg-[#0b222b] object-cover" />
+                <img src={imagePreviewUrl} alt="" className="orbivue-attachment-thumb h-11 w-11 shrink-0 rounded-md bg-[#0b222b] object-cover" />
               ) : (
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-white text-[#074d3b] shadow-inner">
                   <Paperclip size={16} />
@@ -476,9 +476,9 @@ function MessageThumb({
   metadata?: SatelliteImageryMetadata;
 }) {
   return (
-    <span className="inline-flex max-w-[220px] items-center gap-2 rounded-lg bg-white/14 p-1.5 text-left text-xs font-semibold">
+    <span className="orbivue-message-thumb inline-flex max-w-[220px] items-center gap-2 rounded-lg bg-white/14 p-1.5 text-left text-xs font-semibold">
       {imageUrl ? (
-        <img src={imageUrl} alt="" className="h-11 w-11 shrink-0 rounded-md bg-[#0b222b] object-cover" />
+        <img src={imageUrl} alt="" className="orbivue-attachment-thumb h-11 w-11 shrink-0 rounded-md bg-[#0b222b] object-cover" />
       ) : (
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-white/15">
           <Paperclip size={16} />
@@ -1070,7 +1070,7 @@ function TemporalAttachmentStrip({
   const hasPair = Boolean(temporalImages.t1 && temporalImages.t2);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="orbivue-attachment-strip flex flex-wrap items-center gap-2">
       {temporalImages.t1 && (
         <TemporalChip
           label="T1 / BEFORE"
@@ -1130,7 +1130,7 @@ function CrossModalUploadPanel({
   disabled: boolean;
 }) {
   return (
-    <div className="grid gap-2 md:grid-cols-2">
+    <div className="orbivue-cross-modal-upload-grid grid gap-2 md:grid-cols-2">
       <CrossModalUploadCard
         slot="optical"
         label="OPTICAL / MULTISPECTRAL"
@@ -1169,7 +1169,7 @@ function CrossModalAttachmentStrip({
   disabled: boolean;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="orbivue-attachment-strip flex flex-wrap items-center gap-2">
       {crossModalImages.optical ? (
         <TemporalChip
           label="OPTICAL / MULTISPECTRAL"
@@ -1231,7 +1231,7 @@ function CrossModalUploadCard({
   disabled: boolean;
 }) {
   return (
-    <article className="min-w-0 rounded-xl border border-[#c2d6cd] bg-white/86 p-2 shadow-sm">
+    <article className="orbivue-cross-modal-upload-card min-w-0 rounded-xl border border-[#c2d6cd] bg-white/86 p-2 shadow-sm">
       <div className="mb-1.5 flex items-start justify-between gap-2.5">
         <div className="min-w-0">
           <h3 className="text-[0.72rem] font-black uppercase tracking-[0.14em] text-[#0b6048]">{label}</h3>
@@ -1245,7 +1245,7 @@ function CrossModalUploadCard({
       </div>
 
       {previewUrl ? (
-        <img src={previewUrl} alt={`${label} preview`} className="block h-20 w-full rounded-lg bg-[#0b222b] object-contain" />
+        <img src={previewUrl} alt={`${label} preview`} className="orbivue-cross-modal-preview block h-20 w-full rounded-lg bg-[#0b222b] object-contain" />
       ) : (
         <button
           type="button"
@@ -1301,9 +1301,9 @@ function TemporalChip({
   disabled: boolean;
 }) {
   return (
-    <div className="relative flex max-w-[300px] items-center gap-2 rounded-lg border border-[#a9c9ba] bg-[#dcece2] px-2 py-1 pr-8 text-[0.78rem] text-[#074d3b] shadow-sm">
+    <div className="orbivue-attachment-chip orbivue-temporal-chip relative flex max-w-[300px] items-center gap-2 rounded-lg border border-[#a9c9ba] bg-[#dcece2] px-2 py-1 pr-8 text-[0.78rem] text-[#074d3b] shadow-sm">
       {previewUrl ? (
-        <img src={previewUrl} alt="" className="h-10 w-10 shrink-0 rounded-md bg-[#0b222b] object-cover" />
+        <img src={previewUrl} alt="" className="orbivue-attachment-thumb h-10 w-10 shrink-0 rounded-md bg-[#0b222b] object-cover" />
       ) : (
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-white text-[#074d3b] shadow-inner">
           <Paperclip size={16} />
