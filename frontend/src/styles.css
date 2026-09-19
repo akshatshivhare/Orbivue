@@ -1182,10 +1182,34 @@ body:has(.orbivue-dashboard) {
   padding: 10px;
 }
 
+.orbivue-composer-panel {
+  flex-shrink: 0;
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(4, 15, 27, 0.64);
+  padding: 10px;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.16);
+}
+
+.orbivue-composer-panel-inline {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+}
+
+.orbivue-composer-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
 .orbivue-composer-actions {
   margin-left: auto;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
 }
@@ -1569,6 +1593,12 @@ body:has(.orbivue-dashboard) {
   }
 }
 
+@media (min-width: 900px) {
+  .orbivue-composer-row {
+    flex-wrap: nowrap;
+  }
+}
+
 @media (max-width: 640px) {
   .orbivue-command-shell {
     gap: 12px;
@@ -1594,6 +1624,7 @@ body:has(.orbivue-dashboard) {
 
   .orbivue-composer-actions {
     margin-left: 0;
+    justify-content: flex-start;
   }
 
   .orbivue-control-button {
@@ -1970,6 +2001,76 @@ body:has(.orbivue-dashboard[data-theme="light"]) {
   color: var(--text-main) !important;
 }
 
+.orbivue-dashboard[data-theme="light"] .orbivue-ask-card,
+.orbivue-dashboard[data-theme="light"] .workspace-chat-card .orbivue-composer-panel {
+  width: calc(100% - 32px);
+  max-width: none;
+  margin: 0 16px 16px;
+  border: 1px solid #d5e2ea !important;
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  padding: 14px 16px;
+  box-shadow: 0 12px 30px rgba(31, 65, 86, 0.08) !important;
+}
+
+.orbivue-dashboard[data-theme="light"] .orbivue-composer-panel-inline {
+  width: 100%;
+  margin: 10px 0 0;
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0;
+  box-shadow: none !important;
+}
+
+.orbivue-dashboard[data-theme="light"] .orbivue-ask-input {
+  background: transparent;
+}
+
+.orbivue-dashboard[data-theme="light"] .orbivue-workspace-composer {
+  margin-top: 10px;
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0;
+  box-shadow: none !important;
+}
+
+.orbivue-dashboard[data-theme="light"] .orbivue-workspace-composer .orbivue-textarea {
+  flex: 1;
+}
+
+.orbivue-dashboard[data-theme="light"] .orbivue-textarea {
+  min-height: 92px;
+  border: 1px solid #d5e2ea;
+  border-radius: 12px;
+  background: #f7fafc !important;
+  color: #102331 !important;
+  padding: 12px 13px;
+}
+
+.orbivue-dashboard[data-theme="light"] .orbivue-textarea.is-compact {
+  min-height: 86px;
+}
+
+.orbivue-dashboard[data-theme="light"] .orbivue-textarea::placeholder {
+  color: #7890a0;
+}
+
+.orbivue-dashboard[data-theme="light"] .orbivue-composer-row > button {
+  border-color: #d5e2ea !important;
+  background: #ffffff !important;
+  color: #102331 !important;
+}
+
+.orbivue-dashboard[data-theme="light"] .orbivue-composer-row > button:not(:disabled):hover {
+  border-color: rgba(15, 159, 145, 0.36) !important;
+  background: #f7fafc !important;
+}
+
+.orbivue-dashboard[data-theme="light"] .orbivue-composer-row > button:disabled {
+  background: #f7fafc !important;
+  color: #7890a0 !important;
+}
+
 .orbivue-dashboard[data-theme="light"] .orbivue-ask-label em {
   border-color: var(--border);
   background: #ffffff;
@@ -1978,7 +2079,7 @@ body:has(.orbivue-dashboard[data-theme="light"]) {
 
 .orbivue-dashboard[data-theme="light"] .orbivue-textarea:focus {
   border-color: rgba(15, 159, 145, 0.42);
-  background: #ffffff;
+  background: #ffffff !important;
   box-shadow: 0 0 0 3px rgba(15, 159, 145, 0.1);
 }
 

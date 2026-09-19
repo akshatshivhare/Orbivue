@@ -243,12 +243,8 @@ export function ChatWorkspace({
           </div>
         )}
 
-        <div className={isWorkspaceMode ? "mt-2 shrink-0 rounded-xl border border-[#c2d6cd] bg-[#fffdf8]/88 p-2 shadow-sm" : ""}>
-        <div
-          className={`flex flex-wrap items-center gap-2 ${
-            isWorkspaceMode ? "" : "mt-3 pl-10"
-          }`}
-        >
+        <div className={isWorkspaceMode ? "orbivue-composer-panel" : "orbivue-composer-panel orbivue-composer-panel-inline"}>
+          <div className="orbivue-composer-row">
           {isWorkspaceMode && isCompareWorkflow && (
             <CompareModeToggle compareMode={compareMode} onCompareModeChange={onCompareModeChange} disabled={isLoading} />
           )}
