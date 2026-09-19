@@ -7,10 +7,12 @@ import {
   Globe2,
   Menu,
   Mountain,
+  Moon,
   Radar,
   Settings,
   ShieldCheck,
   Sparkles,
+  Sun,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -47,8 +49,10 @@ const SINGLE_ANALYSIS_ENDPOINT = apiUrl("/api/analyze");
 const CHANGE_ANALYSIS_ENDPOINT = apiUrl("/api/change-analyze");
 const CROSS_MODAL_ENDPOINT = apiUrl("/api/cross-modal");
 const DEBUG_LOGS = import.meta.env.DEV;
+const THEME_STORAGE_KEY = "orbivue-theme";
 
 type ApiStatus = "connecting" | "connected" | "unavailable";
+type ThemeMode = "dark" | "light";
 type NavSection = "ask" | "satellite" | "intelligence" | "reports" | "watch" | "terrain" | "evaluation";
 
 type TrustRow = {
@@ -81,6 +85,16 @@ function debugLog(...args: unknown[]) {
   if (DEBUG_LOGS) {
     console.log(...args);
   }
+}
+
+function getInitialTheme(): ThemeMode {
+  const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+
+  if (savedTheme === "dark" || savedTheme === "light") {
+    return savedTheme;
+  }
+
+  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
 }
 
 async function compressImageForAnalysis(file: File): Promise<File> {
@@ -517,7 +531,9 @@ function OrbivueHero() {
         <h2>
           Earth
           <br />
-          Intelligence You
+          Intelligence
+          <br />
+          You
           <br />
           Can Verify
         </h2>
@@ -590,6 +606,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
   const [isSatelliteExplorerOpen, setIsSatelliteExplorerOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [apiStatus, setApiStatus] = useState<ApiStatus>("connecting");
+  const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const submitLockRef = useRef(false);
   const changeSubmitLockRef = useRef(false);
@@ -622,6 +639,10 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     (isCompareWorkflow && Boolean(temporalImages.t1 || temporalImages.t2)) ||
     (isCompareWorkflow && Boolean(crossModalImages.optical || crossModalImages.sar)) ||
     messages.length > 0;
+
+  useEffect(() => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  }, [theme]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1469,7 +1490,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
   };
 
   return (
-    <main className="main-page orbivue-dashboard">
+    <main className="main-page orbivue-dashboard" data-theme={theme}>
       <button
         type="button"
         className="orbivue-mobile-menu"
@@ -1514,6 +1535,15 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
               <span aria-hidden="true" />
               {apiStatusLabel(apiStatus)}
             </span>
+            <button
+              type="button"
+              className="orbivue-icon-button"
+              aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+              title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+              onClick={() => setTheme((currentTheme) => (currentTheme === "dark" ? "light" : "dark"))}
+            >
+              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
             <button type="button" className="orbivue-icon-button" aria-label="Settings">
               <Settings size={18} />
             </button>
