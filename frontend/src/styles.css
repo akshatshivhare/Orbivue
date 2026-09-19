@@ -1635,6 +1635,40 @@ body:has(.orbivue-dashboard) {
   --scroll-thumb: #2a536a;
 }
 
+.orbivue-dashboard[data-theme="dark"] .orbivue-ask-input > button {
+  border-color: var(--border) !important;
+  background: var(--control-bg) !important;
+  color: var(--text-secondary) !important;
+}
+
+.orbivue-dashboard[data-theme="dark"] .orbivue-ask-input > button:not(:disabled):hover {
+  border-color: rgba(64, 212, 189, 0.45) !important;
+  background: var(--bg-card-hover) !important;
+  color: var(--text-main) !important;
+}
+
+.orbivue-dashboard[data-theme="dark"] .orbivue-ask-input > button span {
+  background: rgba(104, 130, 149, 0.16) !important;
+  color: var(--text-muted) !important;
+}
+
+.orbivue-dashboard[data-theme="dark"] .orbivue-ask-card button:not(.orbivue-control-button) {
+  border-color: var(--border) !important;
+  background: var(--control-bg) !important;
+  color: var(--text-secondary) !important;
+}
+
+.orbivue-dashboard[data-theme="dark"] .orbivue-ask-card button:not(.orbivue-control-button):not(:disabled):hover {
+  border-color: rgba(64, 212, 189, 0.45) !important;
+  background: var(--bg-card-hover) !important;
+  color: var(--text-main) !important;
+}
+
+.orbivue-dashboard[data-theme="dark"] .orbivue-ask-card button:not(.orbivue-control-button) span {
+  background: rgba(104, 130, 149, 0.16) !important;
+  color: var(--text-muted) !important;
+}
+
 .orbivue-dashboard[data-theme="light"] {
   --bg-main: #f4f8fb;
   --bg-sidebar: #ffffff;
@@ -1642,16 +1676,16 @@ body:has(.orbivue-dashboard) {
   --bg-card-soft: #f7fafc;
   --bg-input: #f8fbfd;
   --bg-card-hover: #eef7f8;
-  --border: #d5e2ea;
-  --border-strong: #bdd2df;
+  --border: #d8e3ea;
+  --border-strong: #c5d5df;
   --border-soft: rgba(96, 128, 148, 0.22);
-  --text-main: #102331;
-  --text-secondary: #536d7e;
-  --text-muted: #7890a0;
+  --text-main: #112535;
+  --text-secondary: #587182;
+  --text-muted: #7b93a3;
   --accent: #0f9f91;
   --accent-soft: #0f9f91;
-  --accent-strong: #087d73;
-  --accent-blue: #2589b5;
+  --accent-strong: #0a7e74;
+  --accent-blue: #238ab7;
   --success: #168a67;
   --warning: #b48627;
   --danger: #d65757;
@@ -1707,7 +1741,7 @@ body:has(.orbivue-dashboard[data-theme="light"]) {
 }
 
 .orbivue-work-grid {
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 290px);
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 280px);
   gap: 14px;
 }
 
@@ -1743,39 +1777,39 @@ body:has(.orbivue-dashboard[data-theme="light"]) {
 }
 
 .orbivue-hero-panel {
-  min-height: 282px;
-  grid-template-columns: minmax(0, 1fr) minmax(230px, 38%);
+  min-height: 258px;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 41%);
   gap: 16px;
-  padding: clamp(20px, 2.4vw, 30px);
+  padding: clamp(18px, 2.1vw, 28px);
 }
 
 .orbivue-hero-copy h2 {
   margin-top: 10px;
-  font-size: clamp(2.875rem, 4.1vw, 3.75rem);
-  line-height: 0.96;
+  font-size: clamp(2.6rem, 3.5vw, 3.4rem);
+  line-height: 0.98;
 }
 
 .orbivue-hero-copy p {
   max-width: 440px;
-  margin-top: 14px;
+  margin-top: 12px;
   font-size: 0.93rem;
   line-height: 1.5;
 }
 
 .orbivue-hero-visual {
-  min-height: 224px;
+  min-height: 210px;
 }
 
 .orbivue-hero-earth {
-  width: min(82%, 360px);
-  max-height: 84%;
+  width: min(98%, 410px);
+  max-height: 92%;
 }
 
 .orbivue-hero-satellite {
-  top: 8%;
-  right: 1%;
-  width: min(36%, 156px);
-  max-height: 36%;
+  top: 4%;
+  right: 2%;
+  width: min(42%, 168px);
+  max-height: 42%;
 }
 
 .orbivue-chat-workspace {
@@ -1783,7 +1817,7 @@ body:has(.orbivue-dashboard[data-theme="light"]) {
 }
 
 .orbivue-ask-card {
-  padding: 14px;
+  padding: 12px;
 }
 
 .workspace-chat-card-empty,
@@ -1793,11 +1827,11 @@ body:has(.orbivue-dashboard[data-theme="light"]) {
 }
 
 .orbivue-ask-input {
-  gap: 8px;
+  gap: 7px;
 }
 
 .orbivue-textarea {
-  min-height: 108px;
+  min-height: 88px;
   padding: 11px 12px;
   background: var(--bg-input);
 }
@@ -1813,39 +1847,39 @@ body:has(.orbivue-dashboard[data-theme="light"]) {
 }
 
 .orbivue-control-button {
-  min-height: 35px;
-  padding: 0 10px;
+  min-height: 33px;
+  padding: 0 9px;
   background: var(--control-bg);
 }
 
 .orbivue-trust-panel {
-  padding: 14px;
+  padding: 12px;
 }
 
 .orbivue-trust-state {
-  margin-top: 14px;
-  padding: 14px;
+  margin-top: 12px;
+  padding: 12px;
   background: var(--panel-subtle);
 }
 
 .orbivue-trust-state strong {
-  font-size: 1.28rem;
+  font-size: 1.18rem;
 }
 
 .orbivue-trust-rows {
-  gap: 8px;
-  margin-top: 12px;
+  gap: 7px;
+  margin-top: 10px;
 }
 
 .orbivue-trust-row {
-  gap: 6px;
-  padding: 10px;
+  gap: 5px;
+  padding: 8px 9px;
   background: var(--panel-subtle);
 }
 
 .orbivue-trust-footnote {
-  margin-top: 12px;
-  padding-top: 12px;
+  margin-top: 10px;
+  padding-top: 10px;
 }
 
 .orbivue-dashboard[data-theme="light"] {
@@ -1909,10 +1943,16 @@ body:has(.orbivue-dashboard[data-theme="light"]) {
   box-shadow: var(--dashboard-shadow) !important;
 }
 
+.orbivue-dashboard[data-theme="light"] .orbivue-hero-panel {
+  background:
+    radial-gradient(circle at 82% 44%, rgba(35, 138, 183, 0.13), transparent 18rem),
+    linear-gradient(135deg, #ffffff 0%, #f5fafc 54%, #eef6fa 100%) !important;
+}
+
 .orbivue-dashboard[data-theme="light"] .orbivue-hero-visual::before {
   background:
-    radial-gradient(circle at 48% 58%, rgba(37, 137, 181, 0.16), rgba(37, 137, 181, 0.06) 34%, transparent 64%),
-    radial-gradient(circle at 72% 24%, rgba(15, 159, 145, 0.08), transparent 34%);
+    radial-gradient(circle at 50% 56%, rgba(35, 138, 183, 0.2), rgba(35, 138, 183, 0.08) 38%, transparent 68%),
+    radial-gradient(circle at 75% 20%, rgba(15, 159, 145, 0.11), transparent 36%);
 }
 
 .orbivue-dashboard[data-theme="light"] .orbivue-hero-earth {
@@ -1928,6 +1968,12 @@ body:has(.orbivue-dashboard[data-theme="light"]) {
   border-color: var(--border);
   background: var(--bg-input) !important;
   color: var(--text-main) !important;
+}
+
+.orbivue-dashboard[data-theme="light"] .orbivue-ask-label em {
+  border-color: var(--border);
+  background: #ffffff;
+  color: var(--text-secondary);
 }
 
 .orbivue-dashboard[data-theme="light"] .orbivue-textarea:focus {
@@ -2042,19 +2088,19 @@ body:has(.orbivue-dashboard[data-theme="light"]) {
 
 @media (max-width: 1400px) and (min-width: 1024px) {
   .orbivue-hero-panel {
-    min-height: 266px;
+    min-height: 248px;
   }
 
   .orbivue-hero-copy h2 {
-    font-size: clamp(2.75rem, 3.7vw, 3.25rem);
+    font-size: clamp(2.5rem, 3.35vw, 3.05rem);
   }
 
   .orbivue-hero-earth {
-    width: min(78%, 330px);
+    width: min(96%, 360px);
   }
 
   .orbivue-hero-satellite {
-    width: min(34%, 144px);
+    width: min(40%, 150px);
   }
 }
 
@@ -2081,14 +2127,14 @@ body:has(.orbivue-dashboard[data-theme="light"]) {
   }
 
   .orbivue-hero-earth {
-    width: min(78%, 330px);
+    width: min(88%, 330px);
     max-height: 224px;
   }
 
   .orbivue-hero-satellite {
     top: 9%;
     right: 9%;
-    width: min(33%, 140px);
+    width: min(36%, 140px);
     max-height: 34%;
   }
 }
@@ -2111,7 +2157,7 @@ body:has(.orbivue-dashboard[data-theme="light"]) {
   }
 
   .orbivue-hero-earth {
-    width: min(78%, 300px);
+    width: min(84%, 300px);
   }
 
   .orbivue-hero-satellite {
