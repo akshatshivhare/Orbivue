@@ -21,7 +21,7 @@ export function BeforeAfterSlider({
   }, [beforeUrl, afterUrl]);
 
   return (
-    <section className="select-none rounded-xl border border-[#c9ddd4] bg-[#fbfaf6]/95 p-2.5 shadow-sm">
+    <section className="temporal-preview-shell select-none rounded-xl border border-[#c9ddd4] bg-[#fbfaf6]/95 p-2.5 shadow-sm">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="text-[0.82rem] font-black text-[#10233a]">Visual comparison</h3>

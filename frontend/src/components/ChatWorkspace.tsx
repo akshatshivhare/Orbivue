@@ -135,20 +135,21 @@ export function ChatWorkspace({
     previousMessageCountRef.current = messages.length;
   }, [messages, isLoading, error]);
 
-  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") {
+  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
       onSubmit();
     }
   };
 
   return (
     <section
-      className={`main-query w-full rounded-[1.15rem] border border-[#a9c9ba] bg-[#fbfaf6]/90 shadow-[0_14px_42px_rgba(6,64,51,0.14)] backdrop-blur-md transition-all duration-300 ${
+      className={`orbivue-chat-workspace main-query w-full transition-all duration-300 ${
         isWorkspaceMode
           ? `workspace-chat-card ${
               hasActiveWorkspaceContent ? "workspace-chat-card-active" : "workspace-chat-card-empty"
             } flex min-h-0 flex-1 flex-col p-4`
-          : "mt-3.5 max-w-[790px] p-3"
+          : "orbivue-ask-card"
       }`}
     >
       <div className={`${isWorkspaceMode ? "flex min-h-0 flex-1 flex-col" : ""}`}>
@@ -226,20 +227,18 @@ export function ChatWorkspace({
         )}
 
         {!isWorkspaceMode && (
-          <div className="flex gap-3.5">
-            <Sparkles size={21} className="mt-0.5 shrink-0 text-[#1f426a]" />
-            <input
+          <div className="orbivue-ask-input">
+            <div className="orbivue-ask-label">
+              <span>Ask ORBIVUE</span>
+              <em>English</em>
+            </div>
+            <textarea
               value={query}
               onChange={(event) => onQueryChange(event.target.value)}
               onKeyDown={handleKeyDown}
-              className="min-w-0 flex-1 bg-transparent text-[0.94rem] font-medium text-[#173452] outline-none placeholder:text-[#173452]"
-              placeholder="Ask anything about changes, 3D, terrain, water, or history..."
-            />
-            <ComposerIconButtons
-              canSubmit={canSubmit}
-              fileInputRef={fileInputRef}
-              onSubmit={onSubmit}
-              isLoading={isLoading}
+              rows={4}
+              className="orbivue-textarea"
+              placeholder="Ask a question after attaching satellite imagery..."
             />
           </div>
         )}
@@ -305,16 +304,14 @@ export function ChatWorkspace({
           <ComposerAction label="Attach Area" icon={Layers} comingSoon />
           <ComposerAction label="Date Range" icon={CalendarDays} comingSoon />
           <ComposerAction label="Data Sources" icon={Layers} comingSoon />
-          {isWorkspaceMode && (
-            <div className="ml-auto flex items-center gap-3">
-              <ComposerIconButtons
-                canSubmit={canSubmit}
-                fileInputRef={fileInputRef}
-                onSubmit={onSubmit}
-                isLoading={isLoading}
-              />
-            </div>
-          )}
+          <div className="orbivue-composer-actions">
+            <ComposerIconButtons
+              canSubmit={canSubmit}
+              fileInputRef={fileInputRef}
+              onSubmit={onSubmit}
+              isLoading={isLoading}
+            />
+          </div>
         </div>
 
         {isCompareWorkflow && compareMode === "temporal" && hasTemporalImage && (
@@ -343,13 +340,14 @@ export function ChatWorkspace({
         )}
 
         {isWorkspaceMode && (
-          <div className="mt-2 flex items-center gap-2.5 rounded-xl border border-[#d5dfda] bg-white/86 px-2.5 py-1.5 shadow-inner">
-            <Sparkles size={19} className="shrink-0 text-[#183958]" />
-            <input
+          <div className="orbivue-workspace-composer">
+            <Sparkles size={18} className="shrink-0" />
+            <textarea
               value={query}
               onChange={(event) => onQueryChange(event.target.value)}
               onKeyDown={handleKeyDown}
-              className="min-w-0 flex-1 bg-transparent text-[0.94rem] font-medium text-[#14314b] outline-none placeholder:text-[#173452]"
+              rows={2}
+              className="orbivue-textarea is-compact"
               placeholder={
                 isCompareWorkflow && compareMode === "cross_modal"
                   ? "Ask what complementary information the optical and SAR sensors reveal..."
@@ -1386,30 +1384,45 @@ function ComposerIconButtons({
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
-        className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#ccd8d3] bg-white text-[#0f2338] shadow-sm transition hover:border-[#075f47] hover:text-[#075f47]"
+        className="orbivue-control-button"
         aria-label="Attach image"
       >
-        <Paperclip size={18} />
+        <Paperclip size={16} />
+        Attach
       </button>
       <button
         type="button"
         disabled
         title="Voice coming soon"
-        className="flex h-9 w-9 shrink-0 cursor-not-allowed items-center justify-center rounded-full border border-[#d8ddd7] bg-[#f3f1ec] text-[#7b8a94] shadow-sm"
+        className="orbivue-control-button is-disabled"
         aria-label="Voice input coming soon"
       >
-        <Mic size={18} />
+        <Mic size={16} />
+        Mic
+        <span>Coming Soon</span>
+      </button>
+      <button
+        type="button"
+        disabled
+        title="More languages coming soon"
+        className="orbivue-control-button is-disabled"
+        aria-label="Language selector"
+      >
+        English
       </button>
       <button
         type="button"
         onClick={onSubmit}
         disabled={isLoading || !canSubmit}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#075f47] text-white shadow-[0_10px_24px_rgba(7,95,71,0.25)] transition hover:bg-[#064836] disabled:cursor-not-allowed disabled:opacity-60"
+        className="orbivue-control-button is-primary"
       >
         {isLoading ? (
           <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/45 border-t-white" />
         ) : (
-          <Send size={18} />
+          <>
+            <Send size={16} />
+            Send
+          </>
         )}
       </button>
     </>

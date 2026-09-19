@@ -84,7 +84,7 @@ export function GroundingPreview({
   }, [imageUrl, measureOverlay]);
 
   return (
-    <div className={`rounded-2xl border border-[#b7d8c8] bg-white/90 p-3 shadow-sm ${className}`}>
+    <div className={`grounding-preview rounded-2xl border border-[#b7d8c8] bg-white/90 p-3 shadow-sm ${className}`}>
       <div ref={frameRef} className="relative mx-auto flex max-w-full justify-center align-top">
         <img
           ref={imageRef}

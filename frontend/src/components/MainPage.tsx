@@ -1,19 +1,27 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowRight,
-  BarChart3,
-  Box,
-  Clock3,
+  Activity,
+  Bell,
+  BrainCircuit,
+  FileText,
+  Globe2,
+  Menu,
+  Mountain,
+  Radar,
+  Settings,
+  ShieldCheck,
   Sparkles,
-  Trees,
+  X,
+  type LucideIcon,
 } from "lucide-react";
+import orbivueEarth from "../assets/orbivue-earth.png";
+import orbivueSatellite from "../assets/orbivue-satellite.png";
 import { apiUrl } from "../config/api";
 import { ChatWorkspace } from "./ChatWorkspace";
+import { OrbivueLogo } from "./OrbivueLogo";
 import { ReportPreviewModal } from "./report/ReportPreviewModal";
 import type { ReportInput } from "./report/reportUtils";
 import { SatelliteExplorer } from "./SatelliteExplorer";
-import { WorkspaceHeader } from "./WorkspaceHeader";
-import { WorkspaceSidebar } from "./WorkspaceSidebar";
 import type {
   AnalysisMode,
   BoundingBox,
@@ -33,39 +41,37 @@ import type {
   TemporalImageState,
 } from "./workspaceTypes";
 
-const actionCards = [
-  {
-    title: "Analyze Changes",
-    description: "Detect land, water, vegetation and temperature changes.",
-    icon: Trees,
-    color: "bg-[#08714f] text-white",
-  },
-  {
-    title: "3D & Terrain",
-    description: "Explore terrain, elevation and 3D reconstruction.",
-    icon: Box,
-    color: "bg-[#3b93d1] text-white",
-  },
-  {
-    title: "Compare Over Time",
-    description: "See how places change across any time period.",
-    icon: Clock3,
-    color: "bg-[#f2a236] text-white",
-  },
-  {
-    title: "Generate Reports",
-    description: "Create AI-generated reports and visual insights.",
-    icon: BarChart3,
-    color: "bg-[#7b5aa6] text-white",
-  },
-];
-
 const MAX_ANALYSIS_IMAGE_SIDE = 1280;
 const ANALYSIS_IMAGE_QUALITY = 0.86;
 const SINGLE_ANALYSIS_ENDPOINT = apiUrl("/api/analyze");
 const CHANGE_ANALYSIS_ENDPOINT = apiUrl("/api/change-analyze");
 const CROSS_MODAL_ENDPOINT = apiUrl("/api/cross-modal");
 const DEBUG_LOGS = import.meta.env.DEV;
+
+type ApiStatus = "connecting" | "connected" | "unavailable";
+type NavSection = "ask" | "satellite" | "intelligence" | "reports" | "watch" | "terrain" | "evaluation";
+
+type TrustRow = {
+  label: string;
+  value: string;
+  tone?: "neutral" | "ready" | "warning";
+  detail?: string;
+};
+
+const navItems: Array<{
+  id: NavSection;
+  label: string;
+  icon: LucideIcon;
+  comingSoon?: boolean;
+}> = [
+  { id: "ask", label: "Ask ORBIVUE", icon: Sparkles },
+  { id: "satellite", label: "Satellite Explorer", icon: Globe2 },
+  { id: "watch", label: "Watch Areas", icon: Bell, comingSoon: true },
+  { id: "intelligence", label: "Intelligence", icon: BrainCircuit },
+  { id: "terrain", label: "3D Terrain", icon: Mountain, comingSoon: true },
+  { id: "reports", label: "Reports", icon: FileText },
+  { id: "evaluation", label: "Evaluation", icon: ShieldCheck, comingSoon: true },
+];
 
 type MainPageProps = {
   userName?: string;
@@ -361,6 +367,203 @@ function normalizeCrossModalResponse(data: unknown) {
   };
 }
 
+function apiStatusLabel(status: ApiStatus) {
+  if (status === "connected") {
+    return "Connected";
+  }
+
+  if (status === "unavailable") {
+    return "Unavailable";
+  }
+
+  return "Connecting";
+}
+
+function activeNavSection(isSatelliteExplorerOpen: boolean, isCompareWorkflow: boolean): NavSection {
+  if (isSatelliteExplorerOpen) {
+    return "satellite";
+  }
+
+  if (isCompareWorkflow) {
+    return "intelligence";
+  }
+
+  return "ask";
+}
+
+function changeGuardTrustLabel(guard?: ChangeGuardPayload | null) {
+  if (!guard?.status) {
+    return "NOT EVALUATED";
+  }
+
+  return guard.status.replace(/_/g, " ").toUpperCase();
+}
+
+function buildTrustRows({
+  selectedImage,
+  hasTemporalPair,
+  hasCrossModalPair,
+  latestReport,
+}: {
+  selectedImage: File | null;
+  hasTemporalPair: boolean;
+  hasCrossModalPair: boolean;
+  latestReport: ReportInput | null;
+}): TrustRow[] {
+  const latestGuard = latestReport?.mode === "temporal" ? latestReport.changeAnalysis?.change_guard : null;
+  const hasInput = Boolean(selectedImage || hasTemporalPair || hasCrossModalPair);
+  const hasCrossModalResult = latestReport?.mode === "cross_modal";
+
+  return [
+    {
+      label: "Input Validation",
+      value: hasInput ? "INPUT ATTACHED" : "NOT EVALUATED",
+      tone: hasInput ? "ready" : "neutral",
+      detail: hasInput ? "Client-side file selection is present." : undefined,
+    },
+    {
+      label: "Observation Feasibility",
+      value: "NOT EVALUATED",
+    },
+    {
+      label: "ChangeGuard",
+      value: changeGuardTrustLabel(latestGuard),
+      tone: latestGuard?.status === "incompatible" ? "warning" : latestGuard?.status ? "ready" : "neutral",
+      detail: latestGuard?.semantic_verification?.replace(/_/g, " "),
+    },
+    {
+      label: "Cross-Sensor Verification",
+      value: hasCrossModalResult ? "RESULT AVAILABLE" : "NOT EVALUATED",
+      tone: hasCrossModalResult ? "ready" : "neutral",
+      detail: hasCrossModalResult ? "Optical + SAR analysis returned a response." : undefined,
+    },
+    {
+      label: "Evidence Validation",
+      value: "NOT EVALUATED",
+    },
+  ];
+}
+
+function OrbivueSidebar({
+  activeSection,
+  isOpen,
+  onClose,
+  onNewChat,
+  onNavigate,
+}: {
+  activeSection: NavSection;
+  isOpen: boolean;
+  onClose: () => void;
+  onNewChat: () => void;
+  onNavigate: (section: NavSection) => void;
+}) {
+  return (
+    <aside className={`orbivue-side-nav ${isOpen ? "is-open" : ""}`}>
+      <div className="orbivue-side-brand">
+        <OrbivueLogo className="orbivue-side-logo" />
+        <button type="button" className="orbivue-side-close" onClick={onClose} aria-label="Close navigation">
+          <X size={18} />
+        </button>
+        <div>
+          <strong>ORBIVUE</strong>
+          <span>Earth Intelligence</span>
+        </div>
+      </div>
+
+      <button type="button" className="orbivue-new-chat" onClick={onNewChat}>
+        <Sparkles size={16} />
+        New analysis
+      </button>
+
+      <nav className="orbivue-nav-list" aria-label="ORBIVUE workspace navigation">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeSection === item.id;
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => {
+                if (!item.comingSoon) {
+                  onNavigate(item.id);
+                }
+              }}
+              disabled={item.comingSoon}
+              className={`orbivue-nav-item ${isActive ? "is-active" : ""}`}
+              title={item.comingSoon ? `${item.label} coming soon` : item.label}
+            >
+              <Icon size={17} />
+              <span>{item.label}</span>
+              {item.comingSoon && <em>Coming Soon</em>}
+            </button>
+          );
+        })}
+      </nav>
+
+      <div className="orbivue-side-note">
+        <Radar size={16} />
+        <span>Verification states appear only when supported by the active pipeline.</span>
+      </div>
+    </aside>
+  );
+}
+
+function OrbivueHero() {
+  return (
+    <section className="orbivue-hero-panel">
+      <div className="orbivue-hero-copy">
+        <span>ORBIVUE</span>
+        <h2>
+          Earth
+          <br />
+          Intelligence You
+          <br />
+          Can Verify
+        </h2>
+        <p>Analyze geospatial imagery through evidence-backed Earth intelligence.</p>
+      </div>
+      <div className="orbivue-hero-visual" aria-hidden="true">
+        <img src={orbivueEarth} alt="" className="orbivue-hero-earth" />
+        <img src={orbivueSatellite} alt="" className="orbivue-hero-satellite" />
+      </div>
+    </section>
+  );
+}
+
+function TrustPanel({ rows, latestReport }: { rows: TrustRow[]; latestReport: ReportInput | null }) {
+  return (
+    <aside className="orbivue-trust-panel">
+      <div className="orbivue-trust-header">
+        <span>ORBIVUE TRUST</span>
+        <ShieldCheck size={18} />
+      </div>
+
+      <div className="orbivue-trust-state">
+        <p>Current State</p>
+        <strong>{latestReport?.mode === "temporal" && latestReport.changeAnalysis?.change_guard ? "Evaluated" : "Not Evaluated"}</strong>
+      </div>
+
+      <div className="orbivue-trust-rows">
+        {rows.map((row) => (
+          <article key={row.label} className={`orbivue-trust-row tone-${row.tone ?? "neutral"}`}>
+            <div>
+              <span>{row.label}</span>
+              {row.detail && <small>{row.detail}</small>}
+            </div>
+            <strong>{row.value}</strong>
+          </article>
+        ))}
+      </div>
+
+      <div className="orbivue-trust-footnote">
+        <Activity size={15} />
+        <p>Verification states are shown only when supported by the current analysis pipeline.</p>
+      </div>
+    </aside>
+  );
+}
+
 export function MainPage({ userName = "Explorer" }: MainPageProps) {
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
@@ -386,7 +589,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
   const [isCompareWorkflow, setIsCompareWorkflow] = useState(false);
   const [isSatelliteExplorerOpen, setIsSatelliteExplorerOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [apiStatus, setApiStatus] = useState<ApiStatus>("connecting");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const submitLockRef = useRef(false);
   const changeSubmitLockRef = useRef(false);
@@ -405,6 +608,13 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
   const hasTemporalPair = Boolean(temporalImages.t1 && temporalImages.t2);
   const hasCrossModalPair = Boolean(crossModalImages.optical && crossModalImages.sar);
   const isBusy = isLoading || isChangeLoading;
+  const currentNavSection = activeNavSection(isSatelliteExplorerOpen, isCompareWorkflow);
+  const trustRows = buildTrustRows({
+    selectedImage,
+    hasTemporalPair,
+    hasCrossModalPair,
+    latestReport,
+  });
   const isWorkspaceMode =
     hasWorkspaceOpened ||
     query.trim().length > 0 ||
@@ -412,6 +622,27 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     (isCompareWorkflow && Boolean(temporalImages.t1 || temporalImages.t2)) ||
     (isCompareWorkflow && Boolean(crossModalImages.optical || crossModalImages.sar)) ||
     messages.length > 0;
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setApiStatus("connecting");
+
+    fetch(apiUrl("/health"), { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Health check failed.");
+        }
+        setApiStatus("connected");
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) {
+          debugLog("[OrbiVue API] health unavailable:", error);
+          setApiStatus("unavailable");
+        }
+      });
+
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     if (!selectedImage) {
@@ -1238,41 +1469,60 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
   };
 
   return (
-    <main
-      className={`main-page fixed inset-0 overflow-hidden bg-[#061b22] text-[#10233a] ${
-        isWorkspaceMode || isSatelliteExplorerOpen ? "workspace-mode" : "landing-shell"
-      }`}
-    >
-      <img
-        src="/assets/orbivue-space-earth-bg.png"
-        alt=""
-        className="absolute inset-0 h-full w-full object-cover"
-        aria-hidden="true"
+    <main className="main-page orbivue-dashboard">
+      <button
+        type="button"
+        className="orbivue-mobile-menu"
+        onClick={() => setIsSidebarOpen(true)}
+        aria-label="Open navigation"
+      >
+        <Menu size={18} />
+      </button>
+
+      {isSidebarOpen && <button type="button" className="orbivue-sidebar-scrim" onClick={() => setIsSidebarOpen(false)} aria-label="Close navigation" />}
+
+      <OrbivueSidebar
+        activeSection={currentNavSection}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        onNewChat={startNewChat}
+        onNavigate={(section) => {
+          if (section === "ask") {
+            openAskWorkflow();
+          }
+          if (section === "satellite") {
+            openSatelliteExplorer();
+          }
+          if (section === "intelligence") {
+            openCompareWorkflow();
+          }
+          if (section === "reports") {
+            openLatestReportFromHome();
+          }
+        }}
       />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(4,18,26,0.38)_0%,rgba(4,18,26,0.18)_38%,rgba(4,18,26,0.05)_100%)]" />
 
-      <div className="relative z-10 flex h-full min-h-0">
-        <WorkspaceSidebar
-          isOpen={isSidebarOpen}
-          isCollapsed={isSidebarCollapsed}
-          onClose={() => setIsSidebarOpen(false)}
-          onToggleCollapse={() => setIsSidebarCollapsed((current) => !current)}
-          onNewChat={startNewChat}
-          onOpenAsk={openAskWorkflow}
-          onOpenCompare={openCompareWorkflow}
-          onOpenRecentChat={openRecentChat}
-          activeSection={isCompareWorkflow ? "compare" : "ask"}
-        />
+      <div className="orbivue-command-shell">
+        <header className="orbivue-topbar">
+          <div>
+            <p className="orbivue-kicker">Remote-sensing vision-language platform</p>
+            <h1>Ask ORBIVUE</h1>
+            <span className="sr-only">Signed in as {userName}</span>
+          </div>
+          <div className="orbivue-topbar-actions">
+            <span className={`orbivue-api-status is-${apiStatus}`}>
+              <span aria-hidden="true" />
+              {apiStatusLabel(apiStatus)}
+            </span>
+            <button type="button" className="orbivue-icon-button" aria-label="Settings">
+              <Settings size={18} />
+            </button>
+          </div>
+        </header>
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <WorkspaceHeader
-            showMenuButton
-            onMenuClick={() => setIsSidebarOpen(true)}
-            onSidebarToggle={() => setIsSidebarCollapsed((current) => !current)}
-          />
-
-          {isSatelliteExplorerOpen ? (
-            <section className="workspace-stage flex min-h-0 flex-1 items-center justify-center px-4 py-3 lg:px-6">
+        <div className="orbivue-work-grid">
+          <section className="orbivue-primary-column">
+            {isSatelliteExplorerOpen ? (
               <SatelliteExplorer
                 onClose={() => {
                   setIsSatelliteExplorerOpen(false);
@@ -1281,177 +1531,56 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
                 onUseSingleImage={useSatelliteSingleImage}
                 onUseTemporalImages={useSatelliteTemporalImages}
               />
-            </section>
-          ) : isWorkspaceMode ? (
-            <section className="workspace-stage flex min-h-0 flex-1 items-center justify-center px-4 py-3 lg:px-6">
-              <ChatWorkspace
-                query={query}
-                onQueryChange={updateQuery}
-                onSubmit={submitQuery}
-                isLoading={isBusy}
-                isChangeLoading={isChangeLoading}
-                error={error}
-                selectedImage={selectedImage}
-                selectedImageMetadata={selectedImageMetadata}
-                imagePreviewUrl={imagePreviewUrl}
-                compareMode={compareMode}
-                isCompareWorkflow={isCompareWorkflow}
-                onCompareModeChange={(mode) => {
-                  setIsCompareWorkflow(true);
-                  setSelectedImage(null);
-                  compressedImageRef.current = null;
-                  setCompareMode(mode);
-                  setError("");
-                  setHasWorkspaceOpened(true);
-                }}
-                temporalImages={temporalImages}
-                temporalImageMetadata={temporalImageMetadata}
-                temporalPreviewUrls={temporalPreviewUrls}
-                crossModalImages={crossModalImages}
-                crossModalPreviewUrls={crossModalPreviewUrls}
-                fileInputRef={fileInputRef}
-                onImageSelected={selectImage}
-                onClearImage={clearSelectedImage}
-                onRemoveTemporalImage={removeTemporalImage}
-                onReplaceTemporalImage={replaceTemporalImage}
-                onSwapTemporalImages={swapTemporalImages}
-                onRemoveCrossModalImage={removeCrossModalImage}
-                onReplaceCrossModalImage={replaceCrossModalImage}
-                onRetryChangeAnalysis={retryChangeAnalysis}
-                onOpenReport={setActiveReport}
-                onOpenSatelliteExplorer={openSatelliteExplorer}
-                messages={messages}
-                isWorkspaceMode
-              />
-            </section>
-          ) : (
-            <section className="main-content relative flex min-h-0 flex-1 flex-col px-5 pb-4 pt-1.5">
-              <div className="main-hero max-w-[600px]">
-                <div className="inline-flex items-center gap-2 rounded-lg bg-[#dcece2] px-3 py-1.5 text-[0.78rem] font-bold text-[#074d3b]">
-                  <Sparkles size={15} />
-                  Welcome to ORBiVUE
-                </div>
+            ) : (
+              <>
+                {!isWorkspaceMode && <OrbivueHero />}
+                <ChatWorkspace
+                  query={query}
+                  onQueryChange={updateQuery}
+                  onSubmit={submitQuery}
+                  isLoading={isBusy}
+                  isChangeLoading={isChangeLoading}
+                  error={error}
+                  selectedImage={selectedImage}
+                  selectedImageMetadata={selectedImageMetadata}
+                  imagePreviewUrl={imagePreviewUrl}
+                  compareMode={compareMode}
+                  isCompareWorkflow={isCompareWorkflow}
+                  onCompareModeChange={(mode) => {
+                    setIsCompareWorkflow(true);
+                    setSelectedImage(null);
+                    compressedImageRef.current = null;
+                    setCompareMode(mode);
+                    setError("");
+                    setHasWorkspaceOpened(true);
+                  }}
+                  temporalImages={temporalImages}
+                  temporalImageMetadata={temporalImageMetadata}
+                  temporalPreviewUrls={temporalPreviewUrls}
+                  crossModalImages={crossModalImages}
+                  crossModalPreviewUrls={crossModalPreviewUrls}
+                  fileInputRef={fileInputRef}
+                  onImageSelected={selectImage}
+                  onClearImage={clearSelectedImage}
+                  onRemoveTemporalImage={removeTemporalImage}
+                  onReplaceTemporalImage={replaceTemporalImage}
+                  onSwapTemporalImages={swapTemporalImages}
+                  onRemoveCrossModalImage={removeCrossModalImage}
+                  onReplaceCrossModalImage={replaceCrossModalImage}
+                  onRetryChangeAnalysis={retryChangeAnalysis}
+                  onOpenReport={setActiveReport}
+                  onOpenSatelliteExplorer={openSatelliteExplorer}
+                  messages={messages}
+                  isWorkspaceMode={isWorkspaceMode}
+                />
+              </>
+            )}
+          </section>
 
-                <h1 className="mt-2.5 text-[2.18rem] font-black leading-[1.03] tracking-normal text-white">
-                  Ask Earth anything.
-                  <br />
-                  Understand <span className="text-[#0b7b5b]">change</span>
-                  <br />
-                  with <span className="text-[#0b7b5b]">intelligence.</span>
-                </h1>
-
-                <p className="mt-2 max-w-[500px] text-[0.86rem] leading-5 text-white/84">
-                  OrbiVue combines multi-sensor data, AI models, and historical comparison to help you analyze
-                  changes, monitor the environment, and make confident decisions instantly.
-                </p>
-                <span className="sr-only">Signed in as {userName}</span>
-              </div>
-
-              <ChatWorkspace
-                query={query}
-                onQueryChange={updateQuery}
-                onSubmit={submitQuery}
-                isLoading={isBusy}
-                isChangeLoading={isChangeLoading}
-                error={error}
-                selectedImage={selectedImage}
-                selectedImageMetadata={selectedImageMetadata}
-                imagePreviewUrl={imagePreviewUrl}
-                compareMode={compareMode}
-                isCompareWorkflow={isCompareWorkflow}
-                onCompareModeChange={(mode) => {
-                  setIsCompareWorkflow(true);
-                  setSelectedImage(null);
-                  compressedImageRef.current = null;
-                  setCompareMode(mode);
-                  setError("");
-                  setHasWorkspaceOpened(true);
-                }}
-                temporalImages={temporalImages}
-                temporalImageMetadata={temporalImageMetadata}
-                temporalPreviewUrls={temporalPreviewUrls}
-                crossModalImages={crossModalImages}
-                crossModalPreviewUrls={crossModalPreviewUrls}
-                fileInputRef={fileInputRef}
-                onImageSelected={selectImage}
-                onClearImage={clearSelectedImage}
-                onRemoveTemporalImage={removeTemporalImage}
-                onReplaceTemporalImage={replaceTemporalImage}
-                onSwapTemporalImages={swapTemporalImages}
-                onRemoveCrossModalImage={removeCrossModalImage}
-                onReplaceCrossModalImage={replaceCrossModalImage}
-                onRetryChangeAnalysis={retryChangeAnalysis}
-                onOpenReport={setActiveReport}
-                onOpenSatelliteExplorer={openSatelliteExplorer}
-                messages={messages}
-                isWorkspaceMode={false}
-              />
-
-              <div className="main-card-grid mt-3.5 grid max-w-[790px] grid-cols-4 gap-3">
-                {actionCards.map((card) => {
-                  const Icon = card.icon;
-                  const isComingSoon = card.title === "3D & Terrain";
-                  return (
-                    <button
-                      type="button"
-                      key={card.title}
-                      onClick={
-                        isComingSoon
-                          ? undefined
-                          : card.title === "Generate Reports"
-                          ? openLatestReportFromHome
-                          : card.title === "Analyze Changes"
-                            ? openAskWorkflow
-                          : card.title === "Compare Over Time"
-                            ? () => {
-                                setIsCompareWorkflow(true);
-                                setSelectedImage(null);
-                                compressedImageRef.current = null;
-                                setCompareMode("temporal");
-                                setHasWorkspaceOpened(true);
-                              }
-                            : undefined
-                      }
-                      disabled={isComingSoon}
-                      className={`main-action-card min-h-[112px] rounded-xl border border-[#cbcfc8] bg-white/86 p-3 text-left shadow-sm backdrop-blur-sm transition ${
-                        isComingSoon
-                          ? "cursor-not-allowed opacity-72"
-                          : "hover:border-[#9bbfae] hover:bg-white/95"
-                      }`}
-                      title={isComingSoon ? `${card.title} coming soon` : card.title}
-                    >
-                      <span className={`flex h-9 w-9 items-center justify-center rounded-full ${card.color}`}>
-                        <Icon size={19} strokeWidth={1.8} />
-                      </span>
-                      <h2 className="mt-2 flex items-center gap-2 text-[0.86rem] font-extrabold text-[#111827]">
-                        {card.title}
-                        {isComingSoon && (
-                          <span className="rounded-full bg-[#f3f1ec] px-1.5 py-0.5 text-[0.56rem] font-black uppercase tracking-[0.08em] text-[#657a8c]">
-                            Soon
-                          </span>
-                        )}
-                      </h2>
-                      <p className="mt-1 text-[0.72rem] leading-[1.08rem] text-[#183958]">{card.description}</p>
-                      <ArrowRight className="mt-1 text-[#183958]" size={17} />
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-          <footer className="main-footer relative z-10 grid h-[3.4rem] grid-cols-2 items-center bg-[#005742] px-8 text-sm text-white/85">
-            <div className="flex items-center gap-3">
-              <span>ORBIVUE Earth intelligence workspace</span>
-            </div>
-            <div className="flex items-center justify-end gap-9">
-              <span>Privacy</span>
-              <span>Terms</span>
-              <span>Feedback</span>
-            </div>
-          </footer>
+          <TrustPanel rows={trustRows} latestReport={latestReport} />
         </div>
       </div>
+
       {(activeReport || isReportEmptyStateOpen) && (
         <ReportPreviewModal
           report={activeReport}
