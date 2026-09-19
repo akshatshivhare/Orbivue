@@ -3,10 +3,8 @@ import {
   AlertTriangle,
   ArrowLeftRight,
   ArrowRight,
-  CalendarDays,
   Check,
   FileText,
-  Layers,
   MapPin,
   type LucideIcon,
   Info,
@@ -297,9 +295,6 @@ export function ChatWorkspace({
             </div>
           )}
           <ComposerAction label="Location" icon={MapPin} onClick={onOpenSatelliteExplorer} />
-          <ComposerAction label="Attach Area" icon={Layers} comingSoon />
-          <ComposerAction label="Date Range" icon={CalendarDays} comingSoon />
-          <ComposerAction label="Data Sources" icon={Layers} comingSoon />
           <div className="orbivue-composer-actions">
             <ComposerIconButtons
               canSubmit={canSubmit}
