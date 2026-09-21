@@ -10,6 +10,7 @@ from .gemini_client import (
     raise_user_facing_gemini_error,
 )
 from .providers import CoordinateOrder, get_grounding_provider
+from .response_language import language_instruction, localized_grounding_fallback
 
 try:
     from PIL import Image
@@ -280,12 +281,13 @@ def _log_grounding_box_debug(raw_boxes: Any, normalized_boxes: list[GroundingBox
         print("[SatQuery Grounding] label:", normalized_box["label"])
 
 
-def ground_image_with_gemini(image_path: str, user_query: str) -> GroundingResponse:
+def ground_image_with_gemini(image_path: str, user_query: str, response_language: str = "en") -> GroundingResponse:
     total_started_at = time.perf_counter()
     image_file = Path(image_path)
     provider = get_grounding_provider()
     image_size = _image_size(image_file)
     prompt = (
+        f"{language_instruction(response_language)}\n\n"
         "Locate only the object or region requested by the user in this image. "
         "Return precise bounding boxes around the requested visible object. "
         "Do not return a box covering the entire image unless the user's requested object "
@@ -293,7 +295,7 @@ def ground_image_with_gemini(image_path: str, user_query: str) -> GroundingRespo
         "return no bounding box. Return ONLY strict JSON. For OpenRouter/Qwen return this shape: "
         '{"objects":[{"label":"requested object","bbox":[x1,y1,x2,y2]}]}. '
         "Coordinates may be normalized 0..1 or image pixel coordinates.\n\n"
-        f"User request: {user_query}"
+        f"User request: {user_query}\n\n{language_instruction(response_language)}"
     )
 
     try:
@@ -327,7 +329,7 @@ def ground_image_with_gemini(image_path: str, user_query: str) -> GroundingRespo
         print("[SatQuery Grounding] total latency:", f"{time.perf_counter() - total_started_at:.3f}s")
         return {
             "mode": "grounding",
-            "final_answer": "I could not confidently locate the requested object.",
+            "final_answer": localized_grounding_fallback(response_language, found=False),
             "bounding_boxes": [],
         }
 
@@ -341,7 +343,7 @@ def ground_image_with_gemini(image_path: str, user_query: str) -> GroundingRespo
         print("[SatQuery Grounding] total latency:", f"{time.perf_counter() - total_started_at:.3f}s")
         return {
             "mode": "grounding",
-            "final_answer": "I could not confidently locate the requested object.",
+            "final_answer": localized_grounding_fallback(response_language, found=False),
             "bounding_boxes": [],
         }
 
@@ -353,7 +355,7 @@ def ground_image_with_gemini(image_path: str, user_query: str) -> GroundingRespo
         print("[SatQuery Grounding] total latency:", f"{time.perf_counter() - total_started_at:.3f}s")
         return {
             "mode": "grounding",
-            "final_answer": provider_final_answer or "I could not confidently locate the requested object.",
+            "final_answer": provider_final_answer or localized_grounding_fallback(response_language, found=False),
             "bounding_boxes": orbivue_boxes,
         }
 
@@ -370,14 +372,14 @@ def ground_image_with_gemini(image_path: str, user_query: str) -> GroundingRespo
         print("[SatQuery Grounding] total latency:", f"{time.perf_counter() - total_started_at:.3f}s")
         return {
             "mode": "grounding",
-            "final_answer": provider_final_answer or "I could not confidently locate the requested object.",
+            "final_answer": provider_final_answer or localized_grounding_fallback(response_language, found=False),
             "bounding_boxes": [],
         }
 
     first_label = normalized_boxes[0]["label"]
-    final_answer = provider_final_answer or f"The {first_label} is highlighted in the image."
+    final_answer = provider_final_answer or localized_grounding_fallback(response_language, found=True, label=first_label)
     if provider_final_answer is None and len(normalized_boxes) > 1:
-        final_answer = f"Highlighted {len(normalized_boxes)} matching regions in the image."
+        final_answer = localized_grounding_fallback(response_language, found=True, count=len(normalized_boxes))
 
     print("[SatQuery Grounding] total latency:", f"{time.perf_counter() - total_started_at:.3f}s")
     return {

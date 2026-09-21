@@ -29,6 +29,7 @@ async def cross_modal(
     optical_image: UploadFile = File(...),
     sar_image: UploadFile = File(...),
     query: str = Form(..., min_length=1, max_length=600),
+    response_language: str = Form(default="en"),
 ) -> dict[str, Any]:
     request_started_at = time.perf_counter()
     temp_paths: list[str] = []
@@ -43,7 +44,7 @@ async def cross_modal(
         print("[SatQuery CrossModal] sar bytes:", len(saved_sar.content))
 
         try:
-            result = await run_cross_modal_analysis(saved_optical.path, saved_sar.path, query)
+            result = await run_cross_modal_analysis(saved_optical.path, saved_sar.path, query, response_language)
         except GeminiAnalysisError as error:
             print("[SatQuery CrossModal] error type:", error.error_type)
             print("[SatQuery CrossModal] error:", repr(error))

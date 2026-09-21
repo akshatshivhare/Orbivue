@@ -48,6 +48,7 @@ def _grounding_error_response(error: Exception) -> dict[str, Any]:
 @router.post("/api/analyze", dependencies=[Depends(enforce_daily_ai_request_limit)])
 async def analyze(
     query: str = Form(..., min_length=1, max_length=600),
+    response_language: str = Form(default="en"),
     image: UploadFile | None = File(default=None),
 ) -> dict[str, Any]:
     request_started_at = time.perf_counter()
@@ -99,6 +100,7 @@ async def analyze(
                         analyze_image_with_gemini,
                         temp_path,
                         query,
+                        response_language,
                     )
                 except GeminiAnalysisError as error:
                     print("[SatQuery Analysis] error type:", error.error_type)
@@ -130,6 +132,7 @@ async def analyze(
                         ground_image_with_gemini,
                         temp_path,
                         query,
+                        response_language,
                     )
                 except GeminiAnalysisError as error:
                     print("[SatQuery Grounding] error type:", error.error_type)

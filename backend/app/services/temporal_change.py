@@ -10,6 +10,7 @@ from .gemini_client import (
     raise_user_facing_gemini_error,
 )
 from .providers import get_temporal_provider
+from .response_language import language_instruction
 
 ALLOWED_DIRECTIONS: set[str] = {
     "increased",
@@ -204,11 +205,13 @@ def _build_temporal_prompt(
     date_t1: str | None,
     date_t2: str | None,
     is_follow_up: bool,
+    response_language: str = "en",
 ) -> str:
     t1_label = f"T1 / BEFORE / earlier reference image{f' ({date_t1})' if date_t1 else ''}"
     t2_label = f"T2 / AFTER / later comparison image{f' ({date_t2})' if date_t2 else ''}"
     prompt = (
         "You are the temporal Earth-observation analysis component of OrbiVue.\n\n"
+        f"{language_instruction(response_language)} Translate only user-facing string fields such as summary, final_answer, descriptions, unchanged_features, possible_imaging_effects, and limitations. Keep enum/schema values unchanged.\n\n"
         "You are given two images of the same or approximately the same geographic location captured at different times.\n"
         f"IMAGE 1 is {t1_label}.\n"
         f"IMAGE 2 is {t2_label}.\n\n"
@@ -260,6 +263,7 @@ def analyze_change_with_gemini(
     user_query: str | None = None,
     date_t1: str | None = None,
     date_t2: str | None = None,
+    response_language: str = "en",
 ) -> ChangeAnalysisResponse:
     total_started_at = time.perf_counter()
     image_t1 = Path(image_t1_path)
@@ -274,6 +278,7 @@ def analyze_change_with_gemini(
         date_t1=date_t1,
         date_t2=date_t2,
         is_follow_up=is_follow_up,
+        response_language=response_language,
     )
 
     try:

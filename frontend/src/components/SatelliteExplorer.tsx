@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { apiUrl } from "../config/api";
+import type { LanguageCode, TranslationKey } from "../i18n/translations";
 import type { SatelliteImageryMetadata } from "./workspaceTypes";
 
 type LocationResult = {
@@ -64,6 +65,8 @@ type SatelliteExplorerProps = {
     afterFile: File,
     afterMetadata: SatelliteImageryMetadata
   ) => void;
+  language: LanguageCode;
+  t: (key: TranslationKey) => string;
 };
 
 const DEFAULT_MAP_CENTER = { lat: 20, lon: 78 };
@@ -210,7 +213,7 @@ function tileUrl(x: number, y: number, zoom: number) {
   return `https://tile.openstreetmap.org/${zoom}/${wrappedX}/${clampedY}.png`;
 }
 
-export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImages }: SatelliteExplorerProps) {
+export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImages, language, t }: SatelliteExplorerProps) {
   const [entryMode, setEntryMode] = useState<"search" | "map">("search");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<LocationResult[]>([]);
@@ -265,7 +268,7 @@ export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImag
         setError("No matching location found.");
       }
     } catch {
-      setError("Location search failed. Please try again.");
+      setError(t("sat.locationFailed"));
     } finally {
       setLoading("search", false);
     }
@@ -429,7 +432,7 @@ export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImag
       if (selectedDates.length === 1) {
         const [dateSelection] = selectedDates;
         const file = await fetchPreviewFile(dateSelection);
-        setSelectionNotice("Selected imagery loaded into the workspace.");
+        setSelectionNotice(t("sat.selectedLoaded"));
         onUseSingleImage(file, buildMetadata(dateSelection));
         return;
       }
@@ -439,10 +442,10 @@ export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImag
         fetchPreviewFile(beforeDate),
         fetchPreviewFile(afterDate),
       ]);
-      setSelectionNotice("Selected dates loaded into the workspace for comparison.");
+      setSelectionNotice(t("sat.datesLoaded"));
       onUseTemporalImages(beforeFile, buildMetadata(beforeDate), afterFile, buildMetadata(afterDate));
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Preview fetch failed. Please retry.");
+      setError(requestError instanceof Error ? requestError.message : t("sat.previewFailed"));
     } finally {
       setLoading("using", false);
     }
@@ -454,9 +457,9 @@ export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImag
         <div>
           <div className="inline-flex items-center gap-2 rounded-lg bg-[#dcece2] px-3 py-1 text-xs font-black text-[#074d3b]">
             <Sparkles size={14} />
-            Satellite Explorer
+            {t("sat.title")}
           </div>
-          <h1 className="mt-1.5 text-xl font-black text-[#0b1d31]">Find satellite imagery by place and date</h1>
+          <h1 className="mt-1.5 text-xl font-black text-[#0b1d31]">{t("sat.heading")}</h1>
         </div>
         <button
           type="button"
@@ -464,7 +467,7 @@ export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImag
           className="inline-flex items-center gap-2 rounded-lg border border-[#ccd8d3] bg-white px-3 py-2 text-sm font-black text-[#173452] shadow-sm transition hover:bg-[#e8f4eb]"
         >
           <X size={16} />
-          Close
+          {t("common.close")}
         </button>
       </div>
 
@@ -480,14 +483,14 @@ export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImag
                   entryMode === mode ? "bg-[#00624b] text-white" : "text-[#0b6048] hover:bg-[#e8f4eb]"
                 }`}
               >
-                {mode === "search" ? "Search Location" : "Select from Map"}
+                {mode === "search" ? t("sat.searchLocation") : t("sat.selectFromMap")}
               </button>
             ))}
           </div>
 
           {entryMode === "search" && (
             <div className="mb-3">
-              <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0b6048]">Search Location</label>
+              <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0b6048]">{t("sat.searchLocation")}</label>
               <div className="mt-1.5 flex gap-2">
                 <input
                   value={searchQuery}
@@ -507,7 +510,7 @@ export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImag
                   className="inline-flex items-center gap-2 rounded-lg bg-[#00624b] px-3 py-2 text-sm font-black text-white shadow-sm transition hover:bg-[#004d3b] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {status.search ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
-                  Search
+                  {t("common.search")}
                 </button>
               </div>
 
@@ -531,7 +534,7 @@ export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImag
             </div>
           )}
 
-          <SimpleOsmMap selectedLocation={selectedLocation} onSelectLocation={selectLocation} />
+          <SimpleOsmMap selectedLocation={selectedLocation} onSelectLocation={selectLocation} t={t} />
 
           {selectedLocation && (
             <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-[#e8f4eb] px-3 py-2 text-sm font-bold text-[#0b6048]">
@@ -547,7 +550,7 @@ export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImag
         <div className="flex min-h-0 flex-col gap-3 overflow-y-auto pr-1">
           <section className="rounded-xl border border-[#c2d6cd] bg-white/88 p-3 shadow-sm">
             <div className="mb-2 flex items-center justify-between gap-3">
-              <h2 className="text-sm font-black text-[#0b1d31]">Latest / Best Available Image</h2>
+              <h2 className="text-sm font-black text-[#0b1d31]">{t("sat.latest")}</h2>
               {status.latest && <Loader2 size={17} className="animate-spin text-[#0b7b5b]" />}
             </div>
 
@@ -559,25 +562,25 @@ export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImag
               />
             ) : (
               <div className="flex aspect-video items-center justify-center rounded-lg border border-dashed border-[#a9c9ba] bg-[#f7f4ed] text-sm font-bold text-[#657a8c]">
-                {selectedLocation ? "Preview loading or unavailable" : "Select a location to load imagery"}
+                {selectedLocation ? t("sat.previewLoading") : t("sat.selectLocation")}
               </div>
             )}
 
             {latestImagery && (
               <div className="mt-2 grid gap-1.5 text-xs font-semibold text-[#173452] sm:grid-cols-2">
-                <MetadataLine label="Provider" value={providerLabel(latestImagery.provider, latestImagery.fallback_used)} />
-                <MetadataLine label="Product" value={latestImagery.product || latestImagery.collection || "Imagery"} />
-                <MetadataLine label="Preview date" value={formatDate(latestImagery.selected_preview_date)} />
-                <MetadataLine label="Cloud cover" value={formatCloud(latestImagery.cloud_cover)} />
-                <MetadataLine label="Quality" value={latestImagery.preview_quality || latestImagery.quality || "unknown"} />
-                <MetadataLine label="Resolution" value={latestImagery.resolution_note || "Provided by backend"} />
+                <MetadataLine label={t("common.provider")} value={providerLabel(latestImagery.provider, latestImagery.fallback_used)} />
+                <MetadataLine label={t("common.product")} value={latestImagery.product || latestImagery.collection || "Imagery"} />
+                <MetadataLine label={t("sat.previewDate")} value={formatDate(latestImagery.selected_preview_date)} />
+                <MetadataLine label={t("sat.cloudCover")} value={formatCloud(latestImagery.cloud_cover)} />
+                <MetadataLine label={t("common.quality")} value={latestImagery.preview_quality || latestImagery.quality || "unknown"} />
+                <MetadataLine label={t("common.resolution")} value={latestImagery.resolution_note || "Provided by backend"} />
               </div>
             )}
 
             {latestImagery?.preview_quality === "poor" && (
               <p className="mt-2 inline-flex items-center gap-2 rounded-lg bg-[#fff4e5] px-2.5 py-1.5 text-xs font-bold text-[#8a4b00]">
                 <AlertTriangle size={14} />
-                Cloudy / low visibility imagery
+                {t("sat.cloudy")}
               </p>
             )}
 
@@ -588,7 +591,7 @@ export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImag
               className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#00624b] px-3 py-2 text-sm font-black text-white shadow-sm transition hover:bg-[#004d3b] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <CloudSun size={16} />
-              Select latest date
+              {t("sat.selectLatest")}
             </button>
           </section>
 
@@ -598,21 +601,21 @@ export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImag
                 type="button"
                 onClick={() => setViewedMonth((current) => monthStart(new Date(current.getFullYear(), current.getMonth() - 1, 1)))}
                 className="rounded-full border border-[#ccd8d3] bg-white p-1.5 text-[#173452] shadow-sm hover:bg-[#e8f4eb]"
-                aria-label="Previous month"
+                aria-label={t("sat.previousMonth")}
               >
                 <ChevronLeft size={16} />
               </button>
               <div className="text-center">
                 <h2 className="text-sm font-black text-[#0b1d31]">
-                  {new Intl.DateTimeFormat("en", { month: "long", year: "numeric" }).format(viewedMonth)}
+                  {new Intl.DateTimeFormat(language === "hi" ? "hi-IN" : "en", { month: "long", year: "numeric" }).format(viewedMonth)}
                 </h2>
-                {status.availability && <p className="text-xs font-semibold text-[#657a8c]">Loading availability...</p>}
+                {status.availability && <p className="text-xs font-semibold text-[#657a8c]">{t("sat.loadingAvailability")}</p>}
               </div>
               <button
                 type="button"
                 onClick={() => setViewedMonth((current) => monthStart(new Date(current.getFullYear(), current.getMonth() + 1, 1)))}
                 className="rounded-full border border-[#ccd8d3] bg-white p-1.5 text-[#173452] shadow-sm hover:bg-[#e8f4eb]"
-                aria-label="Next month"
+                aria-label={t("sat.nextMonth")}
               >
                 <ChevronRight size={16} />
               </button>
@@ -626,20 +629,20 @@ export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImag
             />
 
             <div className="mt-2 flex flex-wrap gap-2 text-[0.72rem] font-bold text-[#657a8c]">
-              <Legend label="Good imagery" className="bg-[#0b7b5b]" />
-              <Legend label="Fair imagery" className="bg-[#e7a52f]" />
-              <Legend label="Cloudy" className="bg-[#b86b64]" />
-              <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full border border-[#9ca8a2]" /> No imagery</span>
+              <Legend label={t("sat.goodImagery")} className="bg-[#0b7b5b]" />
+              <Legend label={t("sat.fairImagery")} className="bg-[#e7a52f]" />
+              <Legend label={t("sat.cloudyLegend")} className="bg-[#b86b64]" />
+              <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full border border-[#9ca8a2]" /> {t("sat.noImagery")}</span>
             </div>
 
             {availableDates.length === 0 && selectedLocation && !status.availability && (
-              <p className="mt-2 text-xs font-bold text-[#657a8c]">No satellite imagery found for this area/month.</p>
+              <p className="mt-2 text-xs font-bold text-[#657a8c]">{t("sat.noImageryMonth")}</p>
             )}
           </section>
 
           <section className="rounded-xl border border-[#c2d6cd] bg-white/88 p-3 shadow-sm">
             <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-sm font-black text-[#0b1d31]">Selected Dates</h2>
+              <h2 className="text-sm font-black text-[#0b1d31]">{t("sat.selectedDates")}</h2>
               {selectedDates.length > 0 && (
                 <button
                   type="button"
@@ -647,13 +650,13 @@ export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImag
                   className="inline-flex items-center gap-1 rounded-lg bg-[#eef4f0] px-2 py-1 text-xs font-black text-[#0b6048] hover:bg-[#dcece2]"
                 >
                   <RotateCcw size={13} />
-                  Clear
+                  {t("common.clear")}
                 </button>
               )}
             </div>
 
             {selectedDates.length === 0 ? (
-              <p className="text-sm font-semibold text-[#657a8c]">Pick one or two available imagery dates.</p>
+              <p className="text-sm font-semibold text-[#657a8c]">{t("sat.pickDates")}</p>
             ) : (
               <div className="grid gap-2 sm:grid-cols-2">
                 {selectedDates.map((item, index) => (
@@ -661,10 +664,10 @@ export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImag
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="text-xs font-black uppercase tracking-[0.12em] text-[#0b6048]">
-                          {selectedDates.length === 1 ? "Selected Image" : index === 0 ? "T1 / Before" : "T2 / After"}
+                          {selectedDates.length === 1 ? t("sat.selectedImage") : index === 0 ? `T1 / ${t("common.before")}` : `T2 / ${t("common.after")}`}
                         </div>
                         <div className="mt-1 text-sm font-black text-[#0b1d31]">{formatDate(item.date)}</div>
-                        <div className="mt-0.5 text-xs font-semibold text-[#657a8c]">Cloud: {formatCloud(item.cloud_cover)}</div>
+                        <div className="mt-0.5 text-xs font-semibold text-[#657a8c]">{t("common.cloud")}: {formatCloud(item.cloud_cover)}</div>
                       </div>
                       <button
                         type="button"
@@ -689,7 +692,7 @@ export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImag
               className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#00624b] px-3 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-[#004d3b] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {status.using ? <Loader2 size={17} className="animate-spin" /> : <CalendarDays size={17} />}
-              {selectedDates.length === 2 ? "Load dates for comparison" : "Load image into analysis"}
+              {selectedDates.length === 2 ? t("sat.loadComparison") : t("sat.loadImage")}
             </button>
           </section>
 
@@ -707,9 +710,11 @@ export function SatelliteExplorer({ onClose, onUseSingleImage, onUseTemporalImag
 function SimpleOsmMap({
   selectedLocation,
   onSelectLocation,
+  t,
 }: {
   selectedLocation: LocationResult | null;
   onSelectLocation: (location: LocationResult) => void;
+  t: (key: TranslationKey) => string;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const center = selectedLocation ?? {
@@ -745,7 +750,7 @@ function SimpleOsmMap({
     const point = pointToLatLon(clickX, clickY, MAP_ZOOM);
 
     onSelectLocation({
-      display_name: `Selected map point near ${point.lat.toFixed(4)}, ${point.lon.toFixed(4)}`,
+      display_name: `${t("sat.mapPoint")} ${point.lat.toFixed(4)}, ${point.lon.toFixed(4)}`,
       lat: point.lat,
       lon: point.lon,
     });
@@ -753,7 +758,7 @@ function SimpleOsmMap({
 
   const selectCenterPoint = () => {
     onSelectLocation({
-      display_name: `Selected map point near ${center.lat.toFixed(4)}, ${center.lon.toFixed(4)}`,
+      display_name: `${t("sat.mapPoint")} ${center.lat.toFixed(4)}, ${center.lon.toFixed(4)}`,
       lat: center.lat,
       lon: center.lon,
     });
@@ -774,7 +779,7 @@ function SimpleOsmMap({
       onPointerDown={handlePointerDown}
       onKeyDown={handleKeyDown}
       className="relative min-h-[300px] flex-1 cursor-crosshair overflow-hidden rounded-xl border border-[#a9c9ba] bg-[#dcece2] shadow-inner"
-      aria-label="Select a location from the map"
+      aria-label={t("sat.selectMapAria")}
       role="button"
       tabIndex={0}
     >
@@ -793,14 +798,14 @@ function SimpleOsmMap({
       {selectedLocation && (
         <span className="pointer-events-none absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-full flex-col items-center text-[#005b46]">
           <MapPin size={36} fill="#0b7b5b" className="drop-shadow-md" />
-          <span className="mt-1 rounded-full bg-white/92 px-2 py-1 text-[0.7rem] font-black shadow-sm">Selected</span>
+          <span className="mt-1 rounded-full bg-white/92 px-2 py-1 text-[0.7rem] font-black shadow-sm">{t("common.selected")}</span>
         </span>
       )}
       {!selectedLocation && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <span className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-2 text-sm font-black text-[#0b6048] shadow-sm">
             <LocateFixed size={16} />
-            Click anywhere to select a location
+            {t("sat.clickMap")}
           </span>
         </div>
       )}

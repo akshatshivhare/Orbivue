@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { BeforeAfterSlider } from "./BeforeAfterSlider";
 import { GroundingPreview } from "./GroundingPreview";
+import type { LanguageCode, TranslationKey } from "../i18n/translations";
 import type { ReportInput } from "./report/reportUtils";
 import type {
   ChangeAnalysisPayload,
@@ -64,6 +65,9 @@ type ChatWorkspaceProps = {
   onOpenSatelliteExplorer: () => void;
   messages: ChatMessage[];
   isWorkspaceMode: boolean;
+  language: LanguageCode;
+  t: (key: TranslationKey) => string;
+  experienceMode: "simple" | "expert";
 };
 
 export function ChatWorkspace({
@@ -97,6 +101,9 @@ export function ChatWorkspace({
   onOpenSatelliteExplorer,
   messages,
   isWorkspaceMode,
+  language,
+  t,
+  experienceMode,
 }: ChatWorkspaceProps) {
   const hasTemporalPair = Boolean(temporalImages.t1 && temporalImages.t2);
   const hasTemporalImage = Boolean(temporalImages.t1 || temporalImages.t2);
@@ -110,7 +117,7 @@ export function ChatWorkspace({
     : isCompareWorkflow && compareMode === "cross_modal"
       ? "cross_modal"
       : inferSingleImageLoadingMode(query);
-  const loadingMessage = useLoadingMessage(isLoading, loadingMode);
+  const loadingMessage = useLoadingMessage(isLoading, loadingMode, t);
 
   useEffect(() => {
     const history = messageHistoryRef.current;
@@ -154,16 +161,18 @@ export function ChatWorkspace({
           <div className="mx-auto flex min-h-[260px] w-full max-w-[760px] flex-1 flex-col justify-center px-3 text-center md:min-h-[320px]">
             <Sparkles size={26} className="mx-auto mb-2.5 text-[#123a5d]" />
             <h2 className="text-base font-black text-[#0b1d31] md:text-[1.14rem]">
-              Ask anything about changes, 3D, terrain, water, or history...
+              {t("composer.emptyTitle")}
             </h2>
-            <p className="mt-1 text-[0.78rem] text-[#506879]">Your geospatial AI assistant for Earth intelligence.</p>
+            <p className="mt-1 text-[0.78rem] text-[#506879]">{t("composer.emptySubtitle")}</p>
           </div>
         )}
 
         {isWorkspaceMode && (messages.length > 0 || error || isLoading) && (
           <div ref={messageHistoryRef} className="chat-history flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto pb-2 pr-2">
             {messages.map((message) =>
-              message.role === "assistant" && message.mode === "cross_modal" && message.crossModalImages ? (
+              experienceMode === "simple" && message.role === "assistant" ? (
+                <SimpleResultCard key={message.id} message={message} onOpenReport={onOpenReport} t={t} />
+              ) : message.role === "assistant" && message.mode === "cross_modal" && message.crossModalImages ? (
                 <CrossModalResultCard key={message.id} message={message} onOpenReport={onOpenReport} />
               ) : message.role === "assistant" && message.temporalImages && message.changeAnalysis ? (
                 <TemporalResultCard
@@ -183,7 +192,7 @@ export function ChatWorkspace({
                   }`}
                 >
                   <div className="mb-1 text-[0.68rem] font-black uppercase tracking-[0.14em] opacity-70">
-                    {message.role === "user" ? "User" : "OrbiVue AI"}
+                    {message.role === "user" ? t("common.user") : t("common.orbivueAi")}
                   </div>
                   {message.role === "user" && <MessageAttachments message={message} />}
                   {message.role === "assistant" ? (
@@ -215,7 +224,7 @@ export function ChatWorkspace({
                     className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#b42318] px-3 py-1.5 text-xs font-black text-white transition hover:bg-[#8f1c13]"
                   >
                     <RefreshCw size={14} />
-                    Retry comparison
+                    {t("analysis.retryComparison")}
                   </button>
                 )}
               </article>
@@ -226,8 +235,8 @@ export function ChatWorkspace({
         {!isWorkspaceMode && (
           <div className="orbivue-ask-input">
             <div className="orbivue-ask-label">
-              <span>Ask ORBIVUE</span>
-              <em>English</em>
+              <span>{t("composer.label")}</span>
+              <em>{language === "hi" ? t("language.hindi") : t("language.english")}</em>
             </div>
             <textarea
               value={query}
@@ -235,15 +244,30 @@ export function ChatWorkspace({
               onKeyDown={handleKeyDown}
               rows={4}
               className="orbivue-textarea"
-              placeholder="Ask a question after attaching satellite imagery..."
+              placeholder={t("composer.placeholderInitial")}
             />
           </div>
         )}
 
         <div className={isWorkspaceMode ? "orbivue-composer-panel" : "orbivue-composer-panel orbivue-composer-panel-inline"}>
           <div className="orbivue-composer-row">
-          {isWorkspaceMode && isCompareWorkflow && (
-            <CompareModeToggle compareMode={compareMode} onCompareModeChange={onCompareModeChange} disabled={isLoading} />
+          {isWorkspaceMode && isCompareWorkflow && experienceMode === "expert" && (
+            <CompareModeToggle compareMode={compareMode} onCompareModeChange={onCompareModeChange} disabled={isLoading} t={t} />
+          )}
+          {experienceMode === "simple" && !isCompareWorkflow && (
+            <div className="orbivue-simple-actions">
+              <button type="button" onClick={() => onCompareModeChange("temporal")} disabled={isLoading}>
+                {t("simple.compareTwoImages")}
+              </button>
+              <button type="button" onClick={() => onCompareModeChange("cross_modal")} disabled={isLoading}>
+                {t("simple.advancedComparison")}
+              </button>
+            </div>
+          )}
+          {experienceMode === "simple" && isCompareWorkflow && (
+            <div className="orbivue-simple-mode-label">
+              {compareMode === "cross_modal" ? t("simple.advancedComparisonHelp") : t("simple.compareTwoImages")}
+            </div>
           )}
           {isCompareWorkflow && compareMode === "temporal" && hasTemporalImage && (
             <TemporalAttachmentStrip
@@ -293,13 +317,15 @@ export function ChatWorkspace({
               </button>
             </div>
           )}
-          <ComposerAction label="Location" icon={MapPin} onClick={onOpenSatelliteExplorer} />
+          <ComposerAction label={t("composer.location")} icon={MapPin} onClick={onOpenSatelliteExplorer} />
           <div className="orbivue-composer-actions">
             <ComposerIconButtons
               canSubmit={canSubmit}
               fileInputRef={fileInputRef}
               onSubmit={onSubmit}
               isLoading={isLoading}
+              language={language}
+              t={t}
             />
           </div>
         </div>
@@ -311,9 +337,9 @@ export function ChatWorkspace({
                 hasTemporalPair ? "bg-[#e8f4eb] text-[#0b6048]" : "bg-[#f3f1ec] text-[#657a8c]"
               }`}
             >
-              {hasTemporalPair ? "T1 ↔ T2 Change Mode" : "T1 active"}
+              {hasTemporalPair ? t("composer.t1T2Mode") : t("composer.t1Active")}
             </span>
-            {!hasTemporalPair && <span>Add T2 / After image to enable change analysis.</span>}
+            {!hasTemporalPair && <span>{t("composer.addT2")}</span>}
           </div>
         )}
 
@@ -328,12 +354,14 @@ export function ChatWorkspace({
               className="orbivue-textarea is-compact"
               placeholder={
                 isCompareWorkflow && compareMode === "cross_modal"
-                  ? "Ask what complementary information the optical and SAR sensors reveal..."
+                  ? t("composer.placeholderCrossModal")
                   : isCompareWorkflow && hasTemporalPair
-                  ? "Ask a follow-up about changes between T1 and T2..."
+                  ? t("composer.placeholderTemporal")
                   : selectedImageMetadata
-                  ? "Ask anything about this satellite image..."
-                  : "Ask anything about changes, 3D, terrain, water, or history..."
+                  ? t("composer.placeholderImage")
+                  : experienceMode === "simple"
+                    ? t("simple.placeholder")
+                    : t("composer.placeholderWorkspace")
               }
             />
           </div>
@@ -363,10 +391,12 @@ function CompareModeToggle({
   compareMode,
   onCompareModeChange,
   disabled,
+  t,
 }: {
   compareMode: CompareMode;
   onCompareModeChange: (mode: CompareMode) => void;
   disabled: boolean;
+  t: (key: TranslationKey) => string;
 }) {
   return (
     <div className="orbivue-compare-mode inline-flex rounded-xl border border-[#b7d8c8] bg-white/82 p-0.5 shadow-sm" aria-label="Compare mode">
@@ -380,7 +410,7 @@ function CompareModeToggle({
             compareMode === mode ? "bg-[#00624b] text-white shadow-sm" : "text-[#0b6048] hover:bg-[#e8f4eb]"
           }`}
         >
-          {mode === "temporal" ? "Change Over Time" : "Optical + SAR"}
+          {mode === "temporal" ? t("mode.changeOverTime") : t("mode.crossModal")}
         </button>
       ))}
     </div>
@@ -478,22 +508,18 @@ function MessageThumb({
 
 type LoadingMode = "analysis" | "grounding" | "temporal" | "cross_modal";
 
-const LOADING_MESSAGES: Record<LoadingMode, string[]> = {
-  analysis: ["Preparing satellite AI...", "Loading vision specialist...", "Analyzing imagery..."],
-  grounding: ["Preparing visual grounding...", "Locating requested feature...", "Verifying candidate regions..."],
-  temporal: ["Preparing temporal analysis...", "Checking image compatibility...", "Comparing imagery..."],
-  cross_modal: [
-    "Preparing cross-sensor analysis...",
-    "Reading optical and SAR inputs...",
-    "Comparing sensor evidence...",
-  ],
+const LOADING_KEYS: Record<LoadingMode, TranslationKey[]> = {
+  analysis: ["analysis.loadingAnalysis"],
+  grounding: ["analysis.loadingGrounding"],
+  temporal: ["analysis.loadingTemporal"],
+  cross_modal: ["analysis.loadingCrossModal"],
 };
 
 function inferSingleImageLoadingMode(query: string): LoadingMode {
   return /\b(where|locate|find|highlight|detect|show|ground)\b/i.test(query) ? "grounding" : "analysis";
 }
 
-function useLoadingMessage(isLoading: boolean, mode: LoadingMode) {
+function useLoadingMessage(isLoading: boolean, mode: LoadingMode, t: (key: TranslationKey) => string) {
   const [stage, setStage] = useState(0);
 
   useEffect(() => {
@@ -504,13 +530,14 @@ function useLoadingMessage(isLoading: boolean, mode: LoadingMode) {
     }
 
     const timer = window.setInterval(() => {
-      setStage((current) => (current + 1) % LOADING_MESSAGES[mode].length);
+      setStage((current) => (current + 1) % LOADING_KEYS[mode].length);
     }, 1800);
 
     return () => window.clearInterval(timer);
   }, [isLoading, mode]);
 
-  return LOADING_MESSAGES[mode][stage] ?? LOADING_MESSAGES[mode][0];
+  const key = LOADING_KEYS[mode][stage] ?? LOADING_KEYS[mode][0];
+  return t(key);
 }
 
 function ModelText({ text, className = "" }: { text: string; className?: string }) {
@@ -551,6 +578,79 @@ function ModelText({ text, className = "" }: { text: string; className?: string 
         );
       })}
     </div>
+  );
+}
+
+function SimpleResultCard({
+  message,
+  onOpenReport,
+  t,
+}: {
+  message: ChatMessage;
+  onOpenReport: (report: ReportInput) => void;
+  t: (key: TranslationKey) => string;
+}) {
+  const [showDetails, setShowDetails] = useState(false);
+  const boxes = message.mode === "grounding" ? message.boundingBoxes ?? [] : [];
+  const title =
+    message.temporalImages && message.changeAnalysis
+      ? t("simple.changeSummary")
+      : message.mode === "grounding"
+        ? t("simple.objectsFound")
+        : t("simple.whatOrbivueSees");
+
+  return (
+    <article className="orbivue-simple-result mr-auto w-full rounded-[1rem] border border-[#c2d6cd] bg-white/95 p-4 text-[#14314b] shadow-[0_12px_34px_rgba(16,35,58,0.09)]">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <div className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#0b6048]">
+            {t("simple.resultStatus")}
+          </div>
+          <h3 className="mt-1 text-base font-black text-[#0b1d31]">{title}</h3>
+        </div>
+        <span className="rounded-full bg-[#e8f4eb] px-3 py-1 text-xs font-bold text-[#0b6048]">
+          {message.mode === "grounding" && boxes.length > 0
+            ? `${boxes.length} ${t("analysis.localized")}`
+            : t("trust.complete")}
+        </span>
+      </div>
+
+      {message.mode === "grounding" && message.imageUrl && (
+        <div className="mb-3">
+          <GroundingPreview
+            imageUrl={message.imageUrl}
+            imageName={message.imageName || "Uploaded image"}
+            boundingBoxes={boxes}
+          />
+        </div>
+      )}
+
+      <ModelText text={message.text} />
+
+      <p className="mt-3 rounded-lg bg-[#f7f4ed] px-3 py-2 text-xs font-bold leading-5 text-[#456172]">
+        {t("simple.aiReviewNote")}
+      </p>
+
+      <button
+        type="button"
+        className="mt-3 inline-flex items-center gap-2 rounded-lg border border-[#a9c9ba] bg-white px-3 py-2 text-xs font-black text-[#074d3b] shadow-sm transition hover:bg-[#dcece2]"
+        onClick={() => setShowDetails((current) => !current)}
+      >
+        {showDetails ? t("simple.hideTechnicalDetails") : t("simple.viewTechnicalDetails")}
+      </button>
+
+      {showDetails && (
+        <div className="mt-3">
+          {message.mode === "cross_modal" && message.crossModalImages ? (
+            <CrossModalResultCard message={message} onOpenReport={onOpenReport} />
+          ) : message.temporalImages && message.changeAnalysis ? (
+            <TemporalResultCard message={message} onOpenReport={onOpenReport} />
+          ) : message.imageUrl ? (
+            <AssistantResultCard message={message} onOpenReport={onOpenReport} />
+          ) : null}
+        </div>
+      )}
+    </article>
   );
 }
 
@@ -1243,11 +1343,15 @@ function ComposerIconButtons({
   fileInputRef,
   onSubmit,
   isLoading,
+  language,
+  t,
 }: {
   canSubmit: boolean;
   fileInputRef: RefObject<HTMLInputElement>;
   onSubmit: () => void;
   isLoading: boolean;
+  language: LanguageCode;
+  t: (key: TranslationKey) => string;
 }) {
   return (
     <>
@@ -1255,30 +1359,30 @@ function ComposerIconButtons({
         type="button"
         onClick={() => fileInputRef.current?.click()}
         className="orbivue-control-button"
-        aria-label="Attach image"
+        aria-label={t("composer.attachImage")}
       >
         <Paperclip size={16} />
-        Attach
+        {t("composer.attach")}
       </button>
       <button
         type="button"
         disabled
-        title="Voice coming soon"
+        title={t("main.comingSoon")}
         className="orbivue-control-button is-disabled"
         aria-label="Voice input coming soon"
       >
         <Mic size={16} />
-        Mic
-        <span>Coming Soon</span>
+        {t("composer.mic")}
+        <span>{t("main.comingSoon")}</span>
       </button>
       <button
         type="button"
         disabled
-        title="More languages coming soon"
+        title="Language selector"
         className="orbivue-control-button is-disabled"
         aria-label="Language selector"
       >
-        English
+        {language === "hi" ? t("language.hindi") : t("language.english")}
       </button>
       <button
         type="button"
@@ -1291,7 +1395,7 @@ function ComposerIconButtons({
         ) : (
           <>
             <Send size={16} />
-            Send
+            {t("composer.send")}
           </>
         )}
       </button>

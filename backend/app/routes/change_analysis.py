@@ -40,6 +40,7 @@ async def change_analyze(
     query: str = Form(default="", max_length=600),
     date_t1: str | None = Form(default=None),
     date_t2: str | None = Form(default=None),
+    response_language: str = Form(default="en"),
 ) -> dict[str, Any]:
     request_started_at = time.perf_counter()
     temp_paths: list[str] = []
@@ -66,6 +67,7 @@ async def change_analyze(
                 query,
                 date_t1,
                 date_t2,
+                response_language,
             )
         except GeminiAnalysisError as error:
             print("[SatQuery Change] error type:", error.error_type)

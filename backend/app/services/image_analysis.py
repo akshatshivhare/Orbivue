@@ -6,6 +6,7 @@ from .gemini_client import (
     raise_user_facing_gemini_error,
 )
 from .providers import get_analysis_provider
+from .response_language import language_instruction
 
 
 def _is_generic_analysis_query(user_query: str) -> bool:
@@ -27,28 +28,31 @@ def _is_generic_analysis_query(user_query: str) -> bool:
     return normalized in generic_queries
 
 
-def _build_analysis_prompt(user_query: str) -> str:
+def _build_analysis_prompt(user_query: str, response_language: str = "en") -> str:
+    response_instruction = language_instruction(response_language)
     if _is_generic_analysis_query(user_query):
         return (
+            f"{response_instruction}\n\n"
             "Describe the important visible features in this satellite/aerial image. "
             "Mention roads, buildings, vegetation, water, infrastructure, terrain, "
             "and any notable structures if visible. Be concise and factual."
         )
 
     return (
+        f"{response_instruction}\n\n"
         "Answer the user's question about this satellite/aerial image. "
         "Be concise, factual, and mention only visible evidence when possible.\n\n"
         f"User question: {user_query}"
     )
 
 
-def analyze_image_with_gemini(image_path: str, user_query: str) -> str:
+def analyze_image_with_gemini(image_path: str, user_query: str, response_language: str = "en") -> str:
     image_file = Path(image_path)
-    prompt = _build_analysis_prompt(user_query)
+    prompt = _build_analysis_prompt(user_query, response_language)
     provider = get_analysis_provider()
 
     try:
-        answer = provider.analyze_image(image_file, prompt, user_query)
+        answer = provider.analyze_image(image_file, prompt, f"{user_query}\n\n{language_instruction(response_language)}")
     except GeminiAnalysisError as error:
         print("[SatQuery Analysis] error type:", error.error_type)
         print("[SatQuery Analysis] error:", repr(error))

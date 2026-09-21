@@ -19,6 +19,8 @@ import {
 import orbivueEarth from "../assets/orbivue-earth.png";
 import orbivueSatellite from "../assets/orbivue-satellite.png";
 import { apiUrl } from "../config/api";
+import { useLanguage, splitLines } from "../i18n/LanguageContext";
+import { SUPPORTED_LANGUAGES, type LanguageCode, type TranslationKey } from "../i18n/translations";
 import { ChatWorkspace } from "./ChatWorkspace";
 import { OrbivueLogo } from "./OrbivueLogo";
 import { ReportPreviewModal } from "./report/ReportPreviewModal";
@@ -50,11 +52,14 @@ const CHANGE_ANALYSIS_ENDPOINT = apiUrl("/api/change-analyze");
 const CROSS_MODAL_ENDPOINT = apiUrl("/api/cross-modal");
 const DEBUG_LOGS = import.meta.env.DEV;
 const THEME_STORAGE_KEY = "orbivue-theme";
+const EXPERIENCE_MODE_STORAGE_KEY = "orbivue-experience-mode";
 const GLOBAL_LIMIT_FRIENDLY_MESSAGE = "Today's demo analysis limit has been reached. Please try again tomorrow.";
 const CLIENT_LIMIT_FRIENDLY_MESSAGE = "You've reached today's analysis limit. Please try again tomorrow.";
 
 type ApiStatus = "connecting" | "connected" | "unavailable";
 type ThemeMode = "dark" | "light";
+type ExperienceMode = "simple" | "expert";
+type SessionMode = "standard" | "guest";
 type NavSection = "ask" | "satellite" | "intelligence" | "reports" | "watch" | "terrain" | "evaluation";
 type ApiResponseShape = {
   detail?: string;
@@ -78,22 +83,22 @@ type TrustPanelModel = {
 
 const navItems: Array<{
   id: NavSection;
-  label: string;
+  labelKey: TranslationKey;
   icon: LucideIcon;
   comingSoon?: boolean;
 }> = [
-  { id: "ask", label: "Ask ORBIVUE", icon: Sparkles },
-  { id: "satellite", label: "Satellite Explorer", icon: Globe2 },
-  { id: "watch", label: "Watch Areas", icon: Bell, comingSoon: true },
-  { id: "intelligence", label: "Intelligence", icon: BrainCircuit },
-  { id: "terrain", label: "3D Terrain", icon: Mountain, comingSoon: true },
-  { id: "reports", label: "Reports", icon: FileText },
-  { id: "evaluation", label: "Evaluation", icon: ShieldCheck, comingSoon: true },
+  { id: "ask", labelKey: "main.askOrbivue", icon: Sparkles },
+  { id: "satellite", labelKey: "main.satelliteExplorer", icon: Globe2 },
+  { id: "watch", labelKey: "main.watchAreas", icon: Bell, comingSoon: true },
+  { id: "intelligence", labelKey: "main.intelligence", icon: BrainCircuit },
+  { id: "terrain", labelKey: "main.terrain", icon: Mountain, comingSoon: true },
+  { id: "reports", labelKey: "main.reports", icon: FileText },
+  { id: "evaluation", labelKey: "main.evaluation", icon: ShieldCheck, comingSoon: true },
 ];
 
 type MainPageProps = {
   userName?: string;
-  sessionLabel?: string;
+  sessionMode?: SessionMode;
 };
 
 function debugLog(...args: unknown[]) {
@@ -137,6 +142,11 @@ function getInitialTheme(): ThemeMode {
   }
 
   return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+}
+
+function getInitialExperienceMode(): ExperienceMode {
+  const savedMode = window.localStorage.getItem(EXPERIENCE_MODE_STORAGE_KEY);
+  return savedMode === "simple" ? "simple" : "expert";
 }
 
 async function compressImageForAnalysis(file: File): Promise<File> {
@@ -453,6 +463,78 @@ function apiStatusLabel(status: ApiStatus) {
   return "Connecting";
 }
 
+function localizedApiStatus(status: ApiStatus, t: (key: TranslationKey) => string) {
+  if (status === "connected") {
+    return t("main.apiConnected");
+  }
+
+  if (status === "unavailable") {
+    return t("main.apiUnavailable");
+  }
+
+  return t("main.apiConnecting");
+}
+
+function localizedTrustValue(value: string, t: (key: TranslationKey) => string) {
+  const normalized = value.toUpperCase();
+  const map: Record<string, TranslationKey> = {
+    "NO INPUT": "trust.noInput",
+    "READY FOR ANALYSIS": "trust.ready",
+    "ANALYSIS COMPLETE": "trust.complete",
+    "EVIDENCE AVAILABLE": "trust.evidenceAvailable",
+    "REVIEW ADVISED": "trust.reviewAdvised",
+    "NOT EVALUATED": "trust.notEvaluated",
+    "INPUT READY": "trust.inputReady",
+    "GROUNDING EVIDENCE": "trust.groundingEvidence",
+    "DETERMINISTIC EVIDENCE": "trust.deterministicEvidence",
+    "MODEL INTERPRETATION": "trust.modelInterpretation",
+  };
+
+  const key = map[normalized];
+  return key ? t(key) : value;
+}
+
+function localizedModeLabel(value: string, t: (key: TranslationKey) => string) {
+  switch (value) {
+    case "OPTICAL + SAR":
+      return t("mode.crossModal");
+    case "TEMPORAL CHANGE":
+      return t("mode.changeOverTime");
+    case "VISUAL GROUNDING":
+      return t("analysis.localizationResult");
+    case "SCENE ANALYSIS":
+      return t("analysis.analysisResult");
+    case "NOT SELECTED":
+      return t("trust.notEvaluated");
+    default:
+      return value;
+  }
+}
+
+function localizedTrustLabel(label: string, t: (key: TranslationKey) => string) {
+  const map: Record<string, TranslationKey> = {
+    "Input Validation": "trust.inputValidation",
+    "Analysis Mode": "trust.analysisMode",
+    ChangeGuard: "trust.changeGuard",
+    "Cross-Sensor Check": "trust.crossSensor",
+    Evidence: "trust.evidence",
+  };
+
+  return map[label] ? t(map[label]) : label;
+}
+
+function localizedTrustSummary(model: TrustPanelModel, t: (key: TranslationKey) => string) {
+  if (model.overallState === "NO INPUT") {
+    return t("trust.noInputSummary");
+  }
+
+  if (model.overallState === "READY FOR ANALYSIS") {
+    return t("trust.busySummary");
+  }
+
+  return t("trust.analysisSummary");
+}
+
 function activeNavSection(isSatelliteExplorerOpen: boolean, isCompareWorkflow: boolean): NavSection {
   if (isSatelliteExplorerOpen) {
     return "satellite";
@@ -722,13 +804,22 @@ function OrbivueSidebar({
   onClose,
   onNewChat,
   onNavigate,
+  t,
+  experienceMode,
 }: {
   activeSection: NavSection;
   isOpen: boolean;
   onClose: () => void;
   onNewChat: () => void;
   onNavigate: (section: NavSection) => void;
+  t: (key: TranslationKey) => string;
+  experienceMode: ExperienceMode;
 }) {
+  const visibleNavItems =
+    experienceMode === "simple"
+      ? navItems.filter((item) => item.id === "ask" || item.id === "satellite" || item.id === "reports")
+      : navItems;
+
   return (
     <aside className={`orbivue-side-nav ${isOpen ? "is-open" : ""}`}>
       <div className="orbivue-side-brand">
@@ -746,13 +837,14 @@ function OrbivueSidebar({
 
       <button type="button" className="orbivue-new-chat" onClick={onNewChat}>
         <Sparkles size={16} />
-        New analysis
+        {t("main.newAnalysis")}
       </button>
 
       <nav className="orbivue-nav-list" aria-label="ORBIVUE workspace navigation">
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeSection === item.id;
+          const label = t(item.labelKey);
 
           return (
             <button
@@ -765,11 +857,11 @@ function OrbivueSidebar({
               }}
               disabled={item.comingSoon}
               className={`orbivue-nav-item ${isActive ? "is-active" : ""}`}
-              title={item.comingSoon ? `${item.label} coming soon` : item.label}
+              title={item.comingSoon ? `${label} ${t("main.comingSoon")}` : label}
             >
               <Icon size={17} />
-              <span>{item.label}</span>
-              {item.comingSoon && <em>Coming Soon</em>}
+              <span>{label}</span>
+              {item.comingSoon && <em>{t("main.comingSoon")}</em>}
             </button>
           );
         })}
@@ -777,27 +869,26 @@ function OrbivueSidebar({
 
       <div className="orbivue-side-note">
         <Radar size={16} />
-        <span>Verification states appear only when supported by the active pipeline.</span>
+        <span>{t("main.pipelineNote")}</span>
       </div>
     </aside>
   );
 }
 
-function OrbivueHero() {
+function OrbivueHero({ t }: { t: (key: TranslationKey) => string }) {
   return (
     <section className="orbivue-hero-panel">
       <div className="orbivue-hero-copy">
         <span>ORBIVUE</span>
         <h2>
-          Earth
-          <br />
-          Intelligence
-          <br />
-          You
-          <br />
-          Can Verify
+          {splitLines(t("hero.title")).map((line, index) => (
+            <span key={`${line}-${index}`}>
+              {line}
+              {index < splitLines(t("hero.title")).length - 1 && <br />}
+            </span>
+          ))}
         </h2>
-        <p>Analyze geospatial imagery through evidence-backed Earth intelligence.</p>
+        <p>{t("hero.subtitle")}</p>
       </div>
       <div className="orbivue-hero-visual" aria-hidden="true">
         <img src={orbivueEarth} alt="" className="orbivue-hero-earth" />
@@ -807,17 +898,17 @@ function OrbivueHero() {
   );
 }
 
-function TrustPanel({ model }: { model: TrustPanelModel }) {
+function TrustPanel({ model, t }: { model: TrustPanelModel; t: (key: TranslationKey) => string }) {
   return (
     <aside className="orbivue-trust-panel">
       <div className="orbivue-trust-header">
-        <span>ORBIVUE TRUST &amp; EVIDENCE</span>
+        <span>{t("trust.title")}</span>
         <ShieldCheck size={18} />
       </div>
 
       <div className={`orbivue-trust-state tone-${model.overallTone ?? "neutral"}`}>
-        <p>Current State</p>
-        <strong>{model.overallState}</strong>
+        <p>{t("trust.currentState")}</p>
+        <strong>{localizedTrustValue(model.overallState, t)}</strong>
         <small>{model.summary}</small>
       </div>
 
@@ -829,10 +920,10 @@ function TrustPanel({ model }: { model: TrustPanelModel }) {
             <article key={row.label} className={`orbivue-trust-row tone-${row.tone ?? "neutral"}`}>
               <Icon size={16} />
               <div>
-                <span>{row.label}</span>
+                <span>{localizedTrustLabel(row.label, t)}</span>
                 {row.detail && <small>{row.detail}</small>}
               </div>
-              <strong>{row.value}</strong>
+              <strong>{localizedTrustValue(row.value, t)}</strong>
             </article>
           );
         })}
@@ -840,13 +931,105 @@ function TrustPanel({ model }: { model: TrustPanelModel }) {
 
       <div className="orbivue-trust-footnote">
         <Activity size={15} />
-        <p>Verification states are shown only when supported by the current analysis pipeline.</p>
+        <p>{t("trust.footnote")}</p>
       </div>
     </aside>
   );
 }
 
-export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps) {
+function SettingsPanel({
+  theme,
+  onThemeChange,
+  language,
+  onLanguageChange,
+  experienceMode,
+  onExperienceModeChange,
+  onClose,
+  t,
+}: {
+  theme: ThemeMode;
+  onThemeChange: (theme: ThemeMode) => void;
+  language: LanguageCode;
+  onLanguageChange: (language: LanguageCode) => void;
+  experienceMode: ExperienceMode;
+  onExperienceModeChange: (mode: ExperienceMode) => void;
+  onClose: () => void;
+  t: (key: TranslationKey) => string;
+}) {
+  return (
+    <div className="orbivue-settings-backdrop" role="presentation" onClick={onClose}>
+      <section
+        className="orbivue-settings-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("settings.title")}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <header className="orbivue-settings-header">
+          <div>
+            <p>{t("settings.title")}</p>
+            <h2>ORBIVUE</h2>
+          </div>
+          <button type="button" className="orbivue-icon-button" onClick={onClose} aria-label={t("common.close")}>
+            <X size={18} />
+          </button>
+        </header>
+
+        <div className="orbivue-settings-section">
+          <h3>{t("settings.appearance")}</h3>
+          <div className="orbivue-settings-segment">
+            {(["light", "dark"] as ThemeMode[]).map((option) => (
+              <button
+                key={option}
+                type="button"
+                className={theme === option ? "is-active" : ""}
+                onClick={() => onThemeChange(option)}
+              >
+                {option === "light" ? t("settings.light") : t("settings.dark")}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="orbivue-settings-section">
+          <h3>{t("settings.language")}</h3>
+          <div className="orbivue-settings-segment">
+            {SUPPORTED_LANGUAGES.map((option) => (
+              <button
+                key={option.code}
+                type="button"
+                className={language === option.code ? "is-active" : ""}
+                onClick={() => onLanguageChange(option.code)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="orbivue-settings-section">
+          <h3>{t("settings.experienceMode")}</h3>
+          <div className="orbivue-mode-cards">
+            {(["simple", "expert"] as ExperienceMode[]).map((option) => (
+              <button
+                key={option}
+                type="button"
+                className={experienceMode === option ? "is-active" : ""}
+                onClick={() => onExperienceModeChange(option)}
+              >
+                <strong>{option === "simple" ? t("settings.simple") : t("settings.expert")}</strong>
+                <span>{option === "simple" ? t("settings.simpleDescription") : t("settings.expertDescription")}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+export function MainPage({ userName = "Explorer", sessionMode = "standard" }: MainPageProps) {
+  const { language, setLanguage, t } = useLanguage();
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -873,6 +1056,8 @@ export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [apiStatus, setApiStatus] = useState<ApiStatus>("connecting");
   const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
+  const [experienceMode, setExperienceMode] = useState<ExperienceMode>(getInitialExperienceMode);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const submitLockRef = useRef(false);
   const changeSubmitLockRef = useRef(false);
@@ -904,6 +1089,7 @@ export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps)
     error,
     isBusy,
   });
+  const sessionLabel = sessionMode === "guest" ? t("main.guestSession") : undefined;
   const isWorkspaceMode =
     hasWorkspaceOpened ||
     query.trim().length > 0 ||
@@ -915,6 +1101,10 @@ export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps)
   useEffect(() => {
     window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme]);
+
+  useEffect(() => {
+    window.localStorage.setItem(EXPERIENCE_MODE_STORAGE_KEY, experienceMode);
+  }, [experienceMode]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1358,12 +1548,12 @@ export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps)
     }
 
     if (!crossModalImages.optical) {
-      setError("Upload an optical image to continue.");
+      setError(t("analysis.uploadOptical"));
       return;
     }
 
     if (!crossModalImages.sar) {
-      setError("Upload a SAR image to continue.");
+      setError(t("analysis.uploadSar"));
       return;
     }
 
@@ -1418,6 +1608,7 @@ export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps)
       formData.append("optical_image", opticalImage, opticalImage.name);
       formData.append("sar_image", sarImage, sarImage.name);
       formData.append("query", trimmedQuery);
+      formData.append("response_language", language);
 
       const response = await fetch(CROSS_MODAL_ENDPOINT, {
         method: "POST",
@@ -1428,7 +1619,7 @@ export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps)
       debugLog("[OrbiVue CrossModal] response:", data);
 
       if (!response.ok) {
-        throw new Error(friendlyAnalysisError(response, data, "Cross-modal analysis request failed."));
+        throw new Error(friendlyAnalysisError(response, data, t("analysis.unavailable")));
       }
 
       const crossModalAnalysis = normalizeCrossModalResponse(data);
@@ -1469,7 +1660,7 @@ export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps)
       ]);
       setQuery("");
     } catch (requestError) {
-      setError(friendlyCaughtError(requestError, "Cross-sensor analysis could not be completed."));
+      setError(friendlyCaughtError(requestError, t("analysis.unavailable")));
     } finally {
       submitLockRef.current = false;
       setIsLoading(false);
@@ -1535,6 +1726,7 @@ export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps)
         formData.append("image_t1", imageT1, imageT1.name);
         formData.append("image_t2", imageT2, imageT2.name);
         formData.append("query", changeQuery.trim());
+        formData.append("response_language", language);
 
         const response = await fetch(CHANGE_ANALYSIS_ENDPOINT, {
           method: "POST",
@@ -1546,7 +1738,7 @@ export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps)
         debugLog("[OrbiVue Change] response:", data);
 
         if (!response.ok) {
-          throw new Error(friendlyAnalysisError(response, data, "Change analysis request failed."));
+          throw new Error(friendlyAnalysisError(response, data, t("analysis.unavailable")));
         }
 
         const changeAnalysis = normalizeChangeAnalysisResponse(data);
@@ -1594,13 +1786,13 @@ export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps)
         setQuery("");
       } catch (requestError) {
         analyzedPairRef.current = null;
-        setError(friendlyCaughtError(requestError, "Temporal comparison could not be completed. Please try again."));
+        setError(friendlyCaughtError(requestError, t("analysis.unavailable")));
       } finally {
         changeSubmitLockRef.current = false;
         setIsChangeLoading(false);
       }
     },
-    [temporalImageMetadata, temporalImages.t1, temporalImages.t2, temporalPreviewUrls.t1, temporalPreviewUrls.t2]
+    [language, t, temporalImageMetadata, temporalImages.t1, temporalImages.t2, temporalPreviewUrls.t1, temporalPreviewUrls.t2]
   );
 
   useEffect(() => {
@@ -1639,7 +1831,7 @@ export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps)
     }
 
     if (isCompareWorkflow && compareMode === "temporal" && !hasTemporalPair) {
-      setError("Add both BEFORE and AFTER images to compare.");
+      setError(t("composer.addT2"));
       return;
     }
 
@@ -1653,7 +1845,7 @@ export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps)
     }
 
     if (!selectedImage) {
-      setError("Upload an image to continue.");
+      setError(t("analysis.uploadImage"));
       return;
     }
 
@@ -1699,6 +1891,7 @@ export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps)
       }
 
       formData.append("query", trimmedQuery);
+      formData.append("response_language", language);
       formData.append("image", imageForAnalysis, imageForAnalysis.name);
 
       const response = await fetch(SINGLE_ANALYSIS_ENDPOINT, {
@@ -1712,7 +1905,7 @@ export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps)
       debugLog("[OrbiVue] response:", data);
 
       if (!response.ok) {
-        throw new Error(friendlyAnalysisError(response, data, "Analysis request failed."));
+        throw new Error(friendlyAnalysisError(response, data, t("analysis.unavailable")));
       }
 
       const finalAnswer =
@@ -1760,7 +1953,7 @@ export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps)
         fileInputRef.current.value = "";
       }
     } catch (requestError) {
-      setError(friendlyCaughtError(requestError, "ORBIVUE could not reach the analysis service. Please try again."));
+      setError(friendlyCaughtError(requestError, t("analysis.unavailable")));
     } finally {
       submitLockRef.current = false;
       setIsLoading(false);
@@ -1768,7 +1961,7 @@ export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps)
   };
 
   return (
-    <main className="main-page orbivue-dashboard" data-theme={theme}>
+    <main className={`main-page orbivue-dashboard ${experienceMode === "simple" ? "is-simple-mode" : ""}`} data-theme={theme}>
       <button
         type="button"
         className="orbivue-mobile-menu"
@@ -1785,6 +1978,8 @@ export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps)
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         onNewChat={startNewChat}
+        t={t}
+        experienceMode={experienceMode}
         onNavigate={(section) => {
           if (section === "ask") {
             openAskWorkflow();
@@ -1804,18 +1999,31 @@ export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps)
       <div className="orbivue-command-shell">
         <header className="orbivue-topbar">
           <div>
-            <p className="orbivue-kicker">Remote-sensing vision-language platform</p>
+            <p className="orbivue-kicker">{t("main.kicker")}</p>
             <div className="orbivue-title-row">
-              <h1>Ask ORBIVUE</h1>
+              <h1>{t("main.askOrbivue")}</h1>
               {sessionLabel && <span className="orbivue-session-label">{sessionLabel}</span>}
             </div>
+            {experienceMode === "simple" && <p className="orbivue-simple-subtitle">{t("simple.subtitle")}</p>}
             <span className="sr-only">Signed in as {userName}</span>
           </div>
           <div className="orbivue-topbar-actions">
             <span className={`orbivue-api-status is-${apiStatus}`}>
               <span aria-hidden="true" />
-              {apiStatusLabel(apiStatus)}
+              {localizedApiStatus(apiStatus, t)}
             </span>
+            <select
+              className="orbivue-language-select"
+              value={language}
+              onChange={(event) => setLanguage(event.target.value as LanguageCode)}
+              aria-label="Language selector"
+            >
+              {SUPPORTED_LANGUAGES.map((option) => (
+                <option key={option.code} value={option.code}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
             <button
               type="button"
               className="orbivue-icon-button"
@@ -1825,7 +2033,7 @@ export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps)
             >
               {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
             </button>
-            <button type="button" className="orbivue-icon-button" aria-label="Settings">
+            <button type="button" className="orbivue-icon-button" aria-label={t("settings.title")} onClick={() => setIsSettingsOpen(true)}>
               <Settings size={18} />
             </button>
           </div>
@@ -1841,10 +2049,12 @@ export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps)
                 }}
                 onUseSingleImage={useSatelliteSingleImage}
                 onUseTemporalImages={useSatelliteTemporalImages}
+                t={t}
+                language={language}
               />
             ) : (
               <>
-                {!isWorkspaceMode && <OrbivueHero />}
+                {!isWorkspaceMode && <OrbivueHero t={t} />}
                 <ChatWorkspace
                   query={query}
                   onQueryChange={updateQuery}
@@ -1883,14 +2093,30 @@ export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps)
                   onOpenSatelliteExplorer={openSatelliteExplorer}
                   messages={messages}
                   isWorkspaceMode={isWorkspaceMode}
+                  language={language}
+                  t={t}
+                  experienceMode={experienceMode}
                 />
               </>
             )}
           </section>
 
-          <TrustPanel model={trustPanelModel} />
+          {experienceMode === "expert" && <TrustPanel model={trustPanelModel} t={t} />}
         </div>
       </div>
+
+      {isSettingsOpen && (
+        <SettingsPanel
+          theme={theme}
+          onThemeChange={setTheme}
+          language={language}
+          onLanguageChange={setLanguage}
+          experienceMode={experienceMode}
+          onExperienceModeChange={setExperienceMode}
+          onClose={() => setIsSettingsOpen(false)}
+          t={t}
+        />
+      )}
 
       {(activeReport || isReportEmptyStateOpen) && (
         <ReportPreviewModal
@@ -1898,6 +2124,8 @@ export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps)
           isEmpty={isReportEmptyStateOpen}
           onClose={closeReportPreview}
           onStartAnalysis={returnToAskOrbiVue}
+          language={language}
+          t={t}
         />
       )}
     </main>

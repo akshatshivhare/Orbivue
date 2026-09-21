@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { GroundingPreview } from "../GroundingPreview";
 import { OrbivueLogo } from "../OrbivueLogo";
 import type { ChangeGuardPayload } from "../workspaceTypes";
+import type { LanguageCode, TranslationKey } from "../../i18n/translations";
 import { ReportCharts } from "./ReportCharts";
 import "./analysisReport.css";
 import {
@@ -20,9 +21,11 @@ import {
 
 type AnalysisReportProps = {
   report: ReportInput;
+  language: LanguageCode;
+  t: (key: TranslationKey) => string;
 };
 
-export function AnalysisReport({ report }: AnalysisReportProps) {
+export function AnalysisReport({ report, language, t }: AnalysisReportProps) {
   const generatedAt = formatGeneratedAt(report.generatedAt);
   const findings = findingsForReport(report);
   const chartData = chartDataForReport(report);
@@ -35,12 +38,12 @@ export function AnalysisReport({ report }: AnalysisReportProps) {
           <OrbivueLogo className="analysis-report-logo" />
           <div>
             <p className="analysis-report-kicker">ORBIVUE Earth Intelligence</p>
-            <h2>ORBIVUE Analysis Report</h2>
+            <h2>{t("report.analysisReport")}</h2>
           </div>
         </div>
         <dl className="analysis-report-meta">
           <div>
-            <dt>Analysis type</dt>
+            <dt>{t("report.mode")}</dt>
             <dd>{reportTypeLabel(report.mode)}</dd>
           </div>
           <div>
@@ -48,7 +51,7 @@ export function AnalysisReport({ report }: AnalysisReportProps) {
             <dd>{generatedAt}</dd>
           </div>
           <div>
-            <dt>Mode</dt>
+            <dt>{t("report.mode")}</dt>
             <dd>{modeLabel(report)}</dd>
           </div>
         </dl>
@@ -59,13 +62,13 @@ export function AnalysisReport({ report }: AnalysisReportProps) {
         <p>{report.query?.trim() || "Initial visual analysis"}</p>
       </section>
 
-      <ReportSection title="Executive Summary" label="Result overview">
+      <ReportSection title={t("report.summary")} label={t("report.resultOverview")}>
         <p className="analysis-report-answer">{executiveSummary(report)}</p>
       </ReportSection>
 
-      <ReportImages report={report} />
+      <ReportImages report={report} t={t} />
 
-      <ReportSection title="Key Findings" label="Readable findings">
+      <ReportSection title={t("report.keyFindings")} label={t("report.readableFindings")}>
         <div className="analysis-report-findings">
           {findings.length ? (
             findings.map((finding, index) => (
@@ -75,20 +78,20 @@ export function AnalysisReport({ report }: AnalysisReportProps) {
               </article>
             ))
           ) : (
-            <p className="analysis-report-empty">No separately parseable findings were available.</p>
+            <p className="analysis-report-empty">{t("report.noFindings")}</p>
           )}
         </div>
       </ReportSection>
 
-      <EvidenceSection report={report} />
+      <EvidenceSection report={report} t={t} />
 
-      {report.mode === "temporal" && report.changeAnalysis && <DetailedChangeSection report={report} />}
+      {report.mode === "temporal" && report.changeAnalysis && <DetailedChangeSection report={report} t={t} />}
 
-      <TrustEvidenceSection report={report} />
+      <TrustEvidenceSection report={report} t={t} />
 
       {chartData.length > 0 && <ReportCharts title={chartTitleForMode(report.mode)} data={chartData} />}
 
-      <ReportSection title="Limitations" label="Use with care">
+      <ReportSection title={t("report.limitations")} label={t("report.useWithCare")}>
         <ul className="analysis-report-list">
           {limitations.map((limitation, index) => (
             <li key={`${limitation}-${index}`}>{limitation}</li>
@@ -127,10 +130,10 @@ function ReportSection({
   );
 }
 
-function ReportImages({ report }: { report: ReportInput }) {
+function ReportImages({ report, t }: { report: ReportInput; t: (key: TranslationKey) => string }) {
   if (report.mode === "cross_modal") {
     return (
-      <ReportSection title="Input Imagery" label="Optical + SAR">
+      <ReportSection title={t("report.inputImagery")} label="Optical + SAR">
         <div className="analysis-report-image-grid">
           {report.opticalImage && (
             <ReportFigure imageUrl={report.opticalImage.url} label={report.opticalImage.label} name={report.opticalImage.name} />
@@ -145,7 +148,7 @@ function ReportImages({ report }: { report: ReportInput }) {
 
   if (report.mode === "temporal") {
     return (
-      <ReportSection title="Input Imagery" label="T1 / T2">
+      <ReportSection title={t("report.inputImagery")} label="T1 / T2">
         <div className="analysis-report-image-grid">
           {report.beforeImage && (
             <ReportFigure imageUrl={report.beforeImage.url} label={report.beforeImage.label} name={report.beforeImage.name} />
@@ -163,7 +166,7 @@ function ReportImages({ report }: { report: ReportInput }) {
   }
 
   return (
-    <ReportSection title="Input Imagery" label={report.mode === "grounding" ? "Grounding source" : "Analysis source"}>
+    <ReportSection title={t("report.inputImagery")} label={report.mode === "grounding" ? "Grounding source" : "Analysis source"}>
       {report.mode === "grounding" ? (
         <GroundingPreview
           imageUrl={report.sourceImage.url}
@@ -177,11 +180,11 @@ function ReportImages({ report }: { report: ReportInput }) {
   );
 }
 
-function EvidenceSection({ report }: { report: ReportInput }) {
+function EvidenceSection({ report, t }: { report: ReportInput; t: (key: TranslationKey) => string }) {
   if (report.mode === "grounding") {
     const boxes = report.boundingBoxes ?? [];
     return (
-      <ReportSection title="Evidence" label="Grounding evidence">
+      <ReportSection title={t("report.evidence")} label="Grounding evidence">
         <div className="analysis-report-findings">
           <article>
             <strong>{boxes.length} localized {boxes.length === 1 ? "region" : "regions"}</strong>
@@ -193,24 +196,24 @@ function EvidenceSection({ report }: { report: ReportInput }) {
   }
 
   if (report.mode === "temporal") {
-    return <TemporalGuardReportSection report={report} />;
+    return <TemporalGuardReportSection report={report} t={t} />;
   }
 
   return (
-    <ReportSection title="Evidence" label="Interpretation status">
+    <ReportSection title={t("report.evidence")} label="Interpretation status">
       <p className="analysis-report-answer">AI-generated interpretation — not independently verified.</p>
     </ReportSection>
   );
 }
 
-function DetailedChangeSection({ report }: { report: ReportInput }) {
+function DetailedChangeSection({ report, t }: { report: ReportInput; t: (key: TranslationKey) => string }) {
   const analysis = report.changeAnalysis;
   if (!analysis) {
     return null;
   }
 
   return (
-    <ReportSection title="Detailed Change Analysis" label="Temporal details">
+    <ReportSection title={t("report.detailedChange")} label="Temporal details">
       <div className="analysis-report-change-overview">
         <strong>Overall Change</strong>
         <p>{analysis.summary || analysis.final_answer}</p>
@@ -221,7 +224,7 @@ function DetailedChangeSection({ report }: { report: ReportInput }) {
           <div role="row" className="analysis-report-change-row is-header">
             <span>Change Type</span>
             <span>What Changed</span>
-            <span>Location / Region</span>
+            <span>{t("report.locationRegion")}</span>
             <span>Direction</span>
             <span>Notes</span>
           </div>
@@ -237,27 +240,27 @@ function DetailedChangeSection({ report }: { report: ReportInput }) {
         </div>
       )}
 
-      {analysis.unchanged.length > 0 && <ReportList title="Unchanged / Stable Features" items={analysis.unchanged} />}
+      {analysis.unchanged.length > 0 && <ReportList title={t("report.unchanged")} items={analysis.unchanged} />}
       {(analysis.possible_imaging_effects?.length ?? 0) > 0 && (
-        <ReportList title="Possible Imaging Effects" items={analysis.possible_imaging_effects ?? []} />
+        <ReportList title={t("report.imagingEffects")} items={analysis.possible_imaging_effects ?? []} />
       )}
     </ReportSection>
   );
 }
 
-function TemporalGuardReportSection({ report }: { report: ReportInput }) {
+function TemporalGuardReportSection({ report, t }: { report: ReportInput; t: (key: TranslationKey) => string }) {
   const guard = report.changeAnalysis?.change_guard;
 
   if (!guard) {
     return (
-      <ReportSection title="Evidence" label="Temporal status">
+      <ReportSection title={t("report.evidence")} label="Temporal status">
         <p className="analysis-report-answer">Model interpretation returned without ChangeGuard metadata.</p>
       </ReportSection>
     );
   }
 
   return (
-    <ReportSection title="Evidence" label="ChangeGuard">
+    <ReportSection title={t("report.evidence")} label="ChangeGuard">
       <div className="analysis-report-evidence-grid">
         <EvidenceMetric label="Status" value={temporalGuardStatusLabel(guard)} />
         <EvidenceMetric label="Exact match" value={guard.exact_match === undefined ? "Not provided" : guard.exact_match ? "Yes" : "No"} />
@@ -278,18 +281,18 @@ function TemporalGuardReportSection({ report }: { report: ReportInput }) {
   );
 }
 
-function TrustEvidenceSection({ report }: { report: ReportInput }) {
+function TrustEvidenceSection({ report, t }: { report: ReportInput; t: (key: TranslationKey) => string }) {
   const guard = report.changeAnalysis?.change_guard;
   const rows = [
-    ["Input Validation", "INPUT READY"],
-    ["Analysis Mode", modeLabel(report).toUpperCase()],
+    [t("trust.inputValidation"), "INPUT READY"],
+    [t("trust.analysisMode"), modeLabel(report).toUpperCase()],
     ["ChangeGuard", guard ? changeGuardReportStatus(guard) : "NOT EVALUATED"],
-    ["Cross-Sensor Check", report.mode === "cross_modal" ? "ANALYZED" : "NOT EVALUATED"],
-    ["Evidence Type", evidenceType(report)],
+    [t("trust.crossSensor"), report.mode === "cross_modal" ? "ANALYZED" : "NOT EVALUATED"],
+    [t("report.evidenceType"), evidenceType(report)],
   ];
 
   return (
-    <ReportSection title="Trust & Evidence" label="Conservative state">
+    <ReportSection title={t("report.trustEvidence")} label="Conservative state">
       <div className="analysis-report-trust-grid">
         {rows.map(([label, value]) => (
           <div key={label}>

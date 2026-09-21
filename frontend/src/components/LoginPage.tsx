@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import {
   ArrowRight,
   Check,
-  ChevronDown,
   Eye,
   EyeOff,
   Leaf,
@@ -14,6 +13,8 @@ import {
   Sun,
 } from "lucide-react";
 import loginSatelliteImage from "../assets/orbivue-login-satellite.png";
+import { splitLines, useLanguage } from "../i18n/LanguageContext";
+import { SUPPORTED_LANGUAGES, type LanguageCode } from "../i18n/translations";
 import { OrbivueLogo } from "./OrbivueLogo";
 
 const THEME_STORAGE_KEY = "orbivue-theme";
@@ -31,6 +32,7 @@ function getInitialLoginTheme(): LoginTheme {
 }
 
 export function LoginPage({ onLogin, onGuest }: LoginPageProps) {
+  const { language, setLanguage, t } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
@@ -64,34 +66,39 @@ export function LoginPage({ onLogin, onGuest }: LoginPageProps) {
           >
             {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
           </button>
-          <button type="button" className="login-language-button" aria-label="Language selector">
-            English
-            <ChevronDown size={15} />
-          </button>
+          <select
+            className="login-language-button"
+            value={language}
+            onChange={(event) => setLanguage(event.target.value as LanguageCode)}
+            aria-label="Language selector"
+          >
+            {SUPPORTED_LANGUAGES.map((option) => (
+              <option key={option.code} value={option.code}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
       </header>
 
       <section className="login-shell">
         <div className="login-hero">
-          <p className="login-kicker">From space to real-world insights</p>
+          <p className="login-kicker">{t("login.kicker")}</p>
           <h1>
-            A clearer
-            <br />
-            picture of
-            <br />
-            a brighter planet
+            {splitLines(t("login.headline")).map((line, index) => (
+              <span key={line}>
+                {line}
+                {index < splitLines(t("login.headline")).length - 1 && <br />}
+              </span>
+            ))}
           </h1>
-          <p className="login-subtitle">
-            Turn satellite imagery into trusted, actionable{" "}
-            <br />
-            intelligence with ORBIVUE.
-          </p>
+          <p className="login-subtitle">{t("login.subtitle")}</p>
 
           <figure className="login-satellite-card">
             <img src={loginSatelliteImage} alt="Satellite imagery preview of Rio de Janeiro, Brazil" />
             <figcaption className="login-location-chip">
               <MapPin size={16} />
-              Rio de Janeiro, Brazil
+              {t("login.location")}
             </figcaption>
             <span className="login-analysis-box" aria-hidden="true" />
             <div className="login-evidence-card">
@@ -100,14 +107,17 @@ export function LoginPage({ onLogin, onGuest }: LoginPageProps) {
               </span>
               <div>
                 <strong>
-                  Evidence-backed
-                  <br />
-                  Earth intelligence
+                  {splitLines(t("login.evidenceTitle")).map((line, index) => (
+                    <span key={line}>
+                      {line}
+                      {index < splitLines(t("login.evidenceTitle")).length - 1 && <br />}
+                    </span>
+                  ))}
                 </strong>
                 <p>
-                  Monitor change. Validate with evidence.
+                  {t("login.evidenceLine1")}
                   <br />
-                  Build a more resilient tomorrow.
+                  {t("login.evidenceLine2")}
                 </p>
               </div>
             </div>
@@ -119,7 +129,7 @@ export function LoginPage({ onLogin, onGuest }: LoginPageProps) {
               <span />
               <span />
             </div>
-            <p>Satellite imagery&nbsp;&nbsp;•&nbsp;&nbsp;AI analysis&nbsp;&nbsp;•&nbsp;&nbsp;Real-world impact</p>
+            <p>{t("login.imageFooter")}</p>
           </div>
         </div>
 
@@ -138,33 +148,33 @@ export function LoginPage({ onLogin, onGuest }: LoginPageProps) {
           </div>
 
           <div className="login-card-heading">
-            <h2>Welcome back</h2>
-            <p>Sign in to continue your satellite analysis.</p>
+            <h2>{t("login.welcome")}</h2>
+            <p>{t("login.signInSubtitle")}</p>
           </div>
 
           <label className="login-field">
-            <span>Email</span>
+            <span>{t("login.email")}</span>
             <div className="login-input-shell">
               <Mail size={20} />
               <input
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="name@company.com"
+                placeholder={t("login.emailPlaceholder")}
                 autoComplete="email"
               />
             </div>
           </label>
 
           <label className="login-field">
-            <span>Password</span>
+            <span>{t("login.password")}</span>
             <div className="login-input-shell">
               <Lock size={20} />
               <input
                 type={isPasswordVisible ? "text" : "password"}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder="Enter your password"
+                placeholder={t("login.passwordPlaceholder")}
                 autoComplete="current-password"
               />
               <button
@@ -188,56 +198,56 @@ export function LoginPage({ onLogin, onGuest }: LoginPageProps) {
               <span aria-hidden="true">
                 <Check size={16} />
               </span>
-              Remember me
+              {t("login.rememberMe")}
             </label>
             <button type="button" className="login-text-button" title="Coming soon">
-              Forgot password?
+              {t("login.forgotPassword")}
             </button>
           </div>
 
           <button type="submit" disabled={!canSubmit} className="login-submit">
-            Sign in
+            {t("login.signIn")}
             <ArrowRight size={21} />
           </button>
 
           <button type="button" className="login-guest" onClick={onGuest}>
-            Continue as Guest
+            {t("login.continueGuest")}
           </button>
 
           <div className="login-divider">
             <span />
-            OR
+            {t("login.or")}
             <span />
           </div>
 
           <button type="button" className="login-google" disabled title="Google sign-in coming soon">
             <span>G</span>
-            Continue with Google
-            <em>Coming Soon</em>
+            {t("login.continueGoogle")}
+            <em>{t("login.comingSoon")}</em>
           </button>
 
           <p className="login-create">
-            Don&apos;t have an account?{" "}
+            {t("login.noAccount")}{" "}
             <button type="button" title="Coming soon">
-              Create account
+              {t("login.createAccount")}
             </button>
           </p>
 
           <p className="login-demo-note">
             <ShieldCheck size={15} />
-            Guest mode opens the dashboard without creating an account.
+            {t("login.guestNote")}
           </p>
         </form>
       </section>
 
       <footer className="login-footer">
         <nav aria-label="Login support links">
-          <span>Privacy</span>
-          <span>Terms</span>
-          <span>Help &amp; Support</span>
+          <span>{t("login.privacy")}</span>
+          <span>{t("login.terms")}</span>
+          <span>{t("login.help")}</span>
         </nav>
         <p>
-          A more resilient tomorrow
+          {t("login.footer")}
           <span />
         </p>
       </footer>

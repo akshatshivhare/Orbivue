@@ -2,6 +2,7 @@ import { useState } from "react";
 import { LoginPage } from "./components/LoginPage";
 import { MainPage } from "./components/MainPage";
 import { OnboardingPage } from "./components/OnboardingPage";
+import { LanguageProvider } from "./i18n/LanguageContext";
 
 type SessionMode = "standard" | "guest";
 type Screen = "onboarding" | "login" | "main";
@@ -11,23 +12,33 @@ export default function App() {
   const [sessionMode, setSessionMode] = useState<SessionMode>("standard");
 
   if (screen === "main") {
-    return <MainPage sessionLabel={sessionMode === "guest" ? "Guest Session" : undefined} />;
+    return (
+      <LanguageProvider>
+        <MainPage sessionMode={sessionMode} />
+      </LanguageProvider>
+    );
   }
 
   if (screen === "login") {
     return (
-      <LoginPage
-        onLogin={() => {
-          setSessionMode("standard");
-          setScreen("main");
-        }}
-        onGuest={() => {
-          setSessionMode("guest");
-          setScreen("main");
-        }}
-      />
+      <LanguageProvider>
+        <LoginPage
+          onLogin={() => {
+            setSessionMode("standard");
+            setScreen("main");
+          }}
+          onGuest={() => {
+            setSessionMode("guest");
+            setScreen("main");
+          }}
+        />
+      </LanguageProvider>
     );
   }
 
-  return <OnboardingPage onFinish={() => setScreen("login")} />;
+  return (
+    <LanguageProvider>
+      <OnboardingPage onFinish={() => setScreen("login")} />
+    </LanguageProvider>
+  );
 }

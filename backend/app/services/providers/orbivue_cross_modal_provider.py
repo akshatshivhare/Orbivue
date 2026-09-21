@@ -16,7 +16,13 @@ class OrbiVueCrossModalProvider:
     name = "OrbiVue Cross-Modal"
     model = "orbivue-cross-modal-optical-sar"
 
-    async def analyze_cross_modal(self, optical_image_path: Path, sar_image_path: Path, query: str) -> str:
+    async def analyze_cross_modal(
+        self,
+        optical_image_path: Path,
+        sar_image_path: Path,
+        query: str,
+        response_language: str = "en",
+    ) -> str:
         if not ORBIVUE_CROSS_MODAL_API_URL:
             raise GeminiAnalysisError(
                 "OrbiVue cross-modal API URL is not configured.",
@@ -48,7 +54,7 @@ class OrbiVueCrossModalProvider:
                 response = await client.post(
                     cross_modal_url,
                     headers={"X-API-Key": ORBIVUE_CROSS_MODAL_API_KEY},
-                    data={"query": query},
+                    data={"query": query, "response_language": response_language},
                     files={
                         "optical_image": (
                             optical_image_path.name,

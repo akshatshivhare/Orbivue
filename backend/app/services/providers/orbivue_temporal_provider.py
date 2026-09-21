@@ -33,7 +33,10 @@ class OrbiVueTemporalProvider:
         )
 
     def analyze_temporal(self, image_t1_path: Path, image_t2_path: Path, prompt: str) -> str:
-        return asyncio.run(self._analyze_temporal_async(image_t1_path, image_t2_path, _extract_user_query(prompt)))
+        query = _extract_user_query(prompt)
+        if "Respond in simple, natural Hindi" in prompt:
+            query = f"{query}\n\nRespond in simple, natural Hindi. Keep technical remote-sensing terms in English where clearer."
+        return asyncio.run(self._analyze_temporal_async(image_t1_path, image_t2_path, query))
 
     async def _analyze_temporal_async(self, image_t1_path: Path, image_t2_path: Path, user_query: str) -> str:
         if not ORBIVUE_TEMPORAL_API_URL:

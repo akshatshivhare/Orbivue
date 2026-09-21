@@ -827,6 +827,166 @@ body:has(.orbivue-dashboard) {
   gap: 10px;
 }
 
+.orbivue-language-select {
+  min-height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card-soft);
+  padding: 0 12px;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.orbivue-simple-subtitle {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.orbivue-settings-backdrop {
+  position: fixed;
+  z-index: 60;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  background: rgba(3, 13, 24, 0.42);
+  padding: 72px 24px 24px;
+  backdrop-filter: blur(8px);
+}
+
+.orbivue-settings-panel {
+  width: min(420px, calc(100vw - 32px));
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--bg-card);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+  padding: 18px;
+  color: var(--text-main);
+}
+
+.orbivue-settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.orbivue-settings-header p,
+.orbivue-settings-section h3 {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.orbivue-settings-header h2 {
+  margin: 3px 0 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.orbivue-settings-section {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 15px;
+  margin-top: 15px;
+}
+
+.orbivue-settings-segment {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.orbivue-settings-segment button,
+.orbivue-mode-cards button {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-card-soft);
+  color: var(--text-secondary);
+  font-weight: 800;
+}
+
+.orbivue-settings-segment button {
+  min-height: 42px;
+}
+
+.orbivue-settings-segment button.is-active,
+.orbivue-mode-cards button.is-active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg-card));
+  color: var(--text-main);
+}
+
+.orbivue-mode-cards {
+  display: grid;
+  gap: 9px;
+}
+
+.orbivue-mode-cards button {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  text-align: left;
+}
+
+.orbivue-mode-cards strong {
+  color: var(--text-main);
+  font-size: 0.95rem;
+}
+
+.orbivue-mode-cards span {
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.orbivue-dashboard.is-simple-mode .orbivue-work-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.orbivue-dashboard.is-simple-mode .orbivue-primary-column {
+  max-width: 980px;
+  margin-inline: auto;
+}
+
+.orbivue-dashboard.is-simple-mode .orbivue-kicker {
+  opacity: 0.72;
+}
+
+.orbivue-simple-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.orbivue-simple-actions button,
+.orbivue-simple-mode-label {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card-soft);
+  padding: 8px 11px;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.orbivue-simple-actions button:hover {
+  border-color: var(--accent);
+  color: var(--text-main);
+}
+
+.orbivue-dashboard.is-simple-mode .orbivue-ask-card,
+.orbivue-dashboard.is-simple-mode .workspace-chat-card {
+  border-radius: 18px;
+}
+
 .orbivue-api-status,
 .orbivue-icon-button,
 .orbivue-mobile-menu {

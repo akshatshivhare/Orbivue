@@ -6,6 +6,7 @@ from typing import Any
 from ..config import CROSS_MODAL_PROVIDER
 from .gemini_client import GeminiAnalysisError
 from .providers.orbivue_cross_modal_provider import OrbiVueCrossModalProvider
+from .response_language import language_instruction
 
 _cross_modal_providers: dict[str, OrbiVueCrossModalProvider] = {}
 
@@ -25,7 +26,7 @@ def get_cross_modal_provider() -> OrbiVueCrossModalProvider:
     return _cross_modal_providers[CROSS_MODAL_PROVIDER]
 
 
-async def analyze_cross_modal(optical_image_path: str, sar_image_path: str, query: str) -> dict[str, str]:
+async def analyze_cross_modal(optical_image_path: str, sar_image_path: str, query: str, response_language: str = "en") -> dict[str, str]:
     total_started_at = time.perf_counter()
     provider = get_cross_modal_provider()
     query_text = query.strip()
@@ -46,7 +47,8 @@ async def analyze_cross_modal(optical_image_path: str, sar_image_path: str, quer
         output_text = await provider.analyze_cross_modal(
             Path(optical_image_path),
             Path(sar_image_path),
-            query_text,
+            f"{query_text}\n\n{language_instruction(response_language)}",
+            response_language=response_language,
         )
         print("[SatQuery CrossModal] provider latency:", f"{time.perf_counter() - provider_started_at:.3f}s")
     except GeminiAnalysisError:

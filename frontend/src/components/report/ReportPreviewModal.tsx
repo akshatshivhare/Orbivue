@@ -2,12 +2,15 @@ import { Printer, Sparkles, X } from "lucide-react";
 import { OrbivueLogo } from "../OrbivueLogo";
 import { AnalysisReport } from "./AnalysisReport";
 import type { ReportInput } from "./reportUtils";
+import type { LanguageCode, TranslationKey } from "../../i18n/translations";
 
 type ReportPreviewModalProps = {
   report: ReportInput | null;
   isEmpty?: boolean;
   onClose: () => void;
   onStartAnalysis: () => void;
+  language: LanguageCode;
+  t: (key: TranslationKey) => string;
 };
 
 export function ReportPreviewModal({
@@ -15,6 +18,8 @@ export function ReportPreviewModal({
   isEmpty = false,
   onClose,
   onStartAnalysis,
+  language,
+  t,
 }: ReportPreviewModalProps) {
   return (
     <div className="report-modal fixed inset-0 z-50 flex items-center justify-center bg-[#061b22]/58 p-4 backdrop-blur-sm">
@@ -28,8 +33,8 @@ export function ReportPreviewModal({
           <div className="flex min-w-0 items-center gap-3">
             <OrbivueLogo className="w-[150px] shrink-0" />
             <div className="hidden min-w-0 sm:block">
-              <p className="text-xs font-black uppercase tracking-[0.14em] text-[#0b6048]">Report Preview</p>
-              <h2 className="truncate text-lg font-black text-[#10233a]">AI Analysis Report</h2>
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-[#0b6048]">{t("report.preview")}</p>
+              <h2 className="truncate text-lg font-black text-[#10233a]">{t("report.aiReport")}</h2>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -61,9 +66,9 @@ export function ReportPreviewModal({
                 <Sparkles size={26} />
               </span>
               <div>
-                <h3 className="text-xl font-black text-[#10233a]">Run an analysis first to generate an OrbiVue report.</h3>
+                <h3 className="text-xl font-black text-[#10233a]">{t("report.emptyTitle")}</h3>
                 <p className="mt-2 text-sm leading-6 text-[#657a8c]">
-                  Complete a single-image, visual grounding, or temporal change analysis, then open the report preview from the result.
+                  {t("report.emptyBody")}
                 </p>
               </div>
               <button
@@ -71,11 +76,11 @@ export function ReportPreviewModal({
                 onClick={onStartAnalysis}
                 className="rounded-lg bg-[#00624b] px-4 py-2 text-sm font-black text-white shadow-sm transition hover:bg-[#004d3b]"
               >
-                Ask OrbiVue
+                {t("main.askOrbivue")}
               </button>
             </div>
           ) : (
-            <AnalysisReport report={report} />
+            <AnalysisReport report={report} language={language} t={t} />
           )}
         </div>
       </section>
