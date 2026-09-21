@@ -251,8 +251,49 @@ def augment_temporal_query(query: str, change_guard: dict[str, Any]) -> str:
         "These pixel statistics do not represent real-world changed area. "
         "Only describe changes that are directly supported by comparing BOTH "
         "images. Do not invent objects, removals, additions, causes, damage, "
-        "or land-use changes. If a semantic change cannot be confidently "
-        "verified from the images, explicitly say it is uncertain.\n\n"
+        "physical area, or land-use changes. Dimension normalization, if any, "
+        "does not establish geospatial registration.\n\n"
+        "Perform a careful visual comparison from IMAGE 1 / T1 / BEFORE to "
+        "IMAGE 2 / T2 / AFTER. Evaluate these categories without forcing a "
+        "change when evidence is weak:\n"
+        "1. Overall change summary.\n"
+        "2. Built environment changes: new/removed structures, visible "
+        "expansion or contraction, roads, or infrastructure alterations.\n"
+        "3. Vegetation / land-cover changes: vegetation gain/loss, bare "
+        "ground, or agricultural pattern changes when visibly observable.\n"
+        "4. Water changes: shoreline or water-extent changes only when "
+        "clearly visible.\n"
+        "5. Other visible differences: large objects, construction, or "
+        "landscape disturbance.\n"
+        "6. Potential non-semantic differences: cloud, shadow, illumination, "
+        "season, image quality, or resolution.\n\n"
+        "For each reported item distinguish one of: CLEARLY VISIBLE CHANGE, "
+        "POSSIBLE CHANGE, NOT RELIABLY OBSERVABLE. If a category has no "
+        "supported visible change, return \"None clearly observed\" in the "
+        "summary or limitations rather than inventing a change.\n\n"
+        "Return one strict JSON object using this directional schema:\n"
+        "{\n"
+        '  "mode": "change_analysis",\n'
+        '  "summary": "2-4 sentence overall change summary.",\n'
+        '  "final_answer": "Concise answer for the user.",\n'
+        '  "changes": [\n'
+        '    {\n'
+        '      "category": "Built environment | Vegetation | Water | Road / infrastructure | Buildings / structures | Bare land | Other visible change",\n'
+        '      "change": "Short change label.",\n'
+        '      "description": "Careful visual description.",\n'
+        '      "direction": "appeared|disappeared|increased|decreased|expanded|contracted|altered|modified|unchanged|uncertain",\n'
+        '      "location": "upper-left / central / lower-right / etc., or not reliably observable",\n'
+        '      "observability": "clearly_visible|possible|not_reliably_observable"\n'
+        '    }\n'
+        '  ],\n'
+        '  "unchanged_features": ["..."],\n'
+        '  "possible_imaging_effects": ["cloud differences", "illumination differences"],\n'
+        '  "limitations": ["..."],\n'
+        '  "change_map": null\n'
+        "}\n"
+        "Do not include confidence scores unless a calibrated value is truly "
+        "available. If structured JSON cannot fully express the result, keep "
+        "the summary and final_answer accurate and cautious.\n\n"
         "Original user question:\n"
         f"{query}"
     )

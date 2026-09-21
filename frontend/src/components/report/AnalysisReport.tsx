@@ -1,17 +1,17 @@
 import { ShieldCheck } from "lucide-react";
+import type { ReactNode } from "react";
 import { GroundingPreview } from "../GroundingPreview";
 import { OrbivueLogo } from "../OrbivueLogo";
+import type { ChangeGuardPayload } from "../workspaceTypes";
 import { ReportCharts } from "./ReportCharts";
-import { ReportSummary } from "./ReportSummary";
 import "./analysisReport.css";
 import {
-  buildSummaryCards,
   chartDataForReport,
   chartTitleForMode,
   findingsForReport,
+  formatGeneratedAt,
   formatGuardNumber,
   formatGuardPixelFraction,
-  formatGeneratedAt,
   reportTypeLabel,
   temporalGuardStatusLabel,
   temporalSemanticVerificationLabel,
@@ -23,25 +23,35 @@ type AnalysisReportProps = {
 };
 
 export function AnalysisReport({ report }: AnalysisReportProps) {
-  const summaryCards = buildSummaryCards(report);
-  const chartData = chartDataForReport(report);
-  const findings = findingsForReport(report);
   const generatedAt = formatGeneratedAt(report.generatedAt);
+  const findings = findingsForReport(report);
+  const chartData = chartDataForReport(report);
+  const limitations = limitationsForReport(report);
 
   return (
-    <article className="analysis-report" aria-label="OrbiVue AI Analysis Report">
+    <article className="analysis-report" aria-label="ORBIVUE analysis report">
       <header className="analysis-report-header">
         <div className="analysis-report-title">
           <OrbivueLogo className="analysis-report-logo" />
           <div>
-            <p className="analysis-report-kicker">OrbiVue Intelligence</p>
-            <h2>AI Analysis Report</h2>
+            <p className="analysis-report-kicker">ORBIVUE Earth Intelligence</p>
+            <h2>ORBIVUE Analysis Report</h2>
           </div>
         </div>
-        <div className="analysis-report-meta">
-          <span>{reportTypeLabel(report.mode)}</span>
-          <time>{generatedAt}</time>
-        </div>
+        <dl className="analysis-report-meta">
+          <div>
+            <dt>Analysis type</dt>
+            <dd>{reportTypeLabel(report.mode)}</dd>
+          </div>
+          <div>
+            <dt>Generated</dt>
+            <dd>{generatedAt}</dd>
+          </div>
+          <div>
+            <dt>Mode</dt>
+            <dd>{modeLabel(report)}</dd>
+          </div>
+        </dl>
       </header>
 
       <section className="analysis-report-query">
@@ -49,21 +59,13 @@ export function AnalysisReport({ report }: AnalysisReportProps) {
         <p>{report.query?.trim() || "Initial visual analysis"}</p>
       </section>
 
-      <ReportSummary cards={summaryCards} />
+      <ReportSection title="Executive Summary" label="Result overview">
+        <p className="analysis-report-answer">{executiveSummary(report)}</p>
+      </ReportSection>
 
-      <section className="analysis-report-section">
-        <div className="analysis-report-section-heading">
-          <h3>AI summary</h3>
-          <span>Model output</span>
-        </div>
-        <p className="analysis-report-answer">{report.finalAnswer}</p>
-      </section>
+      <ReportImages report={report} />
 
-      <section className="analysis-report-section">
-        <div className="analysis-report-section-heading">
-          <h3>Key findings</h3>
-          <span>Extracted text</span>
-        </div>
+      <ReportSection title="Key Findings" label="Readable findings">
         <div className="analysis-report-findings">
           {findings.length ? (
             findings.map((finding, index) => (
@@ -76,81 +78,51 @@ export function AnalysisReport({ report }: AnalysisReportProps) {
             <p className="analysis-report-empty">No separately parseable findings were available.</p>
           )}
         </div>
-      </section>
+      </ReportSection>
 
-      <ReportImages report={report} />
+      <EvidenceSection report={report} />
 
-      {report.mode === "temporal" && report.changeAnalysis?.change_guard && (
-        <TemporalGuardReportSection report={report} />
-      )}
+      {report.mode === "temporal" && report.changeAnalysis && <DetailedChangeSection report={report} />}
 
-      {report.mode === "grounding" && (
-        <section className="analysis-report-section">
-          <div className="analysis-report-section-heading">
-            <h3>Detection summary</h3>
-            <span>Bounding boxes</span>
-          </div>
-          <p className="analysis-report-answer">
-            {(report.boundingBoxes?.length ?? 0) > 0
-              ? `${report.boundingBoxes?.length ?? 0} verified region${
-                  (report.boundingBoxes?.length ?? 0) === 1 ? "" : "s"
-                } returned for this grounding request.`
-              : "No confident localization was produced for this query."}
-          </p>
-        </section>
-      )}
+      <TrustEvidenceSection report={report} />
 
-      <ReportCharts title={chartTitleForMode(report.mode)} data={chartData} />
+      {chartData.length > 0 && <ReportCharts title={chartTitleForMode(report.mode)} data={chartData} />}
+
+      <ReportSection title="Limitations" label="Use with care">
+        <ul className="analysis-report-list">
+          {limitations.map((limitation, index) => (
+            <li key={`${limitation}-${index}`}>{limitation}</li>
+          ))}
+        </ul>
+      </ReportSection>
 
       <section className="analysis-report-note">
         <ShieldCheck size={18} />
         <p>
-          Evidence note: visual analytics represent detected findings/categories from the AI result and should not
-          be interpreted as precise area or percentage measurements unless explicitly provided by the analysis.
+          ORBIVUE reports summarize current session outputs. AI-generated semantic interpretations are not
+          independent scientific verification unless deterministic evidence is explicitly listed.
         </p>
       </section>
     </article>
   );
 }
 
-function TemporalGuardReportSection({ report }: { report: ReportInput }) {
-  const guard = report.changeAnalysis?.change_guard;
-
-  if (!guard) {
-    return null;
-  }
-
+function ReportSection({
+  title,
+  label,
+  children,
+}: {
+  title: string;
+  label: string;
+  children: ReactNode;
+}) {
   return (
     <section className="analysis-report-section">
       <div className="analysis-report-section-heading">
-        <h3>Temporal comparison status</h3>
-        <span>Guard result</span>
+        <h3>{title}</h3>
+        <span>{label}</span>
       </div>
-      <div className="analysis-report-findings">
-        <article>
-          <strong>{temporalGuardStatusLabel(guard)}</strong>
-          <p>{temporalSemanticVerificationLabel(guard)}</p>
-        </article>
-        {guard.dimension_normalized && (
-          <article>
-            <strong>Image normalization</strong>
-            <p>Images were normalized to a common resolution for comparison. This does not establish geospatial registration.</p>
-          </article>
-        )}
-        {guard.alignment_warning && (
-          <article>
-            <strong>Alignment note</strong>
-            <p>{guard.alignment_warning}</p>
-          </article>
-        )}
-        <article>
-          <strong>Image-space metrics</strong>
-          <p>
-            Mean image difference: {formatGuardNumber(guard.mean_absolute_difference)}. Changed pixel fraction:{" "}
-            {formatGuardPixelFraction(guard.changed_pixel_fraction)}.
-          </p>
-        </article>
-      </div>
+      {children}
     </section>
   );
 }
@@ -158,34 +130,22 @@ function TemporalGuardReportSection({ report }: { report: ReportInput }) {
 function ReportImages({ report }: { report: ReportInput }) {
   if (report.mode === "cross_modal") {
     return (
-      <section className="analysis-report-section">
-        <div className="analysis-report-section-heading">
-          <h3>Optical and SAR imagery</h3>
-          <span>Sensor pair</span>
-        </div>
+      <ReportSection title="Input Imagery" label="Optical + SAR">
         <div className="analysis-report-image-grid">
           {report.opticalImage && (
-            <ReportFigure
-              imageUrl={report.opticalImage.url}
-              label={report.opticalImage.label}
-              name={report.opticalImage.name}
-            />
+            <ReportFigure imageUrl={report.opticalImage.url} label={report.opticalImage.label} name={report.opticalImage.name} />
           )}
           {report.sarImage && (
             <ReportFigure imageUrl={report.sarImage.url} label={report.sarImage.label} name={report.sarImage.name} />
           )}
         </div>
-      </section>
+      </ReportSection>
     );
   }
 
   if (report.mode === "temporal") {
     return (
-      <section className="analysis-report-section">
-        <div className="analysis-report-section-heading">
-          <h3>Before and after imagery</h3>
-          <span>T1 / T2</span>
-        </div>
+      <ReportSection title="Input Imagery" label="T1 / T2">
         <div className="analysis-report-image-grid">
           {report.beforeImage && (
             <ReportFigure imageUrl={report.beforeImage.url} label={report.beforeImage.label} name={report.beforeImage.name} />
@@ -194,7 +154,7 @@ function ReportImages({ report }: { report: ReportInput }) {
             <ReportFigure imageUrl={report.afterImage.url} label={report.afterImage.label} name={report.afterImage.name} />
           )}
         </div>
-      </section>
+      </ReportSection>
     );
   }
 
@@ -203,11 +163,7 @@ function ReportImages({ report }: { report: ReportInput }) {
   }
 
   return (
-    <section className="analysis-report-section">
-      <div className="analysis-report-section-heading">
-        <h3>Source image</h3>
-        <span>{report.mode === "grounding" ? "Grounding source" : "Analysis source"}</span>
-      </div>
+    <ReportSection title="Input Imagery" label={report.mode === "grounding" ? "Grounding source" : "Analysis source"}>
       {report.mode === "grounding" ? (
         <GroundingPreview
           imageUrl={report.sourceImage.url}
@@ -215,9 +171,134 @@ function ReportImages({ report }: { report: ReportInput }) {
           boundingBoxes={report.boundingBoxes ?? []}
         />
       ) : (
-      <ReportFigure imageUrl={report.sourceImage.url} label={report.sourceImage.label || "Source"} name={report.sourceImage.name} />
+        <ReportFigure imageUrl={report.sourceImage.url} label={report.sourceImage.label || "Source"} name={report.sourceImage.name} />
       )}
-    </section>
+    </ReportSection>
+  );
+}
+
+function EvidenceSection({ report }: { report: ReportInput }) {
+  if (report.mode === "grounding") {
+    const boxes = report.boundingBoxes ?? [];
+    return (
+      <ReportSection title="Evidence" label="Grounding evidence">
+        <div className="analysis-report-findings">
+          <article>
+            <strong>{boxes.length} localized {boxes.length === 1 ? "region" : "regions"}</strong>
+            <p>{boxes.length ? boxes.map((box) => box.label || "region").join(", ") : "No localized regions returned."}</p>
+          </article>
+        </div>
+      </ReportSection>
+    );
+  }
+
+  if (report.mode === "temporal") {
+    return <TemporalGuardReportSection report={report} />;
+  }
+
+  return (
+    <ReportSection title="Evidence" label="Interpretation status">
+      <p className="analysis-report-answer">AI-generated interpretation — not independently verified.</p>
+    </ReportSection>
+  );
+}
+
+function DetailedChangeSection({ report }: { report: ReportInput }) {
+  const analysis = report.changeAnalysis;
+  if (!analysis) {
+    return null;
+  }
+
+  return (
+    <ReportSection title="Detailed Change Analysis" label="Temporal details">
+      <div className="analysis-report-change-overview">
+        <strong>Overall Change</strong>
+        <p>{analysis.summary || analysis.final_answer}</p>
+      </div>
+
+      {analysis.changes.length > 0 && (
+        <div className="analysis-report-change-table" role="table" aria-label="Detected temporal changes">
+          <div role="row" className="analysis-report-change-row is-header">
+            <span>Change Type</span>
+            <span>What Changed</span>
+            <span>Location / Region</span>
+            <span>Direction</span>
+            <span>Notes</span>
+          </div>
+          {analysis.changes.map((change, index) => (
+            <div role="row" className="analysis-report-change-row" key={`${change.category}-${index}`}>
+              <span>{change.category}</span>
+              <span>{change.change || change.description}</span>
+              <span>{change.location || "Not specified"}</span>
+              <span>{change.direction}</span>
+              <span>{observabilityLabel(change.observability) || change.description}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {analysis.unchanged.length > 0 && <ReportList title="Unchanged / Stable Features" items={analysis.unchanged} />}
+      {(analysis.possible_imaging_effects?.length ?? 0) > 0 && (
+        <ReportList title="Possible Imaging Effects" items={analysis.possible_imaging_effects ?? []} />
+      )}
+    </ReportSection>
+  );
+}
+
+function TemporalGuardReportSection({ report }: { report: ReportInput }) {
+  const guard = report.changeAnalysis?.change_guard;
+
+  if (!guard) {
+    return (
+      <ReportSection title="Evidence" label="Temporal status">
+        <p className="analysis-report-answer">Model interpretation returned without ChangeGuard metadata.</p>
+      </ReportSection>
+    );
+  }
+
+  return (
+    <ReportSection title="Evidence" label="ChangeGuard">
+      <div className="analysis-report-evidence-grid">
+        <EvidenceMetric label="Status" value={temporalGuardStatusLabel(guard)} />
+        <EvidenceMetric label="Exact match" value={guard.exact_match === undefined ? "Not provided" : guard.exact_match ? "Yes" : "No"} />
+        <EvidenceMetric label="Qwen called" value={guard.qwen_called === undefined ? "Not provided" : guard.qwen_called ? "Yes" : "No"} />
+        <EvidenceMetric label="Semantic state" value={temporalSemanticVerificationLabel(guard)} />
+        <EvidenceMetric label="Mean image difference" value={formatGuardNumber(guard.mean_absolute_difference)} />
+        <EvidenceMetric label="Changed pixel fraction" value={formatGuardPixelFraction(guard.changed_pixel_fraction)} />
+      </div>
+      {guard.dimension_normalized && (
+        <p className="analysis-report-caution">
+          Images were normalized to a common resolution for image-space comparison. This does not establish geospatial registration.
+        </p>
+      )}
+      <p className="analysis-report-caution">
+        Changed pixel fraction is an image-space comparison metric and does not represent physical changed land area.
+      </p>
+    </ReportSection>
+  );
+}
+
+function TrustEvidenceSection({ report }: { report: ReportInput }) {
+  const guard = report.changeAnalysis?.change_guard;
+  const rows = [
+    ["Input Validation", "INPUT READY"],
+    ["Analysis Mode", modeLabel(report).toUpperCase()],
+    ["ChangeGuard", guard ? changeGuardReportStatus(guard) : "NOT EVALUATED"],
+    ["Cross-Sensor Check", report.mode === "cross_modal" ? "ANALYZED" : "NOT EVALUATED"],
+    ["Evidence Type", evidenceType(report)],
+  ];
+
+  return (
+    <ReportSection title="Trust & Evidence" label="Conservative state">
+      <div className="analysis-report-trust-grid">
+        {rows.map(([label, value]) => (
+          <div key={label}>
+            <span>{label}</span>
+            <strong>{value}</strong>
+          </div>
+        ))}
+      </div>
+    </ReportSection>
   );
 }
 
@@ -231,4 +312,141 @@ function ReportFigure({ imageUrl, label, name }: { imageUrl: string; label?: str
       </figcaption>
     </figure>
   );
+}
+
+function EvidenceMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <article>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </article>
+  );
+}
+
+function ReportList({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div className="analysis-report-mini-list">
+      <strong>{title}</strong>
+      <ul>
+        {items.map((item, index) => (
+          <li key={`${title}-${index}`}>{item}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function executiveSummary(report: ReportInput) {
+  if (report.mode === "grounding") {
+    const count = report.boundingBoxes?.length ?? 0;
+    return `${count} localized ${count === 1 ? "region was" : "regions were"} returned for the grounding request. ${sentenceSummary(report.finalAnswer)}`;
+  }
+
+  if (report.mode === "temporal") {
+    return sentenceSummary(report.changeAnalysis?.summary || report.finalAnswer);
+  }
+
+  if (report.mode === "cross_modal") {
+    return sentenceSummary(report.finalAnswer);
+  }
+
+  return sentenceSummary(report.finalAnswer);
+}
+
+function sentenceSummary(value: string) {
+  const sentences = value
+    .replace(/\*\*/g, "")
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean)
+    .slice(0, 4);
+
+  return sentences.join(" ") || "No summary text was available.";
+}
+
+function modeLabel(report: ReportInput) {
+  if (report.mode === "grounding") {
+    return "Visual Grounding";
+  }
+  if (report.mode === "temporal") {
+    return "Temporal Change";
+  }
+  if (report.mode === "cross_modal") {
+    return "Optical + SAR";
+  }
+  return "Scene Analysis";
+}
+
+function evidenceType(report: ReportInput) {
+  if (report.mode === "grounding" && (report.boundingBoxes?.length ?? 0) > 0) {
+    return "GROUNDING EVIDENCE";
+  }
+
+  const guard = report.changeAnalysis?.change_guard;
+  if (guard?.qwen_called === false || guard?.semantic_verification === "deterministic_no_change") {
+    return "DETERMINISTIC EVIDENCE";
+  }
+
+  if (report.mode === "temporal" && guard?.status === "measurable_difference") {
+    return "MODEL INTERPRETATION";
+  }
+
+  return "MODEL INTERPRETATION";
+}
+
+function changeGuardReportStatus(guard: ChangeGuardPayload) {
+  switch (guard.status) {
+    case "no_measurable_change":
+      return "NO MEASURABLE CHANGE";
+    case "measurable_difference":
+      return "VISIBLE CHANGE DETECTED";
+    case "incompatible":
+      return "ERROR";
+    default:
+      return guard.status?.replace(/_/g, " ").toUpperCase() || "NOT EVALUATED";
+  }
+}
+
+function limitationsForReport(report: ReportInput) {
+  const customLimitations = report.changeAnalysis?.limitations ?? [];
+
+  if (report.mode === "temporal") {
+    return [
+      ...customLimitations,
+      "The semantic change description is AI-generated when Qwen is called.",
+      "Dimension normalization is not geospatial registration.",
+      "Image-space changed-pixel fraction does not equal changed ground area.",
+      "Season, illumination, cloud, viewing conditions, resolution, or image quality may influence interpretation.",
+    ];
+  }
+
+  if (report.mode === "cross_modal") {
+    return [
+      "Cross-sensor interpretation may require expert verification.",
+      "The current Optical + SAR pipeline does not prove geospatial co-registration unless such metadata is explicitly available.",
+      "Semantic output is AI-generated and not independently verified.",
+    ];
+  }
+
+  if (report.mode === "grounding") {
+    return [
+      "Grounding boxes are localized model outputs and should be visually reviewed.",
+      "A returned bounding box is not independent scientific verification.",
+    ];
+  }
+
+  return ["AI-generated interpretation — not independently verified."];
+}
+
+function observabilityLabel(value?: string) {
+  switch (value) {
+    case "clearly_visible":
+      return "Clearly visible";
+    case "possible":
+      return "Possible change";
+    case "not_reliably_observable":
+      return "Not reliably observable";
+    default:
+      return value ? value.replace(/_/g, " ") : "";
+  }
 }

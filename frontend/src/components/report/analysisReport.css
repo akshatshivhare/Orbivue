@@ -50,19 +50,30 @@
 
 .analysis-report-meta {
   display: grid;
-  justify-items: end;
-  gap: 0.25rem;
+  min-width: min(100%, 300px);
+  gap: 0.45rem;
   color: #657a8c;
   font-size: 0.78rem;
   font-weight: 700;
-  text-align: right;
 }
 
-.analysis-report-meta span {
-  border-radius: 999px;
-  background: #e8f4eb;
-  padding: 0.35rem 0.7rem;
+.analysis-report-meta div {
+  display: grid;
+  grid-template-columns: minmax(80px, 0.75fr) minmax(0, 1fr);
+  gap: 0.75rem;
+  border-bottom: 1px solid #e1e8e4;
+  padding-bottom: 0.35rem;
+}
+
+.analysis-report-meta dt {
+  color: #657a8c;
+}
+
+.analysis-report-meta dd {
+  margin: 0;
   color: #0b6048;
+  font-weight: 900;
+  text-align: right;
 }
 
 .analysis-report-query,
@@ -142,6 +153,106 @@
 .analysis-report-findings article {
   border-left: 3px solid #0b7b5b;
   padding-left: 0.75rem;
+}
+
+.analysis-report-evidence-grid,
+.analysis-report-trust-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.analysis-report-evidence-grid article,
+.analysis-report-trust-grid div,
+.analysis-report-change-overview,
+.analysis-report-mini-list {
+  border: 1px solid #d8e1dc;
+  border-radius: 0.85rem;
+  background: #ffffff;
+  padding: 0.75rem;
+}
+
+.analysis-report-evidence-grid span,
+.analysis-report-trust-grid span,
+.analysis-report-mini-list > strong,
+.analysis-report-change-overview strong {
+  display: block;
+  color: #657a8c;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.analysis-report-evidence-grid strong,
+.analysis-report-trust-grid strong {
+  display: block;
+  margin-top: 0.35rem;
+  color: #10233a;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.analysis-report-caution {
+  margin: 0.75rem 0 0;
+  border-left: 3px solid #d49b2a;
+  background: #fff7e5;
+  padding: 0.65rem 0.75rem;
+  color: #754600;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.analysis-report-change-overview p,
+.analysis-report-mini-list ul,
+.analysis-report-list {
+  margin: 0.45rem 0 0;
+  color: #173452;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.analysis-report-change-table {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+}
+
+.analysis-report-change-row {
+  display: grid;
+  grid-template-columns: 0.9fr 1.3fr 1fr 0.75fr 1.1fr;
+  gap: 0.6rem;
+  align-items: start;
+  border: 1px solid #d8e1dc;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  padding: 0.65rem;
+  color: #173452;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.analysis-report-change-row.is-header {
+  border-color: #b7d8c8;
+  background: #e8f4eb;
+  color: #0b6048;
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.analysis-report-list {
+  padding-left: 1.1rem;
+}
+
+.analysis-report-mini-list {
+  margin-top: 0.85rem;
+}
+
+.analysis-report-mini-list ul {
+  padding-left: 1.1rem;
 }
 
 .analysis-report-findings strong {
@@ -270,8 +381,19 @@
   }
 
   .analysis-report-summary,
-  .analysis-report-image-grid {
+  .analysis-report-image-grid,
+  .analysis-report-evidence-grid,
+  .analysis-report-trust-grid {
     grid-template-columns: 1fr;
+  }
+
+  .analysis-report-change-row,
+  .analysis-report-change-row.is-header {
+    grid-template-columns: 1fr;
+  }
+
+  .analysis-report-change-row.is-header {
+    display: none;
   }
 
   .analysis-report-title {

@@ -5,9 +5,19 @@ ChangeDirection = Literal[
     "decreased",
     "appeared",
     "disappeared",
+    "expanded",
+    "contracted",
+    "reduced",
+    "altered",
     "modified",
     "unchanged",
     "uncertain",
+]
+
+ChangeObservability = Literal[
+    "clearly_visible",
+    "possible",
+    "not_reliably_observable",
 ]
 
 
@@ -15,7 +25,10 @@ class ChangeItem(TypedDict):
     category: str
     description: str
     direction: ChangeDirection
-    confidence: float
+    confidence: NotRequired[float]
+    change: NotRequired[str]
+    location: NotRequired[str]
+    observability: NotRequired[ChangeObservability]
 
 
 class ChangeGuardMetadata(TypedDict, total=False):
@@ -45,6 +58,8 @@ class ChangeAnalysisResponse(TypedDict):
     final_answer: str
     changes: list[ChangeItem]
     unchanged: list[str]
+    unchanged_features: NotRequired[list[str]]
+    possible_imaging_effects: NotRequired[list[str]]
     limitations: list[str]
     change_map: None
     change_guard: NotRequired[ChangeGuardMetadata]

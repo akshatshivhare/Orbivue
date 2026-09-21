@@ -16,17 +16,30 @@ ALLOWED_DIRECTIONS: set[str] = {
     "decreased",
     "appeared",
     "disappeared",
+    "expanded",
+    "contracted",
+    "reduced",
+    "altered",
     "modified",
     "unchanged",
     "uncertain",
 }
 
+ALLOWED_OBSERVABILITY: set[str] = {
+    "clearly_visible",
+    "possible",
+    "not_reliably_observable",
+}
 
-def _normalize_confidence(value: Any) -> float:
+
+def _normalize_confidence(value: Any) -> float | None:
+    if value is None:
+        return None
+
     try:
         confidence = float(value)
     except (TypeError, ValueError):
-        return 0.0
+        return None
     return round(max(0.0, min(1.0, confidence)), 3)
 
 
@@ -35,6 +48,11 @@ def _normalize_change_direction(value: Any) -> ChangeDirection:
     if direction in ALLOWED_DIRECTIONS:
         return direction  # type: ignore[return-value]
     return "uncertain"
+
+
+def _normalize_observability(value: Any) -> str | None:
+    observability = str(value or "").strip().casefold()
+    return observability if observability in ALLOWED_OBSERVABILITY else None
 
 
 def _normalize_string_list(value: Any) -> list[str]:
@@ -114,17 +132,29 @@ def _normalize_change_response(raw_response: Any, *, is_follow_up: bool) -> Chan
             if not isinstance(item, dict):
                 continue
             description = str(item.get("description") or "").strip()
+            change = str(item.get("change") or "").strip()
+            if not description:
+                description = change
             if not description:
                 continue
             category = str(item.get("category") or f"change {index + 1}").strip()
-            changes.append(
-                {
-                    "category": category,
-                    "description": description,
-                    "direction": _normalize_change_direction(item.get("direction")),
-                    "confidence": _normalize_confidence(item.get("confidence")),
-                }
-            )
+            normalized_item: ChangeItem = {
+                "category": category,
+                "description": description,
+                "direction": _normalize_change_direction(item.get("direction")),
+            }
+            confidence = _normalize_confidence(item.get("confidence"))
+            if confidence is not None:
+                normalized_item["confidence"] = confidence
+            if change:
+                normalized_item["change"] = change
+            location = str(item.get("location") or "").strip()
+            if location:
+                normalized_item["location"] = location
+            observability = _normalize_observability(item.get("observability"))
+            if observability:
+                normalized_item["observability"] = observability  # type: ignore[typeddict-item]
+            changes.append(normalized_item)
 
     summary = str(
         raw_response.get("summary")
@@ -145,15 +175,22 @@ def _normalize_change_response(raw_response: Any, *, is_follow_up: bool) -> Chan
     if not final_answer:
         final_answer = summary
 
+    unchanged = _normalize_string_list(raw_response.get("unchanged"))
+    unchanged_features = _normalize_string_list(raw_response.get("unchanged_features"))
+    possible_imaging_effects = _normalize_string_list(raw_response.get("possible_imaging_effects"))
     response: ChangeAnalysisResponse = {
         "mode": "change_vqa" if is_follow_up else "change_analysis",
         "summary": summary,
         "final_answer": final_answer,
         "changes": changes,
-        "unchanged": _normalize_string_list(raw_response.get("unchanged")),
+        "unchanged": unchanged_features or unchanged,
         "limitations": _normalize_string_list(raw_response.get("limitations")),
         "change_map": None,
     }
+    if unchanged_features:
+        response["unchanged_features"] = unchanged_features
+    if possible_imaging_effects:
+        response["possible_imaging_effects"] = possible_imaging_effects
     change_guard = _normalize_change_guard(raw_response.get("change_guard"))
     if change_guard is not None:
         response["change_guard"] = change_guard
@@ -176,23 +213,37 @@ def _build_temporal_prompt(
         f"IMAGE 1 is {t1_label}.\n"
         f"IMAGE 2 is {t2_label}.\n\n"
         "Compare IMAGE 2 / T2 / AFTER against IMAGE 1 / T1 / BEFORE. Never reverse the direction.\n"
-        "Identify only visually supported changes. Pay attention to buildings, built-up area, roads, "
-        "infrastructure, vegetation, water bodies, bare land, construction, urban expansion, agricultural "
-        "patterns, terrain, land-cover differences, and other clearly visible significant changes.\n"
+        "Identify only visually supported changes. Evaluate built environment, roads/infrastructure, "
+        "vegetation or land cover, water features, bare land, construction, agricultural patterns, terrain, "
+        "large objects, and landscape disturbance.\n"
         "Distinguish real change from differences caused by resolution, zoom, crop, viewing angle, lighting, "
-        "season, cloud cover, or color correction. Do not invent precise percentages. If alignment or image "
-        "quality makes a conclusion uncertain, say so.\n\n"
+        "season, cloud cover, shadow, image quality, or color correction. Do not invent precise percentages, "
+        "physical land area, causes, or damage. If a category has no supported visible change, do not include "
+        "it in changes; mention it only if useful as an unchanged feature or limitation.\n\n"
+        "For every reported change, classify observability as one of: clearly_visible, possible, "
+        "not_reliably_observable. Use not_reliably_observable when the images do not support a reliable "
+        "semantic conclusion.\n\n"
         "Return ONE strict JSON object only with this schema:\n"
         "{\n"
         '  "mode": "change_analysis" or "change_vqa",\n'
-        '  "summary": "Concise overall explanation.",\n'
-        '  "final_answer": "Direct answer for the user.",\n'
-        '  "changes": [{"category": "urbanization", "description": "...", "direction": "increased", "confidence": 0.91}],\n'
-        '  "unchanged": ["..."],\n'
+        '  "summary": "2-4 sentence overall change summary.",\n'
+        '  "final_answer": "Direct answer for the user, concise and cautious.",\n'
+        '  "changes": [\n'
+        '    {\n'
+        '      "category": "Built environment | Vegetation | Water | Road / infrastructure | Buildings / structures | Bare land | Other visible change",\n'
+        '      "change": "Short label for what changed.",\n'
+        '      "description": "Careful visual description without unsupported area claims.",\n'
+        '      "direction": "appeared|disappeared|increased|decreased|expanded|contracted|altered|modified|unchanged|uncertain",\n'
+        '      "location": "upper-left / central / lower-right / etc., or not reliably observable",\n'
+        '      "observability": "clearly_visible|possible|not_reliably_observable"\n'
+        '    }\n'
+        '  ],\n'
+        '  "unchanged_features": ["..."],\n'
+        '  "possible_imaging_effects": ["cloud differences", "illumination differences"],\n'
         '  "limitations": ["..."],\n'
         '  "change_map": null\n'
         "}\n"
-        'Allowed direction values: "increased", "decreased", "appeared", "disappeared", "modified", "unchanged", "uncertain".\n'
+        "Do not include confidence scores unless the model has a real calibrated value, which it usually does not.\n"
     )
 
     if is_follow_up:

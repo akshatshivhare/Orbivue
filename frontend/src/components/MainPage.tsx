@@ -355,14 +355,21 @@ function normalizeChangeItems(value: unknown): ChangeItem[] {
 
     const candidate = item as {
       category?: unknown;
+      change?: unknown;
       direction?: unknown;
       description?: unknown;
       confidence?: unknown;
+      location?: unknown;
+      observability?: unknown;
     };
+    const change =
+      typeof candidate.change === "string" && candidate.change.trim()
+        ? candidate.change.trim()
+        : "";
     const description =
       typeof candidate.description === "string" && candidate.description.trim()
         ? candidate.description.trim()
-        : "";
+        : change;
 
     if (!description) {
       return [];
@@ -383,6 +390,13 @@ function normalizeChangeItems(value: unknown): ChangeItem[] {
             : "uncertain",
         description,
         confidence,
+        ...(change ? { change } : {}),
+        ...(typeof candidate.location === "string" && candidate.location.trim()
+          ? { location: candidate.location.trim() }
+          : {}),
+        ...(typeof candidate.observability === "string" && candidate.observability.trim()
+          ? { observability: candidate.observability.trim() }
+          : {}),
       },
     ];
   });
@@ -402,7 +416,11 @@ function normalizeChangeAnalysisResponse(data: unknown): ChangeAnalysisPayload {
     summary: summary || finalAnswer,
     final_answer: finalAnswer,
     changes: normalizeChangeItems(source.changes),
-    unchanged: normalizeTextArray(source.unchanged),
+    unchanged: normalizeTextArray(source.unchanged_features).length
+      ? normalizeTextArray(source.unchanged_features)
+      : normalizeTextArray(source.unchanged),
+    unchanged_features: normalizeTextArray(source.unchanged_features),
+    possible_imaging_effects: normalizeTextArray(source.possible_imaging_effects),
     limitations: normalizeTextArray(source.limitations),
     change_map: typeof source.change_map === "string" ? source.change_map : null,
     change_guard: normalizeChangeGuard(source.change_guard),

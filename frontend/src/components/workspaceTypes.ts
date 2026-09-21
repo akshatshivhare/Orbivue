@@ -38,16 +38,24 @@ export type ChangeDirection =
   | "decreased"
   | "appeared"
   | "disappeared"
+  | "expanded"
+  | "contracted"
+  | "altered"
   | "modified"
   | "unchanged"
   | "uncertain"
   | string;
+
+export type ChangeObservability = "clearly_visible" | "possible" | "not_reliably_observable" | string;
 
 export type ChangeItem = {
   category: string;
   direction: ChangeDirection;
   description: string;
   confidence?: number | null;
+  change?: string;
+  location?: string;
+  observability?: ChangeObservability;
 };
 
 export type ChangeGuardStatus = "no_measurable_change" | "measurable_difference" | "incompatible" | string;
@@ -81,6 +89,8 @@ export type ChangeAnalysisPayload = {
   final_answer: string;
   changes: ChangeItem[];
   unchanged: string[];
+  unchanged_features?: string[];
+  possible_imaging_effects?: string[];
   limitations: string[];
   change_map?: string | null;
   change_guard?: ChangeGuardPayload | null;

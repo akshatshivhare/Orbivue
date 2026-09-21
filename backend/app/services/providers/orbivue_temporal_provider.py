@@ -136,6 +136,17 @@ class OrbiVueTemporalProvider:
             "mode": "temporal",
             "final_answer": final_answer.strip(),
         }
+        for key in (
+            "summary",
+            "changes",
+            "unchanged",
+            "unchanged_features",
+            "possible_imaging_effects",
+            "limitations",
+            "change_map",
+        ):
+            if key in payload:
+                provider_payload[key] = payload[key]
         change_guard = payload.get("change_guard")
         if isinstance(change_guard, dict):
             provider_payload["change_guard"] = change_guard

@@ -95,6 +95,8 @@ class TemporalGuardTests(unittest.TestCase):
         self.assertIn("Mean normalized absolute RGB difference", calls[0][2])
         self.assertIn("Original user question:\nWhat changed?", calls[0][2])
         self.assertIn("do not represent real-world changed area", calls[0][2])
+        self.assertIn('"possible_imaging_effects"', calls[0][2])
+        self.assertIn("CLEARLY VISIBLE CHANGE", calls[0][2])
         self.assertEqual(result["change_guard"]["status"], "measurable_difference")
         self.assertTrue(result["change_guard"]["qwen_called"])
         self.assertEqual(

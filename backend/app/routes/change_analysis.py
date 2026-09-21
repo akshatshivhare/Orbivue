@@ -25,6 +25,8 @@ def _change_error_response(error: Exception) -> dict[str, Any]:
         "final_answer": user_message,
         "changes": [],
         "unchanged": [],
+        "unchanged_features": [],
+        "possible_imaging_effects": [],
         "limitations": [],
         "change_map": None,
         "error": str(error),

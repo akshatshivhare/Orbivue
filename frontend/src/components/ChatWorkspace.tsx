@@ -727,7 +727,7 @@ function TemporalResultCard({
 
       <div className="mt-3 rounded-xl border border-[#ccd8d3] bg-[#f7f4ed] p-3">
         <div className="text-sm font-extrabold uppercase tracking-[0.12em] text-[#0b6048]">
-          OrbiVue Change Analysis
+          Change Overview
         </div>
         {showSummary && <p className="mt-2 text-sm leading-6 text-[#173452]">{analysis.summary}</p>}
         <ModelText text={analysis.final_answer} className="mt-2" />
@@ -735,7 +735,7 @@ function TemporalResultCard({
 
       {analysis.changes.length > 0 && (
         <section className="mt-4">
-          <h3 className="text-sm font-black text-[#10233a]">Changes</h3>
+          <h3 className="text-sm font-black text-[#10233a]">Detected Changes</h3>
           <div className="mt-2 grid gap-2.5 md:grid-cols-2">
             {analysis.changes.map((change, index) => (
               <ChangeCard key={`${change.category}-${index}`} change={change} />
@@ -745,11 +745,26 @@ function TemporalResultCard({
       )}
 
       {analysis.unchanged.length > 0 && (
-        <ListSection title="Unchanged" items={analysis.unchanged} />
+        <ListSection title="Unchanged / Stable Features" items={analysis.unchanged} />
+      )}
+
+      {(analysis.possible_imaging_effects?.length ?? 0) > 0 && (
+        <ListSection title="Possible Imaging Effects" items={analysis.possible_imaging_effects ?? []} />
       )}
 
       {analysis.limitations.length > 0 && (
         <ListSection title="Limitations" items={analysis.limitations} />
+      )}
+
+      {guard && (
+        <section className="mt-3 rounded-xl border border-[#ccd8d3] bg-white/78 p-3.5">
+          <h3 className="text-sm font-black text-[#10233a]">Verification Status</h3>
+          <p className="mt-1 text-[0.84rem] leading-5 text-[#14314b]">
+            {guard.qwen_called === false
+              ? "Deterministic image comparison — Qwen was not called."
+              : "AI-generated interpretation — not independently verified."}
+          </p>
+        </section>
       )}
 
       {guard && <TemporalGuardDetails guard={guard} />}
@@ -1005,12 +1020,17 @@ function ChangeCard({ change }: { change: ChangeAnalysisPayload["changes"][numbe
             {directionMarker(change.direction)} {change.direction}
           </p>
         </div>
-        {typeof change.confidence === "number" && (
+        {change.observability && (
           <span className="shrink-0 rounded-full bg-[#e8f4eb] px-2.5 py-1 text-xs font-black text-[#0b6048]">
-            {formatConfidence(change.confidence)}
+            {observabilityLabel(change.observability)}
           </span>
         )}
       </div>
+      {change.location && (
+        <p className="mt-1 text-xs font-bold uppercase tracking-[0.1em] text-[#657a8c]">
+          {change.location}
+        </p>
+      )}
       <p className="mt-1.5 text-[0.84rem] leading-5 text-[#14314b]">{change.description}</p>
     </article>
   );
@@ -1283,22 +1303,34 @@ function directionMarker(direction: string) {
   switch (direction) {
     case "increased":
     case "appeared":
+    case "expanded":
       return "↑";
     case "decreased":
     case "disappeared":
+    case "contracted":
+    case "reduced":
       return "↓";
-    case "unchanged":
-      return "•";
+    case "altered":
     case "modified":
       return "↔";
+    case "unchanged":
+      return "•";
     default:
       return "?";
   }
 }
 
-function formatConfidence(confidence: number) {
-  const normalized = confidence <= 1 ? confidence * 100 : confidence;
-  return `${Math.round(Math.max(0, Math.min(100, normalized)))}%`;
+function observabilityLabel(value: string) {
+  switch (value) {
+    case "clearly_visible":
+      return "Clearly Visible";
+    case "possible":
+      return "Possible";
+    case "not_reliably_observable":
+      return "Not Reliable";
+    default:
+      return value.replace(/_/g, " ");
+  }
 }
 
 function cleanModelText(text: string) {
