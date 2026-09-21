@@ -64,8 +64,16 @@ type ApiResponseShape = {
 type TrustRow = {
   label: string;
   value: string;
-  tone?: "neutral" | "ready" | "warning";
+  tone?: "neutral" | "ready" | "info" | "warning" | "error";
   detail?: string;
+  icon: LucideIcon;
+};
+
+type TrustPanelModel = {
+  overallState: string;
+  overallTone: TrustRow["tone"];
+  summary: string;
+  rows: TrustRow[];
 };
 
 const navItems: Array<{
@@ -438,57 +446,255 @@ function activeNavSection(isSatelliteExplorerOpen: boolean, isCompareWorkflow: b
   return "ask";
 }
 
+function trustModeLabel(report: ReportInput | null, isCompareWorkflow: boolean, compareMode: CompareMode, query: string) {
+  if (isCompareWorkflow) {
+    return compareMode === "cross_modal" ? "OPTICAL + SAR" : "TEMPORAL CHANGE";
+  }
+
+  if (report?.mode === "grounding") {
+    return "VISUAL GROUNDING";
+  }
+
+  if (report?.mode === "temporal") {
+    return "TEMPORAL CHANGE";
+  }
+
+  if (report?.mode === "cross_modal") {
+    return "OPTICAL + SAR";
+  }
+
+  if (report?.mode === "analysis" || query.trim()) {
+    return /\b(where|locate|find|highlight|detect|show|ground)\b/i.test(query)
+      ? "VISUAL GROUNDING"
+      : "SCENE ANALYSIS";
+  }
+
+  return "NOT SELECTED";
+}
+
 function changeGuardTrustLabel(guard?: ChangeGuardPayload | null) {
   if (!guard?.status) {
     return "NOT EVALUATED";
   }
 
-  return guard.status.replace(/_/g, " ").toUpperCase();
+  switch (guard.status) {
+    case "no_measurable_change":
+      return "NO MEASURABLE CHANGE";
+    case "measurable_difference":
+      return "VISIBLE CHANGE DETECTED";
+    case "incompatible":
+      return "ERROR";
+    default:
+      return guard.status.replace(/_/g, " ").toUpperCase();
+  }
 }
 
-function buildTrustRows({
+function changeGuardDetail(guard?: ChangeGuardPayload | null) {
+  if (!guard?.status) {
+    return undefined;
+  }
+
+  if (guard.qwen_called === false || guard.semantic_verification === "deterministic_no_change") {
+    return "DETERMINISTIC CHECK";
+  }
+
+  if (guard.qwen_called === true || guard.semantic_verification === "model_generated_unverified") {
+    return "AI INTERPRETATION";
+  }
+
+  return undefined;
+}
+
+function evidenceState(report: ReportInput | null) {
+  if (!report) {
+    return {
+      value: "NO EVIDENCE YET",
+      detail: "Run an analysis to populate evidence.",
+      tone: "neutral" as const,
+    };
+  }
+
+  if (report.mode === "grounding") {
+    const count = report.boundingBoxes?.length ?? 0;
+    return {
+      value: count > 0 ? "GROUNDING EVIDENCE" : "NO EVIDENCE YET",
+      detail: count > 0 ? `${count} localized ${count === 1 ? "region" : "regions"} returned.` : "No localized regions returned.",
+      tone: count > 0 ? ("ready" as const) : ("neutral" as const),
+    };
+  }
+
+  if (report.mode === "temporal") {
+    const guard = report.changeAnalysis?.change_guard;
+    if (!guard) {
+      return {
+        value: "MODEL INTERPRETATION",
+        detail: "Temporal result is AI-generated and not independently verified.",
+        tone: "warning" as const,
+      };
+    }
+
+    if (guard.qwen_called === false || guard.semantic_verification === "deterministic_no_change") {
+      return {
+        value: "DETERMINISTIC EVIDENCE",
+        detail: "Exact/near-identical imagery detected.",
+        tone: "ready" as const,
+      };
+    }
+
+    if (guard.status === "measurable_difference" && typeof guard.changed_pixel_fraction === "number") {
+      return {
+        value: "DETERMINISTIC EVIDENCE",
+        detail: "Image-space difference metrics returned.",
+        tone: "ready" as const,
+      };
+    }
+
+    return {
+      value: "MODEL INTERPRETATION",
+      detail: "Result is AI-generated and not independently verified.",
+      tone: "warning" as const,
+    };
+  }
+
+  return {
+    value: "MODEL INTERPRETATION",
+    detail: "Result is AI-generated and not independently verified.",
+    tone: "warning" as const,
+  };
+}
+
+function readableStatus(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+    .replace(/\bSar\b/g, "SAR")
+    .replace(/\bAi\b/g, "AI");
+}
+
+function buildTrustPanelModel({
   selectedImage,
-  hasTemporalPair,
-  hasCrossModalPair,
+  hasTemporalImage,
+  hasCrossModalImage,
   latestReport,
+  isCompareWorkflow,
+  compareMode,
+  query,
+  error,
+  isBusy,
 }: {
   selectedImage: File | null;
-  hasTemporalPair: boolean;
-  hasCrossModalPair: boolean;
+  hasTemporalImage: boolean;
+  hasCrossModalImage: boolean;
   latestReport: ReportInput | null;
-}): TrustRow[] {
+  isCompareWorkflow: boolean;
+  compareMode: CompareMode;
+  query: string;
+  error: string;
+  isBusy: boolean;
+}): TrustPanelModel {
   const latestGuard = latestReport?.mode === "temporal" ? latestReport.changeAnalysis?.change_guard : null;
-  const hasInput = Boolean(selectedImage || hasTemporalPair || hasCrossModalPair);
+  const hasInput = Boolean(selectedImage || hasTemporalImage || hasCrossModalImage);
   const hasCrossModalResult = latestReport?.mode === "cross_modal";
+  const hasRequestError = Boolean(error && !isBusy);
+  const modeLabel = trustModeLabel(latestReport, isCompareWorkflow, compareMode, query);
+  const evidence = evidenceState(latestReport);
+  const overallState = (() => {
+    if (hasRequestError) {
+      return "REVIEW ADVISED";
+    }
 
-  return [
-    {
-      label: "Input Validation",
-      value: hasInput ? "INPUT ATTACHED" : "NOT EVALUATED",
-      tone: hasInput ? "ready" : "neutral",
-      detail: hasInput ? "Client-side file selection is present." : undefined,
-    },
-    {
-      label: "Observation Feasibility",
-      value: "NOT EVALUATED",
-    },
-    {
-      label: "ChangeGuard",
-      value: changeGuardTrustLabel(latestGuard),
-      tone: latestGuard?.status === "incompatible" ? "warning" : latestGuard?.status ? "ready" : "neutral",
-      detail: latestGuard?.semantic_verification?.replace(/_/g, " "),
-    },
-    {
-      label: "Cross-Sensor Verification",
-      value: hasCrossModalResult ? "RESULT AVAILABLE" : "NOT EVALUATED",
-      tone: hasCrossModalResult ? "ready" : "neutral",
-      detail: hasCrossModalResult ? "Optical + SAR analysis returned a response." : undefined,
-    },
-    {
-      label: "Evidence Validation",
-      value: "NOT EVALUATED",
-    },
-  ];
+    if (isBusy || (hasInput && !latestReport)) {
+      return "READY FOR ANALYSIS";
+    }
+
+    if (latestReport?.mode === "grounding" && (latestReport.boundingBoxes?.length ?? 0) > 0) {
+      return "EVIDENCE AVAILABLE";
+    }
+
+    if (latestReport?.mode === "temporal" && latestGuard) {
+      return latestGuard.qwen_called === false || latestGuard.semantic_verification === "deterministic_no_change"
+        ? "EVIDENCE AVAILABLE"
+        : "REVIEW ADVISED";
+    }
+
+    if (latestReport?.mode === "cross_modal") {
+      return "REVIEW ADVISED";
+    }
+
+    if (latestReport?.mode === "analysis") {
+      return "ANALYSIS COMPLETE";
+    }
+
+    return "NO INPUT";
+  })();
+  const overallTone: TrustRow["tone"] =
+    overallState === "EVIDENCE AVAILABLE" || overallState === "ANALYSIS COMPLETE"
+      ? "ready"
+      : overallState === "READY FOR ANALYSIS"
+        ? "info"
+        : overallState === "REVIEW ADVISED"
+          ? "warning"
+          : "neutral";
+
+  return {
+    overallState,
+    overallTone,
+    summary: `Mode: ${readableStatus(modeLabel)} • Evidence: ${readableStatus(evidence.value)}`,
+    rows: [
+      {
+        label: "Input Validation",
+        value: hasInput ? "INPUT READY" : "NOT EVALUATED",
+        tone: hasInput ? "ready" : "neutral",
+        detail: hasInput ? "Supported imagery attached." : "Attach imagery to begin.",
+        icon: ShieldCheck,
+      },
+      {
+        label: "Analysis Mode",
+        value: modeLabel,
+        tone: modeLabel === "NOT SELECTED" ? "neutral" : "info",
+        detail: "Derived from the active workspace.",
+        icon: BrainCircuit,
+      },
+      {
+        label: "ChangeGuard",
+        value: changeGuardTrustLabel(latestGuard),
+        tone:
+          latestGuard?.status === "incompatible"
+            ? "error"
+            : latestGuard?.status === "measurable_difference"
+              ? "warning"
+              : latestGuard?.status
+                ? "ready"
+                : "neutral",
+        detail: changeGuardDetail(latestGuard),
+        icon: Activity,
+      },
+      {
+        label: "Cross-Sensor Check",
+        value:
+          hasRequestError && isCompareWorkflow && compareMode === "cross_modal"
+            ? "ERROR"
+            : hasCrossModalResult
+              ? "ANALYZED"
+              : "NOT EVALUATED",
+        tone:
+          hasRequestError && isCompareWorkflow && compareMode === "cross_modal"
+            ? "error"
+            : hasCrossModalResult
+              ? "info"
+              : "neutral",
+        detail: hasCrossModalResult ? "Optical and SAR evidence processed together." : undefined,
+        icon: Radar,
+      },
+      {
+        label: "Evidence",
+        value: evidence.value,
+        tone: evidence.tone,
+        detail: evidence.detail,
+        icon: Globe2,
+      },
+    ],
+  };
 }
 
 function OrbivueSidebar({
@@ -582,29 +788,35 @@ function OrbivueHero() {
   );
 }
 
-function TrustPanel({ rows, latestReport }: { rows: TrustRow[]; latestReport: ReportInput | null }) {
+function TrustPanel({ model }: { model: TrustPanelModel }) {
   return (
     <aside className="orbivue-trust-panel">
       <div className="orbivue-trust-header">
-        <span>ORBIVUE TRUST</span>
+        <span>ORBIVUE TRUST &amp; EVIDENCE</span>
         <ShieldCheck size={18} />
       </div>
 
-      <div className="orbivue-trust-state">
+      <div className={`orbivue-trust-state tone-${model.overallTone ?? "neutral"}`}>
         <p>Current State</p>
-        <strong>{latestReport?.mode === "temporal" && latestReport.changeAnalysis?.change_guard ? "Evaluated" : "Not Evaluated"}</strong>
+        <strong>{model.overallState}</strong>
+        <small>{model.summary}</small>
       </div>
 
       <div className="orbivue-trust-rows">
-        {rows.map((row) => (
-          <article key={row.label} className={`orbivue-trust-row tone-${row.tone ?? "neutral"}`}>
-            <div>
-              <span>{row.label}</span>
-              {row.detail && <small>{row.detail}</small>}
-            </div>
-            <strong>{row.value}</strong>
-          </article>
-        ))}
+        {model.rows.map((row) => {
+          const Icon = row.icon;
+
+          return (
+            <article key={row.label} className={`orbivue-trust-row tone-${row.tone ?? "neutral"}`}>
+              <Icon size={16} />
+              <div>
+                <span>{row.label}</span>
+                {row.detail && <small>{row.detail}</small>}
+              </div>
+              <strong>{row.value}</strong>
+            </article>
+          );
+        })}
       </div>
 
       <div className="orbivue-trust-footnote">
@@ -657,22 +869,28 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     () => buildTemporalPairKey(temporalImages.t1, temporalImages.t2),
     [temporalImages.t1, temporalImages.t2]
   );
+  const hasTemporalImage = Boolean(temporalImages.t1 || temporalImages.t2);
   const hasTemporalPair = Boolean(temporalImages.t1 && temporalImages.t2);
-  const hasCrossModalPair = Boolean(crossModalImages.optical && crossModalImages.sar);
+  const hasCrossModalImage = Boolean(crossModalImages.optical || crossModalImages.sar);
   const isBusy = isLoading || isChangeLoading;
   const currentNavSection = activeNavSection(isSatelliteExplorerOpen, isCompareWorkflow);
-  const trustRows = buildTrustRows({
+  const trustPanelModel = buildTrustPanelModel({
     selectedImage,
-    hasTemporalPair,
-    hasCrossModalPair,
+    hasTemporalImage,
+    hasCrossModalImage,
     latestReport,
+    isCompareWorkflow,
+    compareMode,
+    query,
+    error,
+    isBusy,
   });
   const isWorkspaceMode =
     hasWorkspaceOpened ||
     query.trim().length > 0 ||
     selectedImage !== null ||
-    (isCompareWorkflow && Boolean(temporalImages.t1 || temporalImages.t2)) ||
-    (isCompareWorkflow && Boolean(crossModalImages.optical || crossModalImages.sar)) ||
+    (isCompareWorkflow && hasTemporalImage) ||
+    (isCompareWorkflow && hasCrossModalImage) ||
     messages.length > 0;
 
   useEffect(() => {
@@ -792,6 +1010,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
 
       setCrossModalImages(nextCrossModalImages);
       setError("");
+      setLatestReport(null);
       setHasWorkspaceOpened(true);
       compressedCrossModalImagesRef.current[slot] = undefined;
 
@@ -809,6 +1028,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
       setSelectedImage(file);
       setSelectedImageMetadata(null);
       setError("");
+      setLatestReport(null);
       compressedImageRef.current = null;
       setHasWorkspaceOpened(true);
 
@@ -838,6 +1058,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     setSelectedImage(null);
     setSelectedImageMetadata(null);
     setError("");
+    setLatestReport(null);
     compressedImageRef.current = null;
     compressedTemporalImagesRef.current[slot] = undefined;
     analyzedPairRef.current = null;
@@ -858,6 +1079,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     setSelectedImage(null);
     setSelectedImageMetadata(null);
     setError("");
+    setLatestReport(null);
     compressedImageRef.current = null;
 
     if (fileInputRef.current) {
@@ -867,6 +1089,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
 
   const clearCrossModalImages = () => {
     setCrossModalImages({ optical: null, sar: null });
+    setLatestReport(null);
     compressedCrossModalImagesRef.current = {};
     crossModalAttachSlotRef.current = "auto";
   };
@@ -884,6 +1107,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     setTemporalImages(nextTemporalImages);
     setTemporalImageMetadata(nextTemporalMetadata);
     setError("");
+    setLatestReport(null);
     compressedImageRef.current = null;
     compressedTemporalImagesRef.current = {};
     analyzedPairRef.current = null;
@@ -901,6 +1125,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
 
     setCrossModalImages(nextCrossModalImages);
     setError("");
+    setLatestReport(null);
     compressedCrossModalImagesRef.current[slot] = undefined;
 
     if (fileInputRef.current) {
@@ -914,6 +1139,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     setIsCompareWorkflow(true);
     setSelectedImage(null);
     setSelectedImageMetadata(null);
+    setLatestReport(null);
     compressedImageRef.current = null;
     fileInputRef.current?.click();
   };
@@ -924,6 +1150,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     setIsCompareWorkflow(true);
     setSelectedImage(null);
     setSelectedImageMetadata(null);
+    setLatestReport(null);
     compressedImageRef.current = null;
     setHasWorkspaceOpened(true);
     fileInputRef.current?.click();
@@ -939,6 +1166,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     setTemporalImages(nextTemporalImages);
     setTemporalImageMetadata(nextTemporalMetadata);
     setError("");
+    setLatestReport(null);
     compressedImageRef.current = null;
     compressedTemporalImagesRef.current = {};
     analyzedPairRef.current = null;
@@ -968,6 +1196,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     setIsCompareWorkflow(false);
     setIsSatelliteExplorerOpen(false);
     setError("");
+    setLatestReport(null);
     setHasWorkspaceOpened(true);
     setIsSidebarOpen(false);
   };
@@ -979,6 +1208,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     setSelectedImageMetadata(null);
     compressedImageRef.current = null;
     setError("");
+    setLatestReport(null);
     setHasWorkspaceOpened(true);
     setIsSidebarOpen(false);
   };
@@ -1012,6 +1242,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     setIsSatelliteExplorerOpen(false);
     setQuery("");
     setError("");
+    setLatestReport(null);
     compressedImageRef.current = null;
     setHasWorkspaceOpened(true);
   };
@@ -1034,6 +1265,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     setIsSatelliteExplorerOpen(false);
     setQuery("");
     setError("");
+    setLatestReport(null);
     setHasWorkspaceOpened(true);
   };
 
@@ -1064,6 +1296,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     ]);
     setQuery("");
     setError("");
+    setLatestReport(null);
     setHasWorkspaceOpened(true);
     setIsSidebarOpen(false);
   };
@@ -1122,6 +1355,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     submitLockRef.current = true;
     setIsLoading(true);
     setError("");
+    setLatestReport(null);
     setHasWorkspaceOpened(true);
 
     const currentOpticalUrl = crossModalPreviewUrls.optical;
@@ -1233,6 +1467,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
       changeSubmitLockRef.current = true;
       setIsChangeLoading(true);
       setError("");
+      setLatestReport(null);
       setHasWorkspaceOpened(true);
 
       if (options.automatic) {
@@ -1410,6 +1645,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
     submitLockRef.current = true;
     setIsLoading(true);
     setError("");
+    setLatestReport(null);
     setHasWorkspaceOpened(true);
 
     const currentImageUrl = imagePreviewUrl;
@@ -1630,7 +1866,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
             )}
           </section>
 
-          <TrustPanel rows={trustRows} latestReport={latestReport} />
+          <TrustPanel model={trustPanelModel} />
         </div>
       </div>
 
