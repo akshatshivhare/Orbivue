@@ -50,10 +50,16 @@ const CHANGE_ANALYSIS_ENDPOINT = apiUrl("/api/change-analyze");
 const CROSS_MODAL_ENDPOINT = apiUrl("/api/cross-modal");
 const DEBUG_LOGS = import.meta.env.DEV;
 const THEME_STORAGE_KEY = "orbivue-theme";
+const GLOBAL_LIMIT_FRIENDLY_MESSAGE = "Today's demo analysis limit has been reached. Please try again tomorrow.";
+const CLIENT_LIMIT_FRIENDLY_MESSAGE = "You've reached today's analysis limit. Please try again tomorrow.";
 
 type ApiStatus = "connecting" | "connected" | "unavailable";
 type ThemeMode = "dark" | "light";
 type NavSection = "ask" | "satellite" | "intelligence" | "reports" | "watch" | "terrain" | "evaluation";
+type ApiResponseShape = {
+  detail?: string;
+  final_answer?: string;
+};
 
 type TrustRow = {
   label: string;
@@ -85,6 +91,33 @@ function debugLog(...args: unknown[]) {
   if (DEBUG_LOGS) {
     console.log(...args);
   }
+}
+
+function friendlyAnalysisError(response: Response, data: ApiResponseShape | null, fallback: string) {
+  if (response.status === 429) {
+    const detail = typeof data?.detail === "string" ? data.detail : "";
+    return detail.toLowerCase().includes("device/network")
+      ? CLIENT_LIMIT_FRIENDLY_MESSAGE
+      : GLOBAL_LIMIT_FRIENDLY_MESSAGE;
+  }
+
+  return data?.detail || data?.final_answer || fallback;
+}
+
+function friendlyCaughtError(error: unknown, fallback: string) {
+  if (!(error instanceof Error)) {
+    return fallback;
+  }
+
+  const normalized = error.message.toLowerCase();
+  if (normalized.includes("timeout")) {
+    return "The satellite AI is taking longer than expected to start. Please retry in a moment.";
+  }
+  if (error.message === CLIENT_LIMIT_FRIENDLY_MESSAGE || error.message === GLOBAL_LIMIT_FRIENDLY_MESSAGE) {
+    return error.message;
+  }
+
+  return fallback;
 }
 
 function getInitialTheme(): ThemeMode {
@@ -1140,7 +1173,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
       debugLog("[OrbiVue CrossModal] response:", data);
 
       if (!response.ok) {
-        throw new Error(data.detail || data.final_answer || "Cross-modal analysis request failed.");
+        throw new Error(friendlyAnalysisError(response, data, "Cross-modal analysis request failed."));
       }
 
       const crossModalAnalysis = normalizeCrossModalResponse(data);
@@ -1181,11 +1214,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
       ]);
       setQuery("");
     } catch (requestError) {
-      setError(
-        requestError instanceof Error && requestError.message.toLowerCase().includes("timeout")
-          ? "The satellite AI is taking longer than expected to start. Please retry in a moment."
-          : "Cross-sensor analysis could not be completed."
-      );
+      setError(friendlyCaughtError(requestError, "Cross-sensor analysis could not be completed."));
     } finally {
       submitLockRef.current = false;
       setIsLoading(false);
@@ -1261,7 +1290,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
         debugLog("[OrbiVue Change] response:", data);
 
         if (!response.ok) {
-          throw new Error(data.detail || data.final_answer || "Change analysis request failed.");
+          throw new Error(friendlyAnalysisError(response, data, "Change analysis request failed."));
         }
 
         const changeAnalysis = normalizeChangeAnalysisResponse(data);
@@ -1309,11 +1338,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
         setQuery("");
       } catch (requestError) {
         analyzedPairRef.current = null;
-        setError(
-          requestError instanceof Error && requestError.message.toLowerCase().includes("timeout")
-            ? "The satellite AI is taking longer than expected to start. Please retry in a moment."
-            : "Temporal comparison could not be completed. Please try again."
-        );
+        setError(friendlyCaughtError(requestError, "Temporal comparison could not be completed. Please try again."));
       } finally {
         changeSubmitLockRef.current = false;
         setIsChangeLoading(false);
@@ -1430,7 +1455,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
       debugLog("[OrbiVue] response:", data);
 
       if (!response.ok) {
-        throw new Error(data.detail || "Analysis request failed.");
+        throw new Error(friendlyAnalysisError(response, data, "Analysis request failed."));
       }
 
       const finalAnswer =
@@ -1478,11 +1503,7 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
         fileInputRef.current.value = "";
       }
     } catch (requestError) {
-      setError(
-        requestError instanceof Error && requestError.message.toLowerCase().includes("timeout")
-          ? "The satellite AI is taking longer than expected to start. Please retry in a moment."
-          : "ORBIVUE could not reach the analysis service. Please try again."
-      );
+      setError(friendlyCaughtError(requestError, "ORBIVUE could not reach the analysis service. Please try again."));
     } finally {
       submitLockRef.current = false;
       setIsLoading(false);

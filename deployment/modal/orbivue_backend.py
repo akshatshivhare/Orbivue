@@ -15,10 +15,12 @@ LOCAL_BACKEND_APP_DIR = LOCAL_REPO_ROOT / "backend" / "app"
 LOCAL_REQUIREMENTS = Path(__file__).with_name("backend_requirements.txt")
 
 app = modal.App(APP_NAME)
+rate_limit_volume = modal.Volume.from_name("orbivue-backend-rate-limits", create_if_missing=True)
 
 image = (
     modal.Image.debian_slim(python_version="3.11")
     .pip_install_from_requirements(str(LOCAL_REQUIREMENTS))
+    .env({"DAILY_REQUEST_LIMIT_STATE_PATH": "/data/daily_ai_request_limits.json"})
     .add_local_dir(str(LOCAL_BACKEND_APP_DIR), remote_path=f"{REMOTE_APP_ROOT}/app")
 )
 
@@ -26,6 +28,7 @@ image = (
 @app.function(
     image=image,
     secrets=[modal.Secret.from_name("orbivue-backend-env", environment_name="main")],
+    volumes={"/data": rate_limit_volume},
     min_containers=0,
     max_containers=3,
     scaledown_window=300,

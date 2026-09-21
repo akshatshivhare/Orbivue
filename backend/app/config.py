@@ -52,6 +52,16 @@ LOCATION_IMAGERY_USER_AGENT = os.getenv(
     "OrbiVue/0.1 location-imagery-prototype",
 )
 MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(25 * 1024 * 1024)))
+DAILY_REQUEST_LIMIT_PER_CLIENT = int(os.getenv("DAILY_REQUEST_LIMIT_PER_CLIENT", "10"))
+DAILY_REQUEST_LIMIT_GLOBAL = int(os.getenv("DAILY_REQUEST_LIMIT_GLOBAL", "40"))
+DAILY_REQUEST_LIMIT_STATE_PATH = _env_or_default(
+    "DAILY_REQUEST_LIMIT_STATE_PATH",
+    str(PROJECT_ROOT / "runtime" / "daily_ai_request_limits.json"),
+)
+DAILY_REQUEST_LIMIT_CLIENT_SALT = _env_or_default(
+    "DAILY_REQUEST_LIMIT_CLIENT_SALT",
+    "orbivue-demo-daily-request-limit-v1",
+)
 
 DEFAULT_ALLOWED_ORIGINS = [
     "https://orbivue.vercel.app",

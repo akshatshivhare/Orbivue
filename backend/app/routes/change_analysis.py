@@ -3,8 +3,9 @@ import time
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 
+from ..services.daily_request_limiter import enforce_daily_ai_request_limit
 from ..services.gemini_client import GeminiAnalysisError
 from ..services.temporal_change import analyze_change_with_gemini
 from ..utils.image_utils import save_upload_to_temp
@@ -30,7 +31,7 @@ def _change_error_response(error: Exception) -> dict[str, Any]:
     }
 
 
-@router.post("/api/change-analyze")
+@router.post("/api/change-analyze", dependencies=[Depends(enforce_daily_ai_request_limit)])
 async def change_analyze(
     image_t1: UploadFile = File(...),
     image_t2: UploadFile = File(...),

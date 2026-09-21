@@ -3,11 +3,12 @@ import time
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from ..agent_router import route_query, route_vision_intent
 from ..mapping_tools import generate_3d_terrain, generate_thermal_map
 from ..services.gemini_client import GeminiAnalysisError
+from ..services.daily_request_limiter import enforce_daily_ai_request_limit
 from ..services.image_analysis import analyze_image_with_gemini
 from ..services.providers import get_analysis_provider, get_grounding_provider
 from ..services.visual_grounding import ground_image_with_gemini
@@ -44,7 +45,7 @@ def _grounding_error_response(error: Exception) -> dict[str, Any]:
     }
 
 
-@router.post("/api/analyze")
+@router.post("/api/analyze", dependencies=[Depends(enforce_daily_ai_request_limit)])
 async def analyze(
     query: str = Form(..., min_length=1, max_length=600),
     image: UploadFile | None = File(default=None),

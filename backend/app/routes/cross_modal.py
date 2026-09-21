@@ -2,8 +2,9 @@ import time
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 
+from ..services.daily_request_limiter import enforce_daily_ai_request_limit
 from ..services.cross_modal import analyze_cross_modal as run_cross_modal_analysis
 from ..services.gemini_client import GeminiAnalysisError
 from ..utils.image_utils import save_upload_to_temp
@@ -23,7 +24,7 @@ def _cross_modal_error_response(error: Exception) -> dict[str, str]:
     }
 
 
-@router.post("/api/cross-modal")
+@router.post("/api/cross-modal", dependencies=[Depends(enforce_daily_ai_request_limit)])
 async def cross_modal(
     optical_image: UploadFile = File(...),
     sar_image: UploadFile = File(...),
