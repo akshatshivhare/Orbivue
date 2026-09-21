@@ -3,7 +3,6 @@ import {
   AlertTriangle,
   ArrowLeftRight,
   ArrowRight,
-  Check,
   FileText,
   MapPin,
   type LucideIcon,
@@ -257,7 +256,7 @@ export function ChatWorkspace({
               disabled={isLoading}
             />
           )}
-          {isCompareWorkflow && compareMode === "cross_modal" && (
+          {isCompareWorkflow && compareMode === "cross_modal" && (crossModalImages.optical || crossModalImages.sar) && (
             <CrossModalAttachmentStrip
               crossModalImages={crossModalImages}
               onRemoveCrossModalImage={onRemoveCrossModalImage}
@@ -318,18 +317,6 @@ export function ChatWorkspace({
           </div>
         )}
 
-        {isCompareWorkflow && compareMode === "cross_modal" && isWorkspaceMode && (
-          <div className="mt-2">
-            <CrossModalUploadPanel
-              crossModalImages={crossModalImages}
-              crossModalPreviewUrls={crossModalPreviewUrls}
-              onRemoveCrossModalImage={onRemoveCrossModalImage}
-              onReplaceCrossModalImage={onReplaceCrossModalImage}
-              disabled={isLoading}
-            />
-          </div>
-        )}
-
         {isWorkspaceMode && (
           <div className="orbivue-workspace-composer">
             <Sparkles size={18} className="shrink-0" />
@@ -382,7 +369,7 @@ function CompareModeToggle({
   disabled: boolean;
 }) {
   return (
-    <div className="inline-flex rounded-xl border border-[#b7d8c8] bg-white/82 p-0.5 shadow-sm" aria-label="Compare mode">
+    <div className="orbivue-compare-mode inline-flex rounded-xl border border-[#b7d8c8] bg-white/82 p-0.5 shadow-sm" aria-label="Compare mode">
       {(["temporal", "cross_modal"] as CompareMode[]).map((mode) => (
         <button
           key={mode}
@@ -1111,44 +1098,6 @@ function TemporalAttachmentStrip({
   );
 }
 
-function CrossModalUploadPanel({
-  crossModalImages,
-  crossModalPreviewUrls,
-  onRemoveCrossModalImage,
-  onReplaceCrossModalImage,
-  disabled,
-}: {
-  crossModalImages: CrossModalImageState;
-  crossModalPreviewUrls: CrossModalImagePreviews;
-  onRemoveCrossModalImage: (slot: CrossModalImageSlot) => void;
-  onReplaceCrossModalImage: (slot: CrossModalImageSlot) => void;
-  disabled: boolean;
-}) {
-  return (
-    <div className="orbivue-cross-modal-upload-grid grid gap-2 md:grid-cols-2">
-      <CrossModalUploadCard
-        slot="optical"
-        label="OPTICAL / MULTISPECTRAL"
-        helper="Upload optical imagery"
-        file={crossModalImages.optical}
-        previewUrl={crossModalPreviewUrls.optical}
-        onRemove={() => onRemoveCrossModalImage("optical")}
-        onReplace={() => onReplaceCrossModalImage("optical")}
-        disabled={disabled}
-      />
-      <CrossModalUploadCard
-        slot="sar"
-        label="SAR / RADAR"
-        helper="Upload SAR imagery"
-        file={crossModalImages.sar}
-        previewUrl={crossModalPreviewUrls.sar}
-        onRemove={() => onRemoveCrossModalImage("sar")}
-        onReplace={() => onReplaceCrossModalImage("sar")}
-        disabled={disabled}
-      />
-    </div>
-  );
-}
 
 function CrossModalAttachmentStrip({
   crossModalImages,
@@ -1165,7 +1114,7 @@ function CrossModalAttachmentStrip({
 }) {
   return (
     <div className="orbivue-attachment-strip flex flex-wrap items-center gap-2">
-      {crossModalImages.optical ? (
+      {crossModalImages.optical && (
         <TemporalChip
           label="OPTICAL / MULTISPECTRAL"
           fileName={crossModalImages.optical.name}
@@ -1174,10 +1123,8 @@ function CrossModalAttachmentStrip({
           onReplace={() => onReplaceCrossModalImage("optical")}
           disabled={disabled}
         />
-      ) : (
-        <CompactUploadButton label="Add Optical" onClick={() => onReplaceCrossModalImage("optical")} disabled={disabled} />
       )}
-      {crossModalImages.sar ? (
+      {crossModalImages.sar && (
         <TemporalChip
           label="SAR / RADAR"
           fileName={crossModalImages.sar.name}
@@ -1186,99 +1133,11 @@ function CrossModalAttachmentStrip({
           onReplace={() => onReplaceCrossModalImage("sar")}
           disabled={disabled}
         />
-      ) : (
-        <CompactUploadButton label="Add SAR" onClick={() => onReplaceCrossModalImage("sar")} disabled={disabled} />
       )}
     </div>
   );
 }
 
-function CompactUploadButton({ label, onClick, disabled }: { label: string; onClick: () => void; disabled: boolean }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="inline-flex h-10 items-center gap-2 rounded-lg border border-dashed border-[#a9c9ba] bg-white/80 px-2.5 text-[0.8rem] font-black text-[#074d3b] shadow-sm transition hover:bg-[#dcece2] disabled:cursor-not-allowed disabled:opacity-60"
-    >
-      <Paperclip size={16} />
-      {label}
-    </button>
-  );
-}
-
-function CrossModalUploadCard({
-  label,
-  helper,
-  file,
-  previewUrl,
-  onRemove,
-  onReplace,
-  disabled,
-}: {
-  slot: CrossModalImageSlot;
-  label: string;
-  helper: string;
-  file: File | null;
-  previewUrl: string;
-  onRemove: () => void;
-  onReplace: () => void;
-  disabled: boolean;
-}) {
-  return (
-    <article className="orbivue-cross-modal-upload-card min-w-0 rounded-xl border border-[#c2d6cd] bg-white/86 p-2 shadow-sm">
-      <div className="mb-1.5 flex items-start justify-between gap-2.5">
-        <div className="min-w-0">
-          <h3 className="text-[0.72rem] font-black uppercase tracking-[0.14em] text-[#0b6048]">{label}</h3>
-          <p className="mt-0.5 text-xs font-semibold text-[#657a8c]">{helper}</p>
-        </div>
-        {file && (
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e8f4eb] text-[#0b6048]">
-            <Check size={16} />
-          </span>
-        )}
-      </div>
-
-      {previewUrl ? (
-        <img src={previewUrl} alt={`${label} preview`} className="orbivue-cross-modal-preview block h-20 w-full rounded-lg bg-[#0b222b] object-contain" />
-      ) : (
-        <button
-          type="button"
-          onClick={onReplace}
-          disabled={disabled}
-          className="flex h-14 w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#a9c9ba] bg-[#f7f4ed] text-xs font-black text-[#074d3b] transition hover:bg-[#dcece2] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <Paperclip size={17} />
-          Upload
-        </button>
-      )}
-
-      {file && (
-        <div className="mt-1.5 flex items-center justify-between gap-2">
-          <span className="min-w-0 truncate text-xs font-semibold text-[#657a8c]">{file.name}</span>
-          <span className="flex shrink-0 gap-2">
-            <button
-              type="button"
-              onClick={onReplace}
-              disabled={disabled}
-            className="rounded-lg bg-[#dcece2] px-2.5 py-1.5 text-xs font-black text-[#074d3b] transition hover:bg-[#cde2d5] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Replace
-            </button>
-            <button
-              type="button"
-              onClick={onRemove}
-              disabled={disabled}
-              className="rounded-lg bg-white px-2.5 py-1.5 text-xs font-black text-[#173452] shadow-sm transition hover:bg-[#0b7b5b] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Remove
-            </button>
-          </span>
-        </div>
-      )}
-    </article>
-  );
-}
 
 function TemporalChip({
   label,

@@ -19,8 +19,10 @@
   body {
     margin: 0;
     min-width: 320px;
+    height: 100%;
     min-height: 100vh;
     min-height: 100svh;
+    min-height: 100dvh;
     background:
       radial-gradient(circle at top left, rgba(4, 73, 55, 0.18), transparent 28rem),
       radial-gradient(circle at bottom right, rgba(12, 48, 61, 0.18), transparent 28rem),
@@ -30,6 +32,7 @@
   html,
   #root {
     min-width: 320px;
+    height: 100%;
     min-height: 100%;
     background: #04151b;
   }
@@ -45,6 +48,7 @@
     overflow: hidden;
     height: 100vh;
     height: 100svh;
+    height: 100dvh;
   }
 }
 
@@ -221,6 +225,10 @@
 .main-page {
   height: 100vh;
   height: 100svh;
+  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
   background:
     radial-gradient(circle at 74% 24%, rgba(13, 96, 82, 0.2), transparent 28rem),
     #04151b;
@@ -245,14 +253,14 @@
 }
 
 .workspace-chat-card-empty {
-  height: min(70svh, 650px);
-  min-height: 430px;
+  height: auto;
+  min-height: 0;
   max-width: min(72vw, 1120px);
 }
 
 .workspace-chat-card-active {
-  height: min(82svh, 840px);
-  min-height: 520px;
+  height: auto;
+  min-height: 0;
   max-width: min(82vw, 1350px);
 }
 
@@ -332,14 +340,14 @@
   }
 
   .workspace-chat-card-empty {
-    height: min(68svh, 620px);
-    min-height: 400px;
+    height: auto;
+    min-height: 0;
     max-width: min(74vw, 1080px);
   }
 
   .workspace-chat-card-active {
-    height: min(80svh, 800px);
-    min-height: 500px;
+    height: auto;
+    min-height: 0;
     max-width: min(82vw, 1280px);
   }
 
@@ -734,6 +742,7 @@ body:has(.orbivue-dashboard) {
   overflow: hidden !important;
   height: 100vh !important;
   height: 100svh !important;
+  height: 100dvh !important;
   background: var(--bg-main);
 }
 
@@ -741,6 +750,10 @@ body:has(.orbivue-dashboard) {
   position: fixed;
   inset: 0;
   display: flex;
+  height: 100vh;
+  height: 100svh;
+  height: 100dvh;
+  min-height: 0;
   overflow: hidden;
   background:
     radial-gradient(circle at 58% 14%, rgba(49, 167, 216, 0.09), transparent 30rem),
@@ -751,9 +764,12 @@ body:has(.orbivue-dashboard) {
 .orbivue-command-shell {
   display: flex;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
   flex: 1;
   flex-direction: column;
   gap: 16px;
+  overflow: hidden;
   padding: 22px 22px 18px;
 }
 
@@ -849,12 +865,16 @@ body:has(.orbivue-dashboard) {
   flex: 1;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 310px);
   gap: 18px;
+  align-items: stretch;
+  overflow: hidden;
 }
 
 .orbivue-primary-column {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   padding-right: 2px;
 }
 
@@ -862,10 +882,15 @@ body:has(.orbivue-dashboard) {
   position: relative;
   z-index: 35;
   display: flex;
+  height: 100vh;
+  height: 100svh;
+  height: 100dvh;
+  min-height: 0;
   width: 252px;
   flex: 0 0 252px;
   flex-direction: column;
   gap: 18px;
+  overflow-y: auto;
   border-right: 1px solid var(--border-soft);
   background: rgba(7, 24, 39, 0.98);
   padding: 22px 14px;
@@ -879,9 +904,20 @@ body:has(.orbivue-dashboard) {
   gap: 10px;
 }
 
+.orbivue-side-logo-crop {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+}
+
 .orbivue-side-logo {
-  width: 44px !important;
-  max-width: 44px !important;
+  position: absolute;
+  left: -7px;
+  top: -5px;
+  width: 152px !important;
+  max-width: none !important;
+  height: auto;
 }
 
 .orbivue-side-brand strong {
@@ -1110,14 +1146,16 @@ body:has(.orbivue-dashboard) {
 .workspace-chat-card {
   width: 100%;
   max-width: none;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .workspace-chat-card-empty,
 .workspace-chat-card-active {
   width: 100%;
   max-width: none;
-  min-height: min(72svh, 620px);
-  height: min(76svh, 720px);
+  min-height: 0;
+  height: auto;
 }
 
 .orbivue-ask-input {
@@ -1217,6 +1255,16 @@ body:has(.orbivue-dashboard) {
   min-width: 0;
 }
 
+.orbivue-compare-mode {
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
+.orbivue-compare-mode > button {
+  min-width: 0;
+  flex: 1;
+}
+
 .orbivue-attachment-strip {
   flex: 1 1 100%;
   min-width: 0;
@@ -1241,26 +1289,16 @@ body:has(.orbivue-dashboard) {
   max-width: min(100%, 300px) !important;
 }
 
-.orbivue-attachment-thumb,
-.orbivue-cross-modal-preview {
+.orbivue-attachment-thumb {
   display: block;
   max-width: 100%;
-}
-
-.orbivue-cross-modal-upload-grid,
-.orbivue-cross-modal-upload-card {
-  min-width: 0;
-  max-width: 100%;
-}
-
-.orbivue-cross-modal-upload-card {
-  overflow: hidden;
 }
 
 .orbivue-composer-actions {
   margin-left: auto;
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  flex-shrink: 0;
   align-items: center;
   min-width: 0;
   max-width: 100%;
@@ -1387,7 +1425,10 @@ body:has(.orbivue-dashboard) {
 }
 
 .orbivue-trust-panel {
-  align-self: start;
+  align-self: stretch;
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
   border-radius: 12px;
   padding: 16px;
 }
@@ -1647,7 +1688,7 @@ body:has(.orbivue-dashboard) {
 }
 
 @media (min-width: 900px) {
-  .orbivue-composer-row:not(:has(.orbivue-attachment-chip)) {
+  .orbivue-composer-row:not(:has(.orbivue-attachment-chip, .orbivue-attachment-strip, .orbivue-compare-mode)) {
     flex-wrap: nowrap;
   }
 
@@ -1850,11 +1891,6 @@ body:has(.orbivue-dashboard[data-theme="light"]) {
   background: var(--bg-sidebar);
 }
 
-.orbivue-side-logo {
-  width: 40px !important;
-  max-width: 40px !important;
-}
-
 .orbivue-new-chat {
   padding: 9px 11px;
 }
@@ -1919,8 +1955,8 @@ body:has(.orbivue-dashboard[data-theme="light"]) {
 
 .workspace-chat-card-empty,
 .workspace-chat-card-active {
-  min-height: min(66svh, 560px);
-  height: min(70svh, 640px);
+  min-height: 0;
+  height: auto;
 }
 
 .orbivue-ask-input {

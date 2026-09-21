@@ -507,7 +507,9 @@ function OrbivueSidebar({
   return (
     <aside className={`orbivue-side-nav ${isOpen ? "is-open" : ""}`}>
       <div className="orbivue-side-brand">
-        <OrbivueLogo className="orbivue-side-logo" />
+        <div className="orbivue-side-logo-crop">
+          <OrbivueLogo className="orbivue-side-logo" />
+        </div>
         <button type="button" className="orbivue-side-close" onClick={onClose} aria-label="Close navigation">
           <X size={18} />
         </button>
