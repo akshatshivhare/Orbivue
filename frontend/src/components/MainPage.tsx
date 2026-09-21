@@ -93,6 +93,7 @@ const navItems: Array<{
 
 type MainPageProps = {
   userName?: string;
+  sessionLabel?: string;
 };
 
 function debugLog(...args: unknown[]) {
@@ -845,7 +846,7 @@ function TrustPanel({ model }: { model: TrustPanelModel }) {
   );
 }
 
-export function MainPage({ userName = "Explorer" }: MainPageProps) {
+export function MainPage({ userName = "Explorer", sessionLabel }: MainPageProps) {
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -1804,7 +1805,10 @@ export function MainPage({ userName = "Explorer" }: MainPageProps) {
         <header className="orbivue-topbar">
           <div>
             <p className="orbivue-kicker">Remote-sensing vision-language platform</p>
-            <h1>Ask ORBIVUE</h1>
+            <div className="orbivue-title-row">
+              <h1>Ask ORBIVUE</h1>
+              {sessionLabel && <span className="orbivue-session-label">{sessionLabel}</span>}
+            </div>
             <span className="sr-only">Signed in as {userName}</span>
           </div>
           <div className="orbivue-topbar-actions">
