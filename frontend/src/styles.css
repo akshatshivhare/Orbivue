@@ -1244,14 +1244,20 @@ body:has(.orbivue-dashboard) {
 .orbivue-hero-copy {
   position: relative;
   z-index: 2;
+  min-width: 0;
+  max-width: 680px;
 }
 
 .orbivue-hero-copy h2 {
+  max-width: 660px;
   margin: 12px 0 0;
   color: var(--text-main);
-  font-size: clamp(3.1rem, 5vw, 4.35rem);
+  font-size: clamp(2.85rem, 4.35vw, 4.05rem);
   font-weight: 700;
-  line-height: 0.98;
+  line-height: 1.04;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 .orbivue-hero-copy p {
@@ -2150,8 +2156,8 @@ body:has(.orbivue-dashboard[data-theme="light"]) {
 
 .orbivue-hero-copy h2 {
   margin-top: 10px;
-  font-size: clamp(2.6rem, 3.5vw, 3.4rem);
-  line-height: 0.98;
+  font-size: clamp(2.35rem, 3.05vw, 3rem);
+  line-height: 1.05;
 }
 
 .orbivue-hero-copy p {

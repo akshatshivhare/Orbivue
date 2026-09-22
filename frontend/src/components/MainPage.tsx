@@ -19,7 +19,7 @@ import {
 import orbivueEarth from "../assets/orbivue-earth.png";
 import orbivueSatellite from "../assets/orbivue-satellite.png";
 import { apiUrl } from "../config/api";
-import { useLanguage, splitLines } from "../i18n/LanguageContext";
+import { useLanguage } from "../i18n/LanguageContext";
 import { SUPPORTED_LANGUAGES, type LanguageCode, type TranslationKey } from "../i18n/translations";
 import { ChatWorkspace } from "./ChatWorkspace";
 import { OrbivueLogo } from "./OrbivueLogo";
@@ -880,14 +880,7 @@ function OrbivueHero({ t }: { t: (key: TranslationKey) => string }) {
     <section className="orbivue-hero-panel">
       <div className="orbivue-hero-copy">
         <span>ORBIVUE</span>
-        <h2>
-          {splitLines(t("hero.title")).map((line, index) => (
-            <span key={`${line}-${index}`}>
-              {line}
-              {index < splitLines(t("hero.title")).length - 1 && <br />}
-            </span>
-          ))}
-        </h2>
+        <h2>{t("hero.title")}</h2>
         <p>{t("hero.subtitle")}</p>
       </div>
       <div className="orbivue-hero-visual" aria-hidden="true">
