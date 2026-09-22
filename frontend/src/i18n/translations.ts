@@ -83,6 +83,7 @@ export type TranslationKey =
   | "settings.expertDescription"
   | "simple.subtitle"
   | "simple.placeholder"
+  | "simple.placeholderTemporal"
   | "simple.compareTwoImages"
   | "simple.advancedComparison"
   | "simple.advancedComparisonHelp"
@@ -109,6 +110,7 @@ export type TranslationKey =
   | "composer.mic"
   | "composer.send"
   | "composer.attachImage"
+  | "attachment.switchedToChange"
   | "composer.t1Active"
   | "composer.t1T2Mode"
   | "composer.addT2"
@@ -295,6 +297,7 @@ export const translations: Record<LanguageCode, Record<TranslationKey, string>> 
     "settings.expertDescription": "Full Earth-intelligence tools, evidence details and advanced analysis.",
     "simple.subtitle": "Upload satellite imagery and ask what you want to know.",
     "simple.placeholder": "Ask something about this satellite image...",
+    "simple.placeholderTemporal": "What changed between these two images?",
     "simple.compareTwoImages": "Compare two images",
     "simple.advancedComparison": "Compare different sensor images",
     "simple.advancedComparisonHelp": "Use an Optical image and a SAR/Radar image together.",
@@ -321,6 +324,7 @@ export const translations: Record<LanguageCode, Record<TranslationKey, string>> 
     "composer.mic": "Mic",
     "composer.send": "Send",
     "composer.attachImage": "Attach image",
+    "attachment.switchedToChange": "Second image detected — switched to Change Over Time.",
     "composer.t1Active": "T1 active",
     "composer.t1T2Mode": "T1 ↔ T2 Change Mode",
     "composer.addT2": "Add T2 / After image to enable change analysis.",
@@ -506,6 +510,7 @@ export const translations: Record<LanguageCode, Record<TranslationKey, string>> 
     "settings.expertDescription": "पूरे Earth-intelligence tools, evidence details और advanced analysis.",
     "simple.subtitle": "सैटेलाइट imagery upload करें और जो जानना है पूछें।",
     "simple.placeholder": "इस सैटेलाइट तस्वीर के बारे में कुछ पूछें...",
+    "simple.placeholderTemporal": "इन दोनों तस्वीरों में क्या बदलाव हुआ है?",
     "simple.compareTwoImages": "दो images compare करें",
     "simple.advancedComparison": "अलग sensor images compare करें",
     "simple.advancedComparisonHelp": "Optical image और SAR/Radar image को साथ में use करें।",
@@ -532,6 +537,7 @@ export const translations: Record<LanguageCode, Record<TranslationKey, string>> 
     "composer.mic": "माइक",
     "composer.send": "भेजें",
     "composer.attachImage": "तस्वीर जोड़ें",
+    "attachment.switchedToChange": "दूसरी इमेज जुड़ गई है — Change Over Time मोड चालू कर दिया गया है।",
     "composer.t1Active": "T1 सक्रिय",
     "composer.t1T2Mode": "T1 ↔ T2 बदलाव मोड",
     "composer.addT2": "बदलाव विश्लेषण के लिए T2 / After image जोड़ें।",

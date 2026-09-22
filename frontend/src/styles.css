@@ -1442,6 +1442,31 @@ body:has(.orbivue-dashboard) {
   min-width: 0;
 }
 
+.orbivue-attachment-notice {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+  border: 1px solid rgba(64, 212, 189, 0.24);
+  border-radius: 999px;
+  background: rgba(14, 48, 72, 0.72);
+  padding: 6px 10px;
+  color: #d4fff5;
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.orbivue-attachment-notice svg {
+  flex-shrink: 0;
+}
+
+.orbivue-attachment-notice span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .orbivue-compare-mode {
   flex-shrink: 0;
   max-width: 100%;
@@ -2376,6 +2401,12 @@ body:has(.orbivue-dashboard[data-theme="light"]) {
 
 .orbivue-dashboard[data-theme="light"] .orbivue-workspace-composer .orbivue-textarea {
   flex: 1;
+}
+
+.orbivue-dashboard[data-theme="light"] .orbivue-attachment-notice {
+  border-color: rgba(15, 159, 145, 0.2);
+  background: #edf8f6;
+  color: #0a665d;
 }
 
 .orbivue-dashboard[data-theme="light"] .orbivue-textarea {

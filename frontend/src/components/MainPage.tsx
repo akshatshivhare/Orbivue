@@ -1040,6 +1040,7 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
     sar: "",
   });
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [attachmentNotice, setAttachmentNotice] = useState("");
   const [latestReport, setLatestReport] = useState<ReportInput | null>(null);
   const [activeReport, setActiveReport] = useState<ReportInput | null>(null);
   const [isReportEmptyStateOpen, setIsReportEmptyStateOpen] = useState(false);
@@ -1212,6 +1213,7 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
 
       setCrossModalImages(nextCrossModalImages);
       setError("");
+      setAttachmentNotice("");
       setLatestReport(null);
       setHasWorkspaceOpened(true);
       compressedCrossModalImagesRef.current[slot] = undefined;
@@ -1227,9 +1229,36 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
     }
 
     if (!isCompareWorkflow) {
+      if (selectedImage) {
+        setTemporalImages({ t1: selectedImage, t2: file });
+        setTemporalImageMetadata({ t1: selectedImageMetadata, t2: null });
+        setCrossModalImages({ optical: null, sar: null });
+        setSelectedImage(null);
+        setSelectedImageMetadata(null);
+        setCompareMode("temporal");
+        setIsCompareWorkflow(true);
+        setError("");
+        setAttachmentNotice(t("attachment.switchedToChange"));
+        setLatestReport(null);
+        compressedImageRef.current = null;
+        compressedTemporalImagesRef.current = {};
+        compressedCrossModalImagesRef.current = {};
+        analyzedPairRef.current = null;
+        setHasWorkspaceOpened(true);
+
+        debugLog("[OrbiVue Change] second image detected; switched to temporal compare:", file.name);
+
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+
+        return;
+      }
+
       setSelectedImage(file);
       setSelectedImageMetadata(null);
       setError("");
+      setAttachmentNotice("");
       setLatestReport(null);
       compressedImageRef.current = null;
       setHasWorkspaceOpened(true);
@@ -1260,6 +1289,7 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
     setSelectedImage(null);
     setSelectedImageMetadata(null);
     setError("");
+    setAttachmentNotice("");
     setLatestReport(null);
     compressedImageRef.current = null;
     compressedTemporalImagesRef.current[slot] = undefined;
@@ -1281,6 +1311,7 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
     setSelectedImage(null);
     setSelectedImageMetadata(null);
     setError("");
+    setAttachmentNotice("");
     setLatestReport(null);
     compressedImageRef.current = null;
 
@@ -1291,27 +1322,45 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
 
   const clearCrossModalImages = () => {
     setCrossModalImages({ optical: null, sar: null });
+    setAttachmentNotice("");
     setLatestReport(null);
     compressedCrossModalImagesRef.current = {};
     crossModalAttachSlotRef.current = "auto";
   };
 
   const removeTemporalImage = (slot: TemporalImageSlot) => {
-    const nextTemporalImages =
-      slot === "t1"
-        ? { t1: temporalImages.t2, t2: null }
-        : { t1: temporalImages.t1, t2: null };
-    const nextTemporalMetadata =
-      slot === "t1"
-        ? { t1: temporalImageMetadata.t2, t2: null }
-        : { t1: temporalImageMetadata.t1, t2: null };
+    const remainingImage = slot === "t1" ? temporalImages.t2 : temporalImages.t1;
+    const remainingMetadata = slot === "t1" ? temporalImageMetadata.t2 : temporalImageMetadata.t1;
+    const hadPair = Boolean(temporalImages.t1 && temporalImages.t2);
 
-    setTemporalImages(nextTemporalImages);
-    setTemporalImageMetadata(nextTemporalMetadata);
+    if (hadPair && remainingImage) {
+      setSelectedImage(remainingImage);
+      setSelectedImageMetadata(remainingMetadata);
+      setTemporalImages({ t1: null, t2: null });
+      setTemporalImageMetadata({ t1: null, t2: null });
+      setCrossModalImages({ optical: null, sar: null });
+      setCompareMode("temporal");
+      setIsCompareWorkflow(false);
+    } else {
+      const nextTemporalImages =
+        slot === "t1"
+          ? { t1: temporalImages.t2, t2: null }
+          : { t1: temporalImages.t1, t2: null };
+      const nextTemporalMetadata =
+        slot === "t1"
+          ? { t1: temporalImageMetadata.t2, t2: null }
+          : { t1: temporalImageMetadata.t1, t2: null };
+
+      setTemporalImages(nextTemporalImages);
+      setTemporalImageMetadata(nextTemporalMetadata);
+    }
+
     setError("");
+    setAttachmentNotice("");
     setLatestReport(null);
     compressedImageRef.current = null;
     compressedTemporalImagesRef.current = {};
+    compressedCrossModalImagesRef.current = {};
     analyzedPairRef.current = null;
 
     if (fileInputRef.current) {
@@ -1320,15 +1369,33 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
   };
 
   const removeCrossModalImage = (slot: CrossModalImageSlot) => {
-    const nextCrossModalImages =
-      slot === "optical"
-        ? { optical: null, sar: crossModalImages.sar }
-        : { optical: crossModalImages.optical, sar: null };
+    const remainingImage = slot === "optical" ? crossModalImages.sar : crossModalImages.optical;
+    const hadPair = Boolean(crossModalImages.optical && crossModalImages.sar);
 
-    setCrossModalImages(nextCrossModalImages);
+    if (hadPair && remainingImage) {
+      setSelectedImage(remainingImage);
+      setSelectedImageMetadata(null);
+      setCrossModalImages({ optical: null, sar: null });
+      setTemporalImages({ t1: null, t2: null });
+      setTemporalImageMetadata({ t1: null, t2: null });
+      setCompareMode("temporal");
+      setIsCompareWorkflow(false);
+    } else {
+      const nextCrossModalImages =
+        slot === "optical"
+          ? { optical: null, sar: crossModalImages.sar }
+          : { optical: crossModalImages.optical, sar: null };
+
+      setCrossModalImages(nextCrossModalImages);
+    }
+
     setError("");
+    setAttachmentNotice("");
     setLatestReport(null);
+    compressedImageRef.current = null;
+    compressedTemporalImagesRef.current = {};
     compressedCrossModalImagesRef.current[slot] = undefined;
+    analyzedPairRef.current = null;
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -1342,6 +1409,7 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
     setSelectedImage(null);
     setSelectedImageMetadata(null);
     setLatestReport(null);
+    setAttachmentNotice("");
     compressedImageRef.current = null;
     fileInputRef.current?.click();
   };
@@ -1353,9 +1421,40 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
     setSelectedImage(null);
     setSelectedImageMetadata(null);
     setLatestReport(null);
+    setAttachmentNotice("");
     compressedImageRef.current = null;
     setHasWorkspaceOpened(true);
     fileInputRef.current?.click();
+  };
+
+  const changeCompareMode = (mode: CompareMode) => {
+    const currentSingleImage = selectedImage;
+    const currentSingleMetadata = selectedImageMetadata;
+
+    setIsCompareWorkflow(true);
+    setSelectedImage(null);
+    setSelectedImageMetadata(null);
+    compressedImageRef.current = null;
+    setCompareMode(mode);
+    setError("");
+    setAttachmentNotice("");
+    setLatestReport(null);
+    setHasWorkspaceOpened(true);
+
+    if (mode === "cross_modal") {
+      const optical = crossModalImages.optical ?? temporalImages.t1 ?? currentSingleImage;
+      const sar = crossModalImages.sar ?? temporalImages.t2;
+      setCrossModalImages({ optical, sar });
+      compressedCrossModalImagesRef.current = {};
+      return;
+    }
+
+    const t1 = temporalImages.t1 ?? crossModalImages.optical ?? currentSingleImage;
+    const t2 = temporalImages.t2 ?? crossModalImages.sar;
+    setTemporalImages({ t1, t2 });
+    setTemporalImageMetadata({ t1: temporalImages.t1 ? temporalImageMetadata.t1 : currentSingleMetadata, t2: temporalImageMetadata.t2 });
+    compressedTemporalImagesRef.current = {};
+    analyzedPairRef.current = null;
   };
 
   const swapTemporalImages = () => {
@@ -1368,6 +1467,7 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
     setTemporalImages(nextTemporalImages);
     setTemporalImageMetadata(nextTemporalMetadata);
     setError("");
+    setAttachmentNotice("");
     setLatestReport(null);
     compressedImageRef.current = null;
     compressedTemporalImagesRef.current = {};
@@ -1381,6 +1481,7 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
     setMessages([]);
     setQuery("");
     setError("");
+    setAttachmentNotice("");
     clearSelectedImage();
     setTemporalImages({ t1: null, t2: null });
     setTemporalImageMetadata({ t1: null, t2: null });
@@ -1398,6 +1499,7 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
     setIsCompareWorkflow(false);
     setIsSatelliteExplorerOpen(false);
     setError("");
+    setAttachmentNotice("");
     setLatestReport(null);
     setHasWorkspaceOpened(true);
     setIsSidebarOpen(false);
@@ -1410,6 +1512,7 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
     setSelectedImageMetadata(null);
     compressedImageRef.current = null;
     setError("");
+    setAttachmentNotice("");
     setLatestReport(null);
     setHasWorkspaceOpened(true);
     setIsSidebarOpen(false);
@@ -1444,6 +1547,7 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
     setIsSatelliteExplorerOpen(false);
     setQuery("");
     setError("");
+    setAttachmentNotice("");
     setLatestReport(null);
     compressedImageRef.current = null;
     setHasWorkspaceOpened(true);
@@ -1467,6 +1571,7 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
     setIsSatelliteExplorerOpen(false);
     setQuery("");
     setError("");
+    setAttachmentNotice("");
     setLatestReport(null);
     setHasWorkspaceOpened(true);
   };
@@ -2060,19 +2165,13 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
                   imagePreviewUrl={imagePreviewUrl}
                   compareMode={compareMode}
                   isCompareWorkflow={isCompareWorkflow}
-                  onCompareModeChange={(mode) => {
-                    setIsCompareWorkflow(true);
-                    setSelectedImage(null);
-                    compressedImageRef.current = null;
-                    setCompareMode(mode);
-                    setError("");
-                    setHasWorkspaceOpened(true);
-                  }}
+                  onCompareModeChange={changeCompareMode}
                   temporalImages={temporalImages}
                   temporalImageMetadata={temporalImageMetadata}
                   temporalPreviewUrls={temporalPreviewUrls}
                   crossModalImages={crossModalImages}
                   crossModalPreviewUrls={crossModalPreviewUrls}
+                  attachmentNotice={attachmentNotice}
                   fileInputRef={fileInputRef}
                   onImageSelected={selectImage}
                   onClearImage={clearSelectedImage}

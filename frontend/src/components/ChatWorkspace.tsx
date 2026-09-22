@@ -52,6 +52,7 @@ type ChatWorkspaceProps = {
   temporalPreviewUrls: TemporalImagePreviews;
   crossModalImages: CrossModalImageState;
   crossModalPreviewUrls: CrossModalImagePreviews;
+  attachmentNotice: string;
   fileInputRef: RefObject<HTMLInputElement>;
   onImageSelected: (file: File | null) => void;
   onClearImage: () => void;
@@ -88,6 +89,7 @@ export function ChatWorkspace({
   temporalPreviewUrls,
   crossModalImages,
   crossModalPreviewUrls,
+  attachmentNotice,
   fileInputRef,
   onImageSelected,
   onClearImage,
@@ -277,6 +279,8 @@ export function ChatWorkspace({
               onReplaceTemporalImage={onReplaceTemporalImage}
               onSwapTemporalImages={onSwapTemporalImages}
               temporalPreviewUrls={temporalPreviewUrls}
+              experienceMode={experienceMode}
+              t={t}
               disabled={isLoading}
             />
           )}
@@ -330,6 +334,13 @@ export function ChatWorkspace({
           </div>
         </div>
 
+        {attachmentNotice && (
+          <div className="orbivue-attachment-notice" role="status">
+            <Info size={15} />
+            <span>{attachmentNotice}</span>
+          </div>
+        )}
+
         {isCompareWorkflow && compareMode === "temporal" && hasTemporalImage && (
           <div className="mt-2 flex flex-wrap items-center gap-2 pl-1 text-xs font-bold text-[#657a8c]">
             <span
@@ -355,6 +366,8 @@ export function ChatWorkspace({
               placeholder={
                 isCompareWorkflow && compareMode === "cross_modal"
                   ? t("composer.placeholderCrossModal")
+                  : isCompareWorkflow && hasTemporalPair && experienceMode === "simple"
+                  ? t("simple.placeholderTemporal")
                   : isCompareWorkflow && hasTemporalPair
                   ? t("composer.placeholderTemporal")
                   : selectedImageMetadata
@@ -1156,6 +1169,8 @@ function TemporalAttachmentStrip({
   temporalImages,
   temporalImageMetadata,
   temporalPreviewUrls,
+  experienceMode,
+  t,
   onRemoveTemporalImage,
   onReplaceTemporalImage,
   onSwapTemporalImages,
@@ -1164,6 +1179,8 @@ function TemporalAttachmentStrip({
   temporalImages: TemporalImageState;
   temporalImageMetadata: TemporalImageryMetadata;
   temporalPreviewUrls: TemporalImagePreviews;
+  experienceMode: "simple" | "expert";
+  t: (key: TranslationKey) => string;
   onRemoveTemporalImage: (slot: TemporalImageSlot) => void;
   onReplaceTemporalImage: (slot: TemporalImageSlot) => void;
   onSwapTemporalImages: () => void;
@@ -1175,7 +1192,7 @@ function TemporalAttachmentStrip({
     <div className="orbivue-attachment-strip flex flex-wrap items-center gap-2">
       {temporalImages.t1 && (
         <TemporalChip
-          label="T1 / BEFORE"
+          label={experienceMode === "simple" ? t("common.before") : "T1 / BEFORE"}
           fileName={temporalImageMetadata.t1 ? satelliteChipLabel(temporalImageMetadata.t1) : temporalImages.t1.name}
           previewUrl={temporalPreviewUrls.t1}
           onRemove={() => onRemoveTemporalImage("t1")}
@@ -1196,7 +1213,7 @@ function TemporalAttachmentStrip({
       )}
       {temporalImages.t2 ? (
         <TemporalChip
-          label="T2 / AFTER"
+          label={experienceMode === "simple" ? t("common.after") : "T2 / AFTER"}
           fileName={temporalImageMetadata.t2 ? satelliteChipLabel(temporalImageMetadata.t2) : temporalImages.t2.name}
           previewUrl={temporalPreviewUrls.t2}
           onRemove={() => onRemoveTemporalImage("t2")}
