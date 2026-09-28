@@ -93,6 +93,8 @@ export type TranslationKey =
   | "simple.whatOrbivueSees"
   | "simple.objectsFound"
   | "simple.changeSummary"
+  | "simple.visibleChanges"
+  | "simple.possibleImageDifferences"
   | "simple.reliabilityNote"
   | "simple.aiReviewNote"
   | "hero.title"
@@ -307,6 +309,8 @@ export const translations: Record<LanguageCode, Record<TranslationKey, string>> 
     "simple.whatOrbivueSees": "What ORBIVUE sees",
     "simple.objectsFound": "Objects found",
     "simple.changeSummary": "Change summary",
+    "simple.visibleChanges": "Visible changes",
+    "simple.possibleImageDifferences": "Possible image differences",
     "simple.reliabilityNote": "Reliability note",
     "simple.aiReviewNote": "AI interpretation — review important findings before making decisions.",
     "hero.title": "Earth Intelligence You Can Verify",
@@ -520,6 +524,8 @@ export const translations: Record<LanguageCode, Record<TranslationKey, string>> 
     "simple.whatOrbivueSees": "ORBIVUE क्या देखता है",
     "simple.objectsFound": "Objects मिले",
     "simple.changeSummary": "बदलाव summary",
+    "simple.visibleChanges": "दिखने वाले बदलाव",
+    "simple.possibleImageDifferences": "संभावित image differences",
     "simple.reliabilityNote": "Reliability note",
     "simple.aiReviewNote": "AI interpretation — important findings को decision से पहले review करें।",
     "hero.title": "ऐसी Earth Intelligence जिसे आप जाँच सकें",

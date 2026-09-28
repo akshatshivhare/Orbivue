@@ -10,6 +10,7 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app import config
 from app.services import daily_request_limiter as limiter_module
 
 
@@ -19,14 +20,18 @@ class DailyRequestLimitTests(unittest.TestCase):
         self.state_path = Path(self.temp_dir.name) / "daily_limits.json"
         self.patches = [
             patch.object(limiter_module, "DAILY_REQUEST_LIMIT_STATE_PATH", str(self.state_path)),
-            patch.object(limiter_module, "DAILY_REQUEST_LIMIT_PER_CLIENT", 10),
-            patch.object(limiter_module, "DAILY_REQUEST_LIMIT_GLOBAL", 40),
+            patch.object(limiter_module, "DAILY_REQUEST_LIMIT_PER_CLIENT", 30),
+            patch.object(limiter_module, "DAILY_REQUEST_LIMIT_GLOBAL", 80),
         ]
         for patcher in self.patches:
             patcher.start()
             self.addCleanup(patcher.stop)
         self.addCleanup(self.temp_dir.cleanup)
         self.client = TestClient(app)
+
+    def test_default_limit_values_are_demo_testing_limits(self) -> None:
+        self.assertEqual(config.DAILY_REQUEST_LIMIT_PER_CLIENT, 30)
+        self.assertEqual(config.DAILY_REQUEST_LIMIT_GLOBAL, 80)
 
     def test_request_below_limit_is_allowed(self) -> None:
         with (

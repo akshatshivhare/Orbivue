@@ -638,7 +638,11 @@ function SimpleResultCard({
         </div>
       )}
 
-      <ModelText text={message.text} />
+      {message.temporalImages && message.changeAnalysis ? (
+        <SimpleTemporalChangeSummary analysis={message.changeAnalysis} t={t} />
+      ) : (
+        <ModelText text={message.text} />
+      )}
 
       <p className="mt-3 rounded-lg bg-[#f7f4ed] px-3 py-2 text-xs font-bold leading-5 text-[#456172]">
         {t("simple.aiReviewNote")}
@@ -664,6 +668,63 @@ function SimpleResultCard({
         </div>
       )}
     </article>
+  );
+}
+
+function SimpleTemporalChangeSummary({
+  analysis,
+  t,
+}: {
+  analysis: ChangeAnalysisPayload;
+  t: (key: TranslationKey) => string;
+}) {
+  const visibleChanges = analysis.changes
+    .map((change) => change.change || change.description)
+    .filter(Boolean)
+    .slice(0, 5);
+  const imageEffects = (analysis.possible_imaging_effects ?? []).slice(0, 4);
+
+  return (
+    <div className="space-y-3 text-[0.86rem] leading-6 text-[#14314b]">
+      <section>
+        <h4 className="text-xs font-black uppercase tracking-[0.12em] text-[#0b6048]">
+          {t("simple.changeSummary")}
+        </h4>
+        <p className="mt-1">{cleanModelText(analysis.summary || analysis.final_answer)}</p>
+      </section>
+
+      {visibleChanges.length > 0 && (
+        <section>
+          <h4 className="text-xs font-black uppercase tracking-[0.12em] text-[#0b6048]">
+            {t("simple.visibleChanges")}
+          </h4>
+          <ul className="mt-1 space-y-1.5">
+            {visibleChanges.map((item, index) => (
+              <li key={`simple-change-${index}`} className="flex gap-2">
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#0b7b5b]" />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {imageEffects.length > 0 && (
+        <section>
+          <h4 className="text-xs font-black uppercase tracking-[0.12em] text-[#0b6048]">
+            {t("simple.possibleImageDifferences")}
+          </h4>
+          <ul className="mt-1 space-y-1.5">
+            {imageEffects.map((item, index) => (
+              <li key={`simple-effect-${index}`} className="flex gap-2">
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#0b7b5b]" />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
   );
 }
 
@@ -1455,7 +1516,57 @@ function observabilityLabel(value: string) {
 }
 
 function cleanModelText(text: string) {
-  return text.replace(/\\n/g, "\n").replace(/\*\*/g, "").trim();
+  const normalized = text.replace(/\\n/g, "\n").replace(/\*\*/g, "").trim();
+  const unfenced = stripMarkdownJsonFence(normalized);
+  const parsed = parseDisplayJson(unfenced);
+
+  if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+    const record = parsed as Record<string, unknown>;
+    const summary = stringValue(record.summary) || stringValue(record.final_answer) || stringValue(record.answer);
+    const changes = Array.isArray(record.changes)
+      ? record.changes
+          .map((item) => {
+            if (!item || typeof item !== "object") {
+              return "";
+            }
+            const change = item as Record<string, unknown>;
+            return stringValue(change.change) || stringValue(change.description) || stringValue(change.category);
+          })
+          .filter(Boolean)
+      : [];
+    return [summary, ...changes.map((item) => `- ${item}`)].filter(Boolean).join("\n\n");
+  }
+
+  return unfenced;
+}
+
+function stripMarkdownJsonFence(text: string) {
+  return text
+    .replace(/^```(?:json|JSON)?\s*/u, "")
+    .replace(/\s*```$/u, "")
+    .replace(/```(?:json|JSON)?/gu, "")
+    .replace(/```/gu, "")
+    .trim();
+}
+
+function parseDisplayJson(text: string): unknown | null {
+  try {
+    return JSON.parse(text);
+  } catch {
+    const match = text.match(/(\{[\s\S]*\}|\[[\s\S]*\])/u);
+    if (!match) {
+      return null;
+    }
+    try {
+      return JSON.parse(match[1]);
+    } catch {
+      return null;
+    }
+  }
+}
+
+function stringValue(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
 }
 
 function providerShortLabel(provider: string, product?: string) {

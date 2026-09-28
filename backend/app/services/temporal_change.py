@@ -8,6 +8,7 @@ from .gemini_client import (
     error_type,
     parse_json_output,
     raise_user_facing_gemini_error,
+    strip_json_code_fences,
 )
 from .providers import get_temporal_provider
 from .response_language import language_instruction
@@ -119,7 +120,57 @@ def _normalize_change_guard(value: Any) -> ChangeGuardMetadata | None:
     return guard or None
 
 
+def _clean_unparsed_temporal_text(value: str) -> str:
+    cleaned = strip_json_code_fences(value)
+    return cleaned.replace("```json", "").replace("```JSON", "").replace("```", "").strip()
+
+
+def _merge_outer_temporal_fields(parsed: dict[str, Any], outer: dict[str, Any]) -> dict[str, Any]:
+    merged = dict(parsed)
+    for key in ("change_guard", "mode"):
+        if key in outer and key not in merged:
+            merged[key] = outer[key]
+    return merged
+
+
+def _unwrap_nested_temporal_json(raw_response: Any) -> Any:
+    if isinstance(raw_response, list):
+        return raw_response
+
+    if not isinstance(raw_response, dict):
+        if isinstance(raw_response, str):
+            try:
+                return parse_json_output(raw_response)
+            except Exception:
+                return {
+                    "summary": _clean_unparsed_temporal_text(raw_response),
+                    "final_answer": _clean_unparsed_temporal_text(raw_response),
+                }
+        return raw_response
+
+    for key in ("summary", "final_answer", "answer", "description"):
+        value = raw_response.get(key)
+        if not isinstance(value, str) or not value.strip():
+            continue
+        try:
+            parsed = parse_json_output(value)
+        except Exception as error:
+            print("[SatQuery Change] nested JSON parse skipped:", repr(error))
+            cleaned_value = _clean_unparsed_temporal_text(value)
+            if cleaned_value != value:
+                cleaned = dict(raw_response)
+                cleaned[key] = cleaned_value
+                return cleaned
+            continue
+        if isinstance(parsed, dict):
+            return _merge_outer_temporal_fields(parsed, raw_response)
+
+    return raw_response
+
+
 def _normalize_change_response(raw_response: Any, *, is_follow_up: bool) -> ChangeAnalysisResponse:
+    raw_response = _unwrap_nested_temporal_json(raw_response)
+
     if isinstance(raw_response, list):
         raw_response = raw_response[0] if raw_response and isinstance(raw_response[0], dict) else {}
 
@@ -175,6 +226,8 @@ def _normalize_change_response(raw_response: Any, *, is_follow_up: bool) -> Chan
     final_answer = str(raw_response.get("final_answer") or raw_response.get("answer") or summary).strip()
     if not final_answer:
         final_answer = summary
+    final_answer = _clean_unparsed_temporal_text(final_answer)
+    summary = _clean_unparsed_temporal_text(summary)
 
     unchanged = _normalize_string_list(raw_response.get("unchanged"))
     unchanged_features = _normalize_string_list(raw_response.get("unchanged_features"))

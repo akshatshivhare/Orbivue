@@ -216,7 +216,7 @@ function DetailedChangeSection({ report, t }: { report: ReportInput; t: (key: Tr
     <ReportSection title={t("report.detailedChange")} label="Temporal details">
       <div className="analysis-report-change-overview">
         <strong>Overall Change</strong>
-        <p>{analysis.summary || analysis.final_answer}</p>
+        <p>{cleanReportText(analysis.summary || analysis.final_answer)}</p>
       </div>
 
       {analysis.changes.length > 0 && (
@@ -357,7 +357,7 @@ function executiveSummary(report: ReportInput) {
 }
 
 function sentenceSummary(value: string) {
-  const sentences = value
+  const sentences = cleanReportText(value)
     .replace(/\*\*/g, "")
     .split(/(?<=[.!?])\s+/)
     .map((sentence) => sentence.trim())
@@ -365,6 +365,25 @@ function sentenceSummary(value: string) {
     .slice(0, 4);
 
   return sentences.join(" ") || "No summary text was available.";
+}
+
+function cleanReportText(value: string) {
+  const unfenced = value
+    .replace(/\\n/g, "\n")
+    .replace(/^```(?:json|JSON)?\s*/u, "")
+    .replace(/\s*```$/u, "")
+    .replace(/```(?:json|JSON)?/gu, "")
+    .replace(/```/gu, "")
+    .trim();
+
+  try {
+    const parsed = JSON.parse(unfenced) as Record<string, unknown>;
+    const summary = typeof parsed.summary === "string" ? parsed.summary.trim() : "";
+    const finalAnswer = typeof parsed.final_answer === "string" ? parsed.final_answer.trim() : "";
+    return summary || finalAnswer || unfenced;
+  } catch {
+    return unfenced;
+  }
 }
 
 function modeLabel(report: ReportInput) {

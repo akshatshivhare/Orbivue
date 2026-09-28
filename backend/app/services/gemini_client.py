@@ -62,12 +62,61 @@ def encode_image_part(image_path: Path) -> dict[str, str]:
     }
 
 
-def parse_json_output(output_text: str) -> Any:
+def strip_json_code_fences(output_text: str) -> str:
     cleaned = output_text.strip()
-    if cleaned.startswith("```"):
-        cleaned = cleaned.removeprefix("```json").removeprefix("```").strip()
-        cleaned = cleaned.removesuffix("```").strip()
-    return json.loads(cleaned)
+    fence_match = re.fullmatch(r"```\s*(?:json|JSON)?\s*(.*?)\s*```", cleaned, flags=re.DOTALL)
+    if fence_match:
+        return fence_match.group(1).strip()
+    return cleaned
+
+
+def _extract_first_json_container(output_text: str) -> str | None:
+    start = -1
+    closer = ""
+    for index, char in enumerate(output_text):
+        if char in "{[":
+            start = index
+            closer = "}" if char == "{" else "]"
+            break
+
+    if start < 0:
+        return None
+
+    stack = [closer]
+    in_string = False
+    escaped = False
+    for index in range(start + 1, len(output_text)):
+        char = output_text[index]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            continue
+
+        if char == '"':
+            in_string = True
+        elif char in "{[":
+            stack.append("}" if char == "{" else "]")
+        elif stack and char == stack[-1]:
+            stack.pop()
+            if not stack:
+                return output_text[start : index + 1]
+
+    return None
+
+
+def parse_json_output(output_text: str) -> Any:
+    cleaned = strip_json_code_fences(output_text)
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        extracted = _extract_first_json_container(cleaned)
+        if extracted is None:
+            raise
+        return json.loads(extracted)
 
 
 def is_temporary_unavailable(error: Exception) -> bool:
