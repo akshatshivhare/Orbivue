@@ -11,6 +11,7 @@ from .config import (
     gemini_api_key_loaded,
 )
 from .routes.analyze import router as analyze_router
+from .routes.archive import router as archive_router
 from .routes.change_analysis import router as change_analysis_router
 from .routes.cross_modal import router as cross_modal_router
 from .routes.general import router as general_router
@@ -28,6 +29,7 @@ app.add_middleware(
 )
 
 app.include_router(analyze_router)
+app.include_router(archive_router)
 app.include_router(change_analysis_router)
 app.include_router(cross_modal_router)
 app.include_router(general_router)

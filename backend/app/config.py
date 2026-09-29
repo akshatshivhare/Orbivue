@@ -62,6 +62,14 @@ DAILY_REQUEST_LIMIT_CLIENT_SALT = _env_or_default(
     "DAILY_REQUEST_LIMIT_CLIENT_SALT",
     "orbivue-demo-daily-request-limit-v1",
 )
+ORBIVUE_ARCHIVE_ROOT = _env_or_default(
+    "ORBIVUE_ARCHIVE_ROOT",
+    str(PROJECT_ROOT / "backend" / "runtime" / "archive_data"),
+)
+ORBIVUE_ARCHIVE_DB_PATH = _env_or_default(
+    "ORBIVUE_ARCHIVE_DB_PATH",
+    str(PROJECT_ROOT / "backend" / "runtime" / "archive" / "orbivue_archive.db"),
+)
 
 DEFAULT_ALLOWED_ORIGINS = [
     "https://orbivue.vercel.app",
