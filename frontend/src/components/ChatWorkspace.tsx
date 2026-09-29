@@ -354,6 +354,10 @@ export function ChatWorkspace({
           </div>
         )}
 
+        {isWorkspaceMode && isCompareWorkflow && compareMode === "temporal" && experienceMode === "expert" && (
+          <MultiTemporalReadinessPanel hasTemporalPair={hasTemporalPair} t={t} />
+        )}
+
         {isWorkspaceMode && (
           <div className="orbivue-workspace-composer">
             <Sparkles size={18} className="shrink-0" />
@@ -397,6 +401,31 @@ export function ChatWorkspace({
       {crossModalPreviewUrls.optical && <span className="sr-only">Optical image attached</span>}
       {crossModalPreviewUrls.sar && <span className="sr-only">SAR image attached</span>}
     </section>
+  );
+}
+
+function MultiTemporalReadinessPanel({
+  hasTemporalPair,
+  t,
+}: {
+  hasTemporalPair: boolean;
+  t: (key: TranslationKey) => string;
+}) {
+  return (
+    <div className="orbivue-temporal-readiness" aria-label={t("temporalReadiness.title")}>
+      <div>
+        <span>{t("temporalReadiness.timeWindow")}</span>
+        <strong>{hasTemporalPair ? t("temporalReadiness.twoObservation") : t("temporalReadiness.awaitingAfter")}</strong>
+      </div>
+      <div>
+        <span>{t("temporalReadiness.availableObservations")}</span>
+        <strong>{hasTemporalPair ? t("temporalReadiness.beforeAfterReady") : t("temporalReadiness.oneObservation")}</strong>
+      </div>
+      <div>
+        <span>{t("temporalReadiness.earliestSupportedChange")}</span>
+        <strong>{t("temporalReadiness.notEvaluatedMulti")}</strong>
+      </div>
+    </div>
   );
 }
 

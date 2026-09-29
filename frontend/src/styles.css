@@ -1147,13 +1147,28 @@ body:has(.orbivue-dashboard) {
 
 .orbivue-nav-list {
   display: grid;
-  gap: 6px;
+  gap: 12px;
+}
+
+.orbivue-nav-group {
+  display: grid;
+  gap: 5px;
+}
+
+.orbivue-nav-group > p {
+  margin: 0 0 2px;
+  padding: 0 8px;
+  color: var(--text-muted);
+  font-size: 0.63rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .orbivue-nav-item {
   display: grid;
   min-height: 42px;
-  grid-template-columns: 22px minmax(0, 1fr) auto;
+  grid-template-columns: 22px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
   border: 1px solid transparent;
@@ -1223,6 +1238,7 @@ body:has(.orbivue-dashboard) {
 .orbivue-hero-panel,
 .orbivue-chat-workspace,
 .orbivue-trust-panel,
+.orbivue-sih-workspace,
 .satellite-explorer {
   border: 1px solid var(--border-soft) !important;
   background: rgba(9, 27, 45, 0.88) !important;
@@ -1266,6 +1282,38 @@ body:has(.orbivue-dashboard) {
   color: var(--text-secondary);
   font-size: 0.98rem;
   line-height: 1.6;
+}
+
+.orbivue-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.orbivue-hero-actions button {
+  min-height: 40px;
+  border-radius: 10px;
+  padding: 0 15px;
+  font-size: 0.84rem;
+  font-weight: 850;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, color 180ms ease;
+}
+
+.orbivue-hero-actions button:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.orbivue-hero-primary {
+  border: 1px solid rgba(64, 212, 189, 0.4);
+  background: var(--accent);
+  color: #03151d;
+}
+
+.orbivue-hero-secondary {
+  border: 1px solid var(--border);
+  background: var(--control-bg);
+  color: var(--text-main);
 }
 
 .orbivue-hero-visual {
@@ -1324,6 +1372,368 @@ body:has(.orbivue-dashboard) {
   color: var(--text-main) !important;
   min-width: 0;
   overflow: hidden;
+}
+
+.orbivue-phase-stack {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 14px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.orbivue-sih-workspace {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: var(--panel-bg);
+  box-shadow: var(--dashboard-shadow);
+  padding: clamp(16px, 2vw, 22px);
+  color: var(--text-main);
+  overflow: hidden;
+}
+
+.orbivue-sih-header {
+  display: grid;
+  max-width: 860px;
+  gap: 7px;
+}
+
+.orbivue-sih-header span,
+.orbivue-results-heading span,
+.orbivue-semantic-search-card > label,
+.orbivue-filter-control span {
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.orbivue-sih-header h2,
+.orbivue-results-heading h3 {
+  margin: 0;
+  color: var(--text-main);
+  font-weight: 850;
+  line-height: 1.05;
+}
+
+.orbivue-sih-header h2 {
+  font-size: clamp(1.65rem, 2.6vw, 2.35rem);
+}
+
+.orbivue-sih-header p,
+.orbivue-results-heading p,
+.orbivue-empty-state p,
+.orbivue-reference-drop p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.orbivue-semantic-search-card,
+.orbivue-results-section,
+.orbivue-reference-panel {
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: var(--panel-subtle);
+  padding: 14px;
+}
+
+.orbivue-semantic-search-card {
+  display: grid;
+  gap: 12px;
+}
+
+.orbivue-semantic-query {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-input);
+  padding: 8px 8px 8px 12px;
+}
+
+.orbivue-semantic-query svg {
+  color: var(--accent-blue);
+}
+
+.orbivue-semantic-query input {
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 0.94rem;
+}
+
+.orbivue-semantic-query input::placeholder {
+  color: var(--text-muted);
+}
+
+.orbivue-semantic-query button,
+.orbivue-result-actions button,
+.orbivue-review-tabs button,
+.orbivue-query-chips button {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--control-bg);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.orbivue-semantic-query button {
+  min-height: 36px;
+  padding: 0 12px;
+}
+
+.orbivue-semantic-query button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.orbivue-query-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.orbivue-query-chips button {
+  padding: 7px 10px;
+}
+
+.orbivue-query-chips button:hover,
+.orbivue-result-actions button:hover,
+.orbivue-review-tabs button:hover,
+.orbivue-review-tabs button.is-active {
+  border-color: rgba(64, 212, 189, 0.4);
+  color: var(--text-main);
+  background: var(--bg-card-hover);
+}
+
+.orbivue-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.orbivue-filter-control {
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--bg-card-soft);
+  padding: 10px;
+}
+
+.orbivue-filter-control strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-main);
+  font-size: 0.86rem;
+}
+
+.orbivue-results-section {
+  display: grid;
+  gap: 12px;
+  min-height: 210px;
+}
+
+.orbivue-results-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.orbivue-results-heading h3 {
+  margin-top: 4px;
+  font-size: 1.08rem;
+}
+
+.orbivue-results-heading p {
+  max-width: 420px;
+  font-size: 0.78rem;
+  text-align: right;
+}
+
+.orbivue-empty-state {
+  display: grid;
+  min-height: 150px;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-card-soft) 70%, transparent);
+  padding: 20px;
+  text-align: center;
+}
+
+.orbivue-empty-state svg {
+  color: var(--accent-blue);
+}
+
+.orbivue-empty-state strong {
+  color: var(--text-main);
+}
+
+.orbivue-empty-state p {
+  max-width: 520px;
+  font-size: 0.88rem;
+}
+
+.orbivue-result-list,
+.orbivue-review-list {
+  display: grid;
+  gap: 10px;
+}
+
+.orbivue-result-card,
+.orbivue-review-card {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: var(--panel-raised);
+  padding: 12px;
+}
+
+.orbivue-result-thumb,
+.orbivue-before-after-placeholders {
+  display: grid;
+  min-height: 86px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-card-soft);
+  color: var(--text-muted);
+}
+
+.orbivue-result-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.orbivue-result-card h4,
+.orbivue-review-card h4 {
+  margin: 0 0 8px;
+  color: var(--text-main);
+  font-size: 1rem;
+}
+
+.orbivue-result-card dl,
+.orbivue-review-card dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px 14px;
+  margin: 0;
+}
+
+.orbivue-result-card dt,
+.orbivue-review-card dt {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.orbivue-result-card dd,
+.orbivue-review-card dd,
+.orbivue-review-card p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.orbivue-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.orbivue-result-actions button {
+  min-height: 32px;
+  padding: 0 9px;
+}
+
+.orbivue-similar-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.72fr) minmax(0, 1fr);
+  gap: 14px;
+  min-height: 0;
+}
+
+.orbivue-reference-panel {
+  display: grid;
+  min-height: 280px;
+}
+
+.orbivue-reference-drop {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 9px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: var(--bg-card-soft);
+  padding: 18px;
+  text-align: center;
+}
+
+.orbivue-reference-drop svg {
+  color: var(--accent-blue);
+}
+
+.orbivue-reference-drop strong {
+  color: var(--text-main);
+}
+
+.orbivue-review-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.orbivue-review-tabs button {
+  min-height: 34px;
+  padding: 0 12px;
+}
+
+.orbivue-before-after-placeholders {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 6px;
+}
+
+.orbivue-before-after-placeholders span {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  min-height: 74px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--panel-subtle);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
 }
 
 .orbivue-ask-card {
@@ -1407,6 +1817,45 @@ body:has(.orbivue-dashboard) {
   background: rgba(4, 15, 27, 0.64) !important;
   color: var(--accent);
   padding: 10px;
+}
+
+.orbivue-temporal-readiness {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: var(--panel-subtle);
+  padding: 8px;
+}
+
+.orbivue-temporal-readiness div {
+  min-width: 0;
+  border: 1px solid var(--border-soft);
+  border-radius: 9px;
+  background: var(--bg-card-soft);
+  padding: 8px 9px;
+}
+
+.orbivue-temporal-readiness span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.64rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.orbivue-temporal-readiness strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
 }
 
 .orbivue-composer-panel {
@@ -2333,6 +2782,7 @@ body:has(.orbivue-dashboard[data-theme="light"]) {
 .orbivue-dashboard[data-theme="light"] .orbivue-hero-panel,
 .orbivue-dashboard[data-theme="light"] .orbivue-chat-workspace,
 .orbivue-dashboard[data-theme="light"] .orbivue-trust-panel,
+.orbivue-dashboard[data-theme="light"] .orbivue-sih-workspace,
 .orbivue-dashboard[data-theme="light"] .satellite-explorer {
   border-color: var(--border) !important;
   background: var(--panel-bg) !important;
@@ -2593,6 +3043,24 @@ body:has(.orbivue-dashboard[data-theme="light"]) {
     padding: 62px 14px 14px;
   }
 
+  .orbivue-phase-stack {
+    overflow: visible;
+  }
+
+  .orbivue-filter-grid,
+  .orbivue-similar-layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .orbivue-result-card,
+  .orbivue-review-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .orbivue-result-actions {
+    justify-content: flex-start;
+  }
+
   .orbivue-hero-visual {
     max-width: 450px;
     min-height: 205px;
@@ -2614,6 +3082,32 @@ body:has(.orbivue-dashboard[data-theme="light"]) {
 @media (max-width: 640px) {
   .orbivue-topbar-actions {
     gap: 8px;
+  }
+
+  .orbivue-semantic-query {
+    grid-template-columns: 22px minmax(0, 1fr);
+  }
+
+  .orbivue-semantic-query button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .orbivue-filter-grid,
+  .orbivue-similar-layout,
+  .orbivue-temporal-readiness,
+  .orbivue-result-card dl,
+  .orbivue-review-card dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .orbivue-results-heading {
+    display: grid;
+  }
+
+  .orbivue-results-heading p {
+    max-width: none;
+    text-align: left;
   }
 
   .orbivue-hero-panel {

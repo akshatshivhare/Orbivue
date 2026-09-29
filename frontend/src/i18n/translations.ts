@@ -57,6 +57,12 @@ export type TranslationKey =
   | "common.cloud"
   | "common.source"
   | "main.newAnalysis"
+  | "main.newAnalysisGroup"
+  | "main.intelligenceGroup"
+  | "main.secondaryGroup"
+  | "main.searchArchive"
+  | "main.similarSites"
+  | "main.reviewQueue"
   | "main.askOrbivue"
   | "main.satelliteExplorer"
   | "main.watchAreas"
@@ -97,8 +103,68 @@ export type TranslationKey =
   | "simple.possibleImageDifferences"
   | "simple.reliabilityNote"
   | "simple.aiReviewNote"
+  | "hero.eyebrow"
   | "hero.title"
   | "hero.subtitle"
+  | "hero.primaryCta"
+  | "hero.secondaryCta"
+  | "archive.eyebrow"
+  | "archive.title"
+  | "archive.subtitle"
+  | "archive.queryLabel"
+  | "archive.queryPlaceholder"
+  | "archive.suggestedQueries"
+  | "archive.chipStructuresRiver"
+  | "archive.chipVehiclesOpenGround"
+  | "archive.chipBuiltExpansion"
+  | "archive.chipRoadDevelopment"
+  | "archive.chipWaterExtent"
+  | "archive.filterAoi"
+  | "archive.filterAoiValue"
+  | "archive.filterDate"
+  | "archive.filterDateValue"
+  | "archive.filterSensor"
+  | "archive.filterSensorValue"
+  | "archive.filterSource"
+  | "archive.filterSourceValue"
+  | "archive.resultsEyebrow"
+  | "archive.resultsTitle"
+  | "archive.phaseNote"
+  | "archive.emptyTitle"
+  | "archive.emptyBody"
+  | "archive.fieldLocation"
+  | "archive.fieldDate"
+  | "archive.fieldSensor"
+  | "archive.fieldSource"
+  | "archive.fieldRelevance"
+  | "archive.notEvaluated"
+  | "archive.viewEvidence"
+  | "archive.findSimilar"
+  | "archive.analyzeChange"
+  | "similar.eyebrow"
+  | "similar.title"
+  | "similar.subtitle"
+  | "similar.referenceTitle"
+  | "similar.referenceBody"
+  | "similar.resultsEyebrow"
+  | "similar.resultsTitle"
+  | "similar.emptyTitle"
+  | "similar.emptyBody"
+  | "review.eyebrow"
+  | "review.title"
+  | "review.subtitle"
+  | "review.statusLabel"
+  | "review.pending"
+  | "review.confirmed"
+  | "review.rejected"
+  | "review.emptyTitle"
+  | "review.emptyBody"
+  | "review.observationDates"
+  | "review.sensorSource"
+  | "review.evidence"
+  | "review.confirm"
+  | "review.reject"
+  | "review.viewDetails"
   | "composer.emptyTitle"
   | "composer.emptySubtitle"
   | "composer.label"
@@ -220,7 +286,16 @@ export type TranslationKey =
   | "temporal.noMeasurableChange"
   | "temporal.measurableDifference"
   | "temporal.incompatible"
-  | "temporal.modelGenerated";
+  | "temporal.modelGenerated"
+  | "temporalReadiness.title"
+  | "temporalReadiness.timeWindow"
+  | "temporalReadiness.twoObservation"
+  | "temporalReadiness.awaitingAfter"
+  | "temporalReadiness.availableObservations"
+  | "temporalReadiness.beforeAfterReady"
+  | "temporalReadiness.oneObservation"
+  | "temporalReadiness.earliestSupportedChange"
+  | "temporalReadiness.notEvaluatedMulti";
 
 export const translations: Record<LanguageCode, Record<TranslationKey, string>> = {
   en: {
@@ -273,6 +348,12 @@ export const translations: Record<LanguageCode, Record<TranslationKey, string>> 
     "common.cloud": "Cloud",
     "common.source": "Source",
     "main.newAnalysis": "New analysis",
+    "main.newAnalysisGroup": "New Analysis",
+    "main.intelligenceGroup": "Intelligence",
+    "main.secondaryGroup": "General",
+    "main.searchArchive": "Search Archive",
+    "main.similarSites": "Similar Sites",
+    "main.reviewQueue": "Review Queue",
     "main.askOrbivue": "Ask ORBIVUE",
     "main.satelliteExplorer": "Satellite Explorer",
     "main.watchAreas": "Watch Areas",
@@ -313,8 +394,68 @@ export const translations: Record<LanguageCode, Record<TranslationKey, string>> 
     "simple.possibleImageDifferences": "Possible image differences",
     "simple.reliabilityNote": "Reliability note",
     "simple.aiReviewNote": "AI interpretation — review important findings before making decisions.",
-    "hero.title": "Earth Intelligence You Can Verify",
-    "hero.subtitle": "Analyze geospatial imagery through evidence-backed Earth intelligence.",
+    "hero.eyebrow": "ORBIVUE",
+    "hero.title": "Search Satellite Archives. Discover Change. Verify Evidence.",
+    "hero.subtitle": "Explore Earth-observation imagery using natural language, discover similar sites and analyse meaningful change across time with evidence-aware validation.",
+    "hero.primaryCta": "Search Archive",
+    "hero.secondaryCta": "Analyze Change",
+    "archive.eyebrow": "Semantic Retrieval",
+    "archive.title": "Search Satellite Archive",
+    "archive.subtitle": "Search Earth-observation imagery by meaning, location, time and sensor.",
+    "archive.queryLabel": "Semantic archive query",
+    "archive.queryPlaceholder": "Describe what you want to find in the satellite archive...",
+    "archive.suggestedQueries": "Suggested queries",
+    "archive.chipStructuresRiver": "Newly built structures near a river",
+    "archive.chipVehiclesOpenGround": "Large vehicle concentrations on open ground",
+    "archive.chipBuiltExpansion": "Expansion of built-up area",
+    "archive.chipRoadDevelopment": "Recent road development",
+    "archive.chipWaterExtent": "Changes in water extent",
+    "archive.filterAoi": "Area of Interest",
+    "archive.filterAoiValue": "Not selected",
+    "archive.filterDate": "Date Range",
+    "archive.filterDateValue": "Any supported date",
+    "archive.filterSensor": "Sensor",
+    "archive.filterSensorValue": "Any sensor",
+    "archive.filterSource": "Source",
+    "archive.filterSourceValue": "Indexed archive",
+    "archive.resultsEyebrow": "Ranked Results",
+    "archive.resultsTitle": "Archive matches",
+    "archive.phaseNote": "Filters are prepared for indexed archive retrieval; no backend filtering is connected in Phase 1.",
+    "archive.emptyTitle": "No ranked results yet",
+    "archive.emptyBody": "Your ranked satellite results will appear here after searching the indexed archive.",
+    "archive.fieldLocation": "Location",
+    "archive.fieldDate": "Acquisition Date",
+    "archive.fieldSensor": "Sensor",
+    "archive.fieldSource": "Source",
+    "archive.fieldRelevance": "Semantic Relevance",
+    "archive.notEvaluated": "Not evaluated",
+    "archive.viewEvidence": "View Evidence",
+    "archive.findSimilar": "Find Similar",
+    "archive.analyzeChange": "Analyze Change",
+    "similar.eyebrow": "Similar Sites",
+    "similar.title": "Discover Similar Sites",
+    "similar.subtitle": "Select or upload a reference image to discover locations with similar visual or semantic characteristics across the indexed archive.",
+    "similar.referenceTitle": "Reference image or selected site",
+    "similar.referenceBody": "A reference selected from Archive Search or an attached image will appear here when image-to-image retrieval is connected.",
+    "similar.resultsEyebrow": "Future Results",
+    "similar.resultsTitle": "Similar locations",
+    "similar.emptyTitle": "No reference selected",
+    "similar.emptyBody": "Select a site from Archive Search or provide a reference image to begin similarity discovery.",
+    "review.eyebrow": "Analyst Review",
+    "review.title": "Analyst Review Queue",
+    "review.subtitle": "Review candidate changes with before/after evidence, ChangeGuard status and processing history when candidates are available.",
+    "review.statusLabel": "Review status",
+    "review.pending": "Pending",
+    "review.confirmed": "Confirmed",
+    "review.rejected": "Rejected",
+    "review.emptyTitle": "No review candidates",
+    "review.emptyBody": "Potential archive or temporal findings will appear here for analyst confirmation after a real candidate pipeline is connected.",
+    "review.observationDates": "Observation Dates",
+    "review.sensorSource": "Sensor / Source",
+    "review.evidence": "Evidence",
+    "review.confirm": "Confirm",
+    "review.reject": "Reject",
+    "review.viewDetails": "View Details",
     "composer.emptyTitle": "Ask anything about changes, 3D, terrain, water, or history...",
     "composer.emptySubtitle": "Your geospatial AI assistant for Earth intelligence.",
     "composer.label": "Ask ORBIVUE",
@@ -437,6 +578,15 @@ export const translations: Record<LanguageCode, Record<TranslationKey, string>> 
     "temporal.measurableDifference": "Measurable difference",
     "temporal.incompatible": "Incompatible",
     "temporal.modelGenerated": "AI model interpretation",
+    "temporalReadiness.title": "Multi-temporal readiness",
+    "temporalReadiness.timeWindow": "Time Window",
+    "temporalReadiness.twoObservation": "Two-observation comparison",
+    "temporalReadiness.awaitingAfter": "Awaiting after image",
+    "temporalReadiness.availableObservations": "Available Observations",
+    "temporalReadiness.beforeAfterReady": "Before and after ready",
+    "temporalReadiness.oneObservation": "One observation attached",
+    "temporalReadiness.earliestSupportedChange": "Earliest Supported Change",
+    "temporalReadiness.notEvaluatedMulti": "Not evaluated across multiple observations",
   },
   hi: {
     "language.english": "English",
@@ -488,6 +638,12 @@ export const translations: Record<LanguageCode, Record<TranslationKey, string>> 
     "common.cloud": "Cloud",
     "common.source": "Source",
     "main.newAnalysis": "नया विश्लेषण",
+    "main.newAnalysisGroup": "नया विश्लेषण",
+    "main.intelligenceGroup": "इंटेलिजेंस",
+    "main.secondaryGroup": "सामान्य",
+    "main.searchArchive": "Archive खोजें",
+    "main.similarSites": "Similar Sites",
+    "main.reviewQueue": "Review Queue",
     "main.askOrbivue": "ORBIVUE से पूछें",
     "main.satelliteExplorer": "सैटेलाइट एक्सप्लोरर",
     "main.watchAreas": "निगरानी क्षेत्र",
@@ -528,8 +684,68 @@ export const translations: Record<LanguageCode, Record<TranslationKey, string>> 
     "simple.possibleImageDifferences": "संभावित image differences",
     "simple.reliabilityNote": "Reliability note",
     "simple.aiReviewNote": "AI interpretation — important findings को decision से पहले review करें।",
-    "hero.title": "ऐसी Earth Intelligence जिसे आप जाँच सकें",
-    "hero.subtitle": "प्रमाण-आधारित Earth Intelligence के साथ भू-स्थानिक तस्वीरों का विश्लेषण करें।",
+    "hero.eyebrow": "ORBIVUE",
+    "hero.title": "Satellite Archives खोजें. बदलाव पहचानें. Evidence verify करें.",
+    "hero.subtitle": "Natural language से Earth-observation imagery explore करें, similar sites खोजें और evidence-aware validation के साथ समय के बदलावों का analysis करें।",
+    "hero.primaryCta": "Archive खोजें",
+    "hero.secondaryCta": "बदलाव विश्लेषण",
+    "archive.eyebrow": "Semantic Retrieval",
+    "archive.title": "Satellite Archive खोजें",
+    "archive.subtitle": "अर्थ, लोकेशन, समय और sensor के आधार पर Earth-observation imagery खोजें।",
+    "archive.queryLabel": "Semantic archive query",
+    "archive.queryPlaceholder": "बताएँ कि satellite archive में आपको क्या खोजना है...",
+    "archive.suggestedQueries": "Suggested queries",
+    "archive.chipStructuresRiver": "नदी के पास नए बने structures",
+    "archive.chipVehiclesOpenGround": "खुले मैदान में बड़े vehicle concentrations",
+    "archive.chipBuiltExpansion": "Built-up area का विस्तार",
+    "archive.chipRoadDevelopment": "हाल की road development",
+    "archive.chipWaterExtent": "Water extent में बदलाव",
+    "archive.filterAoi": "Area of Interest",
+    "archive.filterAoiValue": "चुना नहीं गया",
+    "archive.filterDate": "Date Range",
+    "archive.filterDateValue": "कोई supported date",
+    "archive.filterSensor": "Sensor",
+    "archive.filterSensorValue": "कोई भी sensor",
+    "archive.filterSource": "Source",
+    "archive.filterSourceValue": "Indexed archive",
+    "archive.resultsEyebrow": "Ranked Results",
+    "archive.resultsTitle": "Archive matches",
+    "archive.phaseNote": "Filters indexed archive retrieval के लिए तैयार हैं; Phase 1 में backend filtering connected नहीं है।",
+    "archive.emptyTitle": "अभी ranked results नहीं हैं",
+    "archive.emptyBody": "Indexed archive search के बाद आपके ranked satellite results यहाँ दिखाई देंगे।",
+    "archive.fieldLocation": "Location",
+    "archive.fieldDate": "Acquisition Date",
+    "archive.fieldSensor": "Sensor",
+    "archive.fieldSource": "Source",
+    "archive.fieldRelevance": "Semantic Relevance",
+    "archive.notEvaluated": "अभी evaluate नहीं हुआ",
+    "archive.viewEvidence": "Evidence देखें",
+    "archive.findSimilar": "Similar खोजें",
+    "archive.analyzeChange": "बदलाव विश्लेषण",
+    "similar.eyebrow": "Similar Sites",
+    "similar.title": "Similar Sites खोजें",
+    "similar.subtitle": "Reference image चुनें या upload करें ताकि indexed archive में similar visual या semantic characteristics वाली locations खोजी जा सकें।",
+    "similar.referenceTitle": "Reference image या selected site",
+    "similar.referenceBody": "Archive Search से चुना गया reference या attached image यहाँ दिखेगा जब image-to-image retrieval connected होगा।",
+    "similar.resultsEyebrow": "Future Results",
+    "similar.resultsTitle": "Similar locations",
+    "similar.emptyTitle": "कोई reference selected नहीं",
+    "similar.emptyBody": "Similarity discovery शुरू करने के लिए Archive Search से site चुनें या reference image दें।",
+    "review.eyebrow": "Analyst Review",
+    "review.title": "Analyst Review Queue",
+    "review.subtitle": "Candidates उपलब्ध होने पर before/after evidence, ChangeGuard status और processing history के साथ बदलावों की review करें।",
+    "review.statusLabel": "Review status",
+    "review.pending": "Pending",
+    "review.confirmed": "Confirmed",
+    "review.rejected": "Rejected",
+    "review.emptyTitle": "Review candidates नहीं हैं",
+    "review.emptyBody": "Real candidate pipeline connected होने के बाद archive या temporal findings analyst confirmation के लिए यहाँ दिखाई देंगी।",
+    "review.observationDates": "Observation Dates",
+    "review.sensorSource": "Sensor / Source",
+    "review.evidence": "Evidence",
+    "review.confirm": "Confirm",
+    "review.reject": "Reject",
+    "review.viewDetails": "Details देखें",
     "composer.emptyTitle": "बदलाव, 3D, टेरेन, पानी या इतिहास के बारे में कुछ भी पूछें...",
     "composer.emptySubtitle": "Earth intelligence के लिए आपका geospatial AI assistant.",
     "composer.label": "ORBIVUE से पूछें",
@@ -652,6 +868,15 @@ export const translations: Record<LanguageCode, Record<TranslationKey, string>> 
     "temporal.measurableDifference": "मापने लायक अंतर",
     "temporal.incompatible": "मेल नहीं खाता",
     "temporal.modelGenerated": "AI मॉडल की व्याख्या",
+    "temporalReadiness.title": "Multi-temporal readiness",
+    "temporalReadiness.timeWindow": "Time Window",
+    "temporalReadiness.twoObservation": "Two-observation comparison",
+    "temporalReadiness.awaitingAfter": "After image का इंतज़ार",
+    "temporalReadiness.availableObservations": "Available Observations",
+    "temporalReadiness.beforeAfterReady": "Before और after ready",
+    "temporalReadiness.oneObservation": "एक observation attached",
+    "temporalReadiness.earliestSupportedChange": "Earliest Supported Change",
+    "temporalReadiness.notEvaluatedMulti": "Multiple observations पर evaluate नहीं हुआ",
   },
 };
 

@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
-  Bell,
   BrainCircuit,
+  ClipboardCheck,
   FileText,
   Globe2,
+  Layers,
   Menu,
-  Mountain,
   Moon,
   Radar,
+  Search,
   Settings,
   ShieldCheck,
   Sparkles,
@@ -60,7 +61,7 @@ type ApiStatus = "connecting" | "connected" | "unavailable";
 type ThemeMode = "dark" | "light";
 type ExperienceMode = "simple" | "expert";
 type SessionMode = "standard" | "guest";
-type NavSection = "ask" | "satellite" | "intelligence" | "reports" | "watch" | "terrain" | "evaluation";
+type NavSection = "search" | "change" | "similar" | "satellite" | "review" | "reports" | "ask";
 type ApiResponseShape = {
   detail?: string;
   final_answer?: string;
@@ -85,15 +86,15 @@ const navItems: Array<{
   id: NavSection;
   labelKey: TranslationKey;
   icon: LucideIcon;
-  comingSoon?: boolean;
+  group: "analysis" | "intelligence" | "secondary";
 }> = [
-  { id: "ask", labelKey: "main.askOrbivue", icon: Sparkles },
-  { id: "satellite", labelKey: "main.satelliteExplorer", icon: Globe2 },
-  { id: "watch", labelKey: "main.watchAreas", icon: Bell, comingSoon: true },
-  { id: "intelligence", labelKey: "main.intelligence", icon: BrainCircuit },
-  { id: "terrain", labelKey: "main.terrain", icon: Mountain, comingSoon: true },
-  { id: "reports", labelKey: "main.reports", icon: FileText },
-  { id: "evaluation", labelKey: "main.evaluation", icon: ShieldCheck, comingSoon: true },
+  { id: "search", labelKey: "main.searchArchive", icon: Search, group: "analysis" },
+  { id: "change", labelKey: "mode.changeOverTime", icon: Activity, group: "analysis" },
+  { id: "similar", labelKey: "main.similarSites", icon: Layers, group: "analysis" },
+  { id: "satellite", labelKey: "main.satelliteExplorer", icon: Globe2, group: "intelligence" },
+  { id: "review", labelKey: "main.reviewQueue", icon: ClipboardCheck, group: "intelligence" },
+  { id: "reports", labelKey: "main.reports", icon: FileText, group: "intelligence" },
+  { id: "ask", labelKey: "main.askOrbivue", icon: Sparkles, group: "secondary" },
 ];
 
 type MainPageProps = {
@@ -535,16 +536,16 @@ function localizedTrustSummary(model: TrustPanelModel, t: (key: TranslationKey) 
   return t("trust.analysisSummary");
 }
 
-function activeNavSection(isSatelliteExplorerOpen: boolean, isCompareWorkflow: boolean): NavSection {
+function activeNavSection(activeSection: NavSection, isSatelliteExplorerOpen: boolean, isCompareWorkflow: boolean): NavSection {
   if (isSatelliteExplorerOpen) {
     return "satellite";
   }
 
   if (isCompareWorkflow) {
-    return "intelligence";
+    return "change";
   }
 
-  return "ask";
+  return activeSection;
 }
 
 function trustModeLabel(report: ReportInput | null, isCompareWorkflow: boolean, compareMode: CompareMode, query: string) {
@@ -670,6 +671,30 @@ function readableStatus(value: string) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase())
     .replace(/\bSar\b/g, "SAR")
     .replace(/\bAi\b/g, "AI");
+}
+
+function workspaceTitleKey(activeSection: NavSection, isSatelliteExplorerOpen: boolean, isCompareWorkflow: boolean): TranslationKey {
+  if (isSatelliteExplorerOpen) {
+    return "main.satelliteExplorer";
+  }
+
+  if (isCompareWorkflow) {
+    return "mode.changeOverTime";
+  }
+
+  switch (activeSection) {
+    case "search":
+      return "main.searchArchive";
+    case "similar":
+      return "main.similarSites";
+    case "review":
+      return "main.reviewQueue";
+    case "reports":
+      return "main.reports";
+    case "ask":
+    default:
+      return "main.askOrbivue";
+  }
 }
 
 function buildTrustPanelModel({
@@ -817,8 +842,22 @@ function OrbivueSidebar({
 }) {
   const visibleNavItems =
     experienceMode === "simple"
-      ? navItems.filter((item) => item.id === "ask" || item.id === "satellite" || item.id === "reports")
+      ? navItems.filter((item) => item.id === "search" || item.id === "change" || item.id === "reports" || item.id === "ask")
       : navItems;
+  const groupedNavItems = [
+    {
+      title: t("main.newAnalysisGroup"),
+      items: visibleNavItems.filter((item) => item.group === "analysis"),
+    },
+    {
+      title: t("main.intelligenceGroup"),
+      items: visibleNavItems.filter((item) => item.group === "intelligence"),
+    },
+    {
+      title: t("main.secondaryGroup"),
+      items: visibleNavItems.filter((item) => item.group === "secondary"),
+    },
+  ].filter((group) => group.items.length > 0);
 
   return (
     <aside className={`orbivue-side-nav ${isOpen ? "is-open" : ""}`}>
@@ -841,30 +880,29 @@ function OrbivueSidebar({
       </button>
 
       <nav className="orbivue-nav-list" aria-label="ORBIVUE workspace navigation">
-        {visibleNavItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeSection === item.id;
-          const label = t(item.labelKey);
+        {groupedNavItems.map((group) => (
+          <div key={group.title} className="orbivue-nav-group">
+            <p>{group.title}</p>
+            {group.items.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeSection === item.id;
+              const label = t(item.labelKey);
 
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => {
-                if (!item.comingSoon) {
-                  onNavigate(item.id);
-                }
-              }}
-              disabled={item.comingSoon}
-              className={`orbivue-nav-item ${isActive ? "is-active" : ""}`}
-              title={item.comingSoon ? `${label} ${t("main.comingSoon")}` : label}
-            >
-              <Icon size={17} />
-              <span>{label}</span>
-              {item.comingSoon && <em>{t("main.comingSoon")}</em>}
-            </button>
-          );
-        })}
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => onNavigate(item.id)}
+                  className={`orbivue-nav-item ${isActive ? "is-active" : ""}`}
+                  title={label}
+                >
+                  <Icon size={17} />
+                  <span>{label}</span>
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       <div className="orbivue-side-note">
@@ -875,19 +913,303 @@ function OrbivueSidebar({
   );
 }
 
-function OrbivueHero({ t }: { t: (key: TranslationKey) => string }) {
+function OrbivueHero({
+  t,
+  onSearchArchive,
+  onAnalyzeChange,
+}: {
+  t: (key: TranslationKey) => string;
+  onSearchArchive: () => void;
+  onAnalyzeChange: () => void;
+}) {
   return (
     <section className="orbivue-hero-panel">
       <div className="orbivue-hero-copy">
-        <span>ORBIVUE</span>
+        <span>{t("hero.eyebrow")}</span>
         <h2>{t("hero.title")}</h2>
         <p>{t("hero.subtitle")}</p>
+        <div className="orbivue-hero-actions">
+          <button type="button" className="orbivue-hero-primary" onClick={onSearchArchive}>
+            {t("hero.primaryCta")}
+          </button>
+          <button type="button" className="orbivue-hero-secondary" onClick={onAnalyzeChange}>
+            {t("hero.secondaryCta")}
+          </button>
+        </div>
       </div>
       <div className="orbivue-hero-visual" aria-hidden="true">
         <img src={orbivueEarth} alt="" className="orbivue-hero-earth" />
         <img src={orbivueSatellite} alt="" className="orbivue-hero-satellite" />
       </div>
     </section>
+  );
+}
+
+type ArchiveResult = {
+  id: string;
+  thumbnailUrl?: string;
+  sceneId: string;
+  location: string;
+  acquisitionDate: string;
+  sensor: string;
+  source: string;
+  semanticRelevance?: string;
+};
+
+type ReviewCandidate = {
+  id: string;
+  changeType: string;
+  location: string;
+  observationDates: string;
+  sensorSource: string;
+  evidence: string;
+  changeGuardStatus: string;
+};
+
+const archiveResults: ArchiveResult[] = [];
+const reviewCandidates: ReviewCandidate[] = [];
+
+function SearchArchiveWorkspace({
+  t,
+  experienceMode,
+}: {
+  t: (key: TranslationKey) => string;
+  experienceMode: ExperienceMode;
+}) {
+  const [archiveQuery, setArchiveQuery] = useState("");
+  const queryChips: TranslationKey[] = [
+    "archive.chipStructuresRiver",
+    "archive.chipVehiclesOpenGround",
+    "archive.chipBuiltExpansion",
+    "archive.chipRoadDevelopment",
+    "archive.chipWaterExtent",
+  ];
+  const filters: Array<{ label: TranslationKey; value: TranslationKey }> = [
+    { label: "archive.filterAoi", value: "archive.filterAoiValue" },
+    { label: "archive.filterDate", value: "archive.filterDateValue" },
+    { label: "archive.filterSensor", value: "archive.filterSensorValue" },
+    { label: "archive.filterSource", value: "archive.filterSourceValue" },
+  ];
+
+  return (
+    <section className="orbivue-sih-workspace orbivue-search-archive">
+      <div className="orbivue-sih-header">
+        <span>{t("archive.eyebrow")}</span>
+        <h2>{t("archive.title")}</h2>
+        <p>{t("archive.subtitle")}</p>
+      </div>
+
+      <div className="orbivue-semantic-search-card">
+        <label htmlFor="orbivue-archive-query">{t("archive.queryLabel")}</label>
+        <div className="orbivue-semantic-query">
+          <Search size={19} />
+          <input
+            id="orbivue-archive-query"
+            value={archiveQuery}
+            onChange={(event) => setArchiveQuery(event.target.value)}
+            placeholder={t("archive.queryPlaceholder")}
+          />
+          <button type="button" disabled>
+            {t("common.search")}
+          </button>
+        </div>
+        <div className="orbivue-query-chips" aria-label={t("archive.suggestedQueries")}>
+          {queryChips.map((chip) => (
+            <button key={chip} type="button" onClick={() => setArchiveQuery(t(chip))}>
+              {t(chip)}
+            </button>
+          ))}
+        </div>
+        {experienceMode === "expert" && (
+          <div className="orbivue-filter-grid">
+            {filters.map((filter) => (
+              <div key={filter.label} className="orbivue-filter-control">
+                <span>{t(filter.label)}</span>
+                <strong>{t(filter.value)}</strong>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="orbivue-results-section">
+        <div className="orbivue-results-heading">
+          <div>
+            <span>{t("archive.resultsEyebrow")}</span>
+            <h3>{t("archive.resultsTitle")}</h3>
+          </div>
+          {experienceMode === "expert" && <p>{t("archive.phaseNote")}</p>}
+        </div>
+        {archiveResults.length > 0 ? (
+          <div className="orbivue-result-list">
+            {archiveResults.map((result) => (
+              <ArchiveResultCard key={result.id} result={result} t={t} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState icon={Search} title={t("archive.emptyTitle")} body={t("archive.emptyBody")} />
+        )}
+      </div>
+    </section>
+  );
+}
+
+function ArchiveResultCard({ result, t }: { result: ArchiveResult; t: (key: TranslationKey) => string }) {
+  return (
+    <article className="orbivue-result-card">
+      <div className="orbivue-result-thumb">
+        {result.thumbnailUrl ? <img src={result.thumbnailUrl} alt="" /> : <Globe2 size={22} />}
+      </div>
+      <div>
+        <h4>{result.sceneId}</h4>
+        <dl>
+          <div>
+            <dt>{t("archive.fieldLocation")}</dt>
+            <dd>{result.location}</dd>
+          </div>
+          <div>
+            <dt>{t("archive.fieldDate")}</dt>
+            <dd>{result.acquisitionDate}</dd>
+          </div>
+          <div>
+            <dt>{t("archive.fieldSensor")}</dt>
+            <dd>{result.sensor}</dd>
+          </div>
+          <div>
+            <dt>{t("archive.fieldSource")}</dt>
+            <dd>{result.source}</dd>
+          </div>
+          <div>
+            <dt>{t("archive.fieldRelevance")}</dt>
+            <dd>{result.semanticRelevance ?? t("archive.notEvaluated")}</dd>
+          </div>
+        </dl>
+      </div>
+      <div className="orbivue-result-actions">
+        <button type="button">{t("archive.viewEvidence")}</button>
+        <button type="button">{t("archive.findSimilar")}</button>
+        <button type="button">{t("archive.analyzeChange")}</button>
+      </div>
+    </article>
+  );
+}
+
+function SimilarSitesWorkspace({ t }: { t: (key: TranslationKey) => string }) {
+  return (
+    <section className="orbivue-sih-workspace">
+      <div className="orbivue-sih-header">
+        <span>{t("similar.eyebrow")}</span>
+        <h2>{t("similar.title")}</h2>
+        <p>{t("similar.subtitle")}</p>
+      </div>
+      <div className="orbivue-similar-layout">
+        <div className="orbivue-reference-panel">
+          <div className="orbivue-reference-drop">
+            <Layers size={28} />
+            <strong>{t("similar.referenceTitle")}</strong>
+            <p>{t("similar.referenceBody")}</p>
+          </div>
+        </div>
+        <div className="orbivue-results-section">
+          <div className="orbivue-results-heading">
+            <div>
+              <span>{t("similar.resultsEyebrow")}</span>
+              <h3>{t("similar.resultsTitle")}</h3>
+            </div>
+          </div>
+          <EmptyState icon={Layers} title={t("similar.emptyTitle")} body={t("similar.emptyBody")} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ReviewQueueWorkspace({ t, experienceMode }: { t: (key: TranslationKey) => string; experienceMode: ExperienceMode }) {
+  const states: TranslationKey[] =
+    experienceMode === "expert" ? ["review.pending", "review.confirmed", "review.rejected"] : ["review.pending"];
+
+  return (
+    <section className="orbivue-sih-workspace">
+      <div className="orbivue-sih-header">
+        <span>{t("review.eyebrow")}</span>
+        <h2>{t("review.title")}</h2>
+        <p>{t("review.subtitle")}</p>
+      </div>
+      <div className="orbivue-review-tabs" aria-label={t("review.statusLabel")}>
+        {states.map((state) => (
+          <button key={state} type="button" className={state === "review.pending" ? "is-active" : ""}>
+            {t(state)}
+          </button>
+        ))}
+      </div>
+      <div className="orbivue-results-section">
+        {reviewCandidates.length > 0 ? (
+          <div className="orbivue-review-list">
+            {reviewCandidates.map((candidate) => (
+              <ReviewCandidateCard key={candidate.id} candidate={candidate} t={t} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState icon={ClipboardCheck} title={t("review.emptyTitle")} body={t("review.emptyBody")} />
+        )}
+      </div>
+    </section>
+  );
+}
+
+function ReviewCandidateCard({ candidate, t }: { candidate: ReviewCandidate; t: (key: TranslationKey) => string }) {
+  return (
+    <article className="orbivue-review-card">
+      <div className="orbivue-before-after-placeholders" aria-hidden="true">
+        <span>{t("common.before")}</span>
+        <span>{t("common.after")}</span>
+      </div>
+      <div>
+        <h4>{candidate.changeType}</h4>
+        <p>{candidate.location}</p>
+        <dl>
+          <div>
+            <dt>{t("review.observationDates")}</dt>
+            <dd>{candidate.observationDates}</dd>
+          </div>
+          <div>
+            <dt>{t("review.sensorSource")}</dt>
+            <dd>{candidate.sensorSource}</dd>
+          </div>
+          <div>
+            <dt>{t("review.evidence")}</dt>
+            <dd>{candidate.evidence}</dd>
+          </div>
+          <div>
+            <dt>{t("trust.changeGuard")}</dt>
+            <dd>{candidate.changeGuardStatus}</dd>
+          </div>
+        </dl>
+      </div>
+      <div className="orbivue-result-actions">
+        <button type="button">{t("review.confirm")}</button>
+        <button type="button">{t("review.reject")}</button>
+        <button type="button">{t("review.viewDetails")}</button>
+      </div>
+    </article>
+  );
+}
+
+function EmptyState({
+  icon: Icon,
+  title,
+  body,
+}: {
+  icon: LucideIcon;
+  title: string;
+  body: string;
+}) {
+  return (
+    <div className="orbivue-empty-state">
+      <Icon size={24} />
+      <strong>{title}</strong>
+      <p>{body}</p>
+    </div>
   );
 }
 
@@ -1052,6 +1374,7 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
   const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
   const [experienceMode, setExperienceMode] = useState<ExperienceMode>(getInitialExperienceMode);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<NavSection>("search");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const submitLockRef = useRef(false);
   const changeSubmitLockRef = useRef(false);
@@ -1071,7 +1394,8 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
   const hasTemporalPair = Boolean(temporalImages.t1 && temporalImages.t2);
   const hasCrossModalImage = Boolean(crossModalImages.optical || crossModalImages.sar);
   const isBusy = isLoading || isChangeLoading;
-  const currentNavSection = activeNavSection(isSatelliteExplorerOpen, isCompareWorkflow);
+  const currentNavSection = activeNavSection(activeSection, isSatelliteExplorerOpen, isCompareWorkflow);
+  const topbarTitleKey = workspaceTitleKey(activeSection, isSatelliteExplorerOpen, isCompareWorkflow);
   const trustPanelModel = buildTrustPanelModel({
     selectedImage,
     hasTemporalImage,
@@ -1491,11 +1815,23 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
     setCompareMode("temporal");
     setIsCompareWorkflow(false);
     setIsSatelliteExplorerOpen(false);
-    setHasWorkspaceOpened(true);
+    setActiveSection("search");
+    setHasWorkspaceOpened(false);
+    setIsSidebarOpen(false);
+  };
+
+  const openSearchArchive = () => {
+    setActiveSection("search");
+    setIsCompareWorkflow(false);
+    setIsSatelliteExplorerOpen(false);
+    setError("");
+    setAttachmentNotice("");
+    setHasWorkspaceOpened(false);
     setIsSidebarOpen(false);
   };
 
   const openAskWorkflow = () => {
+    setActiveSection("ask");
     setIsCompareWorkflow(false);
     setIsSatelliteExplorerOpen(false);
     setError("");
@@ -1506,6 +1842,7 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
   };
 
   const openCompareWorkflow = () => {
+    setActiveSection("change");
     setIsCompareWorkflow(true);
     setIsSatelliteExplorerOpen(false);
     setSelectedImage(null);
@@ -1518,7 +1855,29 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
     setIsSidebarOpen(false);
   };
 
+  const openSimilarSites = () => {
+    setActiveSection("similar");
+    setIsCompareWorkflow(false);
+    setIsSatelliteExplorerOpen(false);
+    setError("");
+    setAttachmentNotice("");
+    setHasWorkspaceOpened(true);
+    setIsSidebarOpen(false);
+  };
+
+  const openReviewQueue = () => {
+    setActiveSection("review");
+    setIsCompareWorkflow(false);
+    setIsSatelliteExplorerOpen(false);
+    setError("");
+    setAttachmentNotice("");
+    setHasWorkspaceOpened(true);
+    setIsSidebarOpen(false);
+  };
+
   const openLatestReportFromHome = () => {
+    setActiveSection("reports");
+    setIsSidebarOpen(false);
     if (latestReport) {
       setActiveReport(latestReport);
       setIsReportEmptyStateOpen(false);
@@ -1529,6 +1888,7 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
   };
 
   const openSatelliteExplorer = () => {
+    setActiveSection("satellite");
     setIsSatelliteExplorerOpen(true);
     setHasWorkspaceOpened(true);
     setError("");
@@ -1551,6 +1911,7 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
     setLatestReport(null);
     compressedImageRef.current = null;
     setHasWorkspaceOpened(true);
+    setActiveSection("ask");
   };
 
   const useSatelliteTemporalImages = (
@@ -1574,15 +1935,20 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
     setAttachmentNotice("");
     setLatestReport(null);
     setHasWorkspaceOpened(true);
+    setActiveSection("change");
   };
 
   const closeReportPreview = () => {
     setActiveReport(null);
     setIsReportEmptyStateOpen(false);
+    if (activeSection === "reports") {
+      setActiveSection("search");
+    }
   };
 
   const returnToAskOrbiVue = () => {
     setIsReportEmptyStateOpen(false);
+    setActiveSection("ask");
     setHasWorkspaceOpened(true);
   };
 
@@ -2079,14 +2445,23 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
         t={t}
         experienceMode={experienceMode}
         onNavigate={(section) => {
+          if (section === "search") {
+            openSearchArchive();
+          }
           if (section === "ask") {
             openAskWorkflow();
           }
           if (section === "satellite") {
             openSatelliteExplorer();
           }
-          if (section === "intelligence") {
+          if (section === "change") {
             openCompareWorkflow();
+          }
+          if (section === "similar") {
+            openSimilarSites();
+          }
+          if (section === "review") {
+            openReviewQueue();
           }
           if (section === "reports") {
             openLatestReportFromHome();
@@ -2099,7 +2474,7 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
           <div>
             <p className="orbivue-kicker">{t("main.kicker")}</p>
             <div className="orbivue-title-row">
-              <h1>{t("main.askOrbivue")}</h1>
+              <h1>{t(topbarTitleKey)}</h1>
               {sessionLabel && <span className="orbivue-session-label">{sessionLabel}</span>}
             </div>
             {experienceMode === "simple" && <p className="orbivue-simple-subtitle">{t("simple.subtitle")}</p>}
@@ -2152,43 +2527,58 @@ export function MainPage({ userName = "Explorer", sessionMode = "standard" }: Ma
               />
             ) : (
               <>
-                {!isWorkspaceMode && <OrbivueHero t={t} />}
-                <ChatWorkspace
-                  query={query}
-                  onQueryChange={updateQuery}
-                  onSubmit={submitQuery}
-                  isLoading={isBusy}
-                  isChangeLoading={isChangeLoading}
-                  error={error}
-                  selectedImage={selectedImage}
-                  selectedImageMetadata={selectedImageMetadata}
-                  imagePreviewUrl={imagePreviewUrl}
-                  compareMode={compareMode}
-                  isCompareWorkflow={isCompareWorkflow}
-                  onCompareModeChange={changeCompareMode}
-                  temporalImages={temporalImages}
-                  temporalImageMetadata={temporalImageMetadata}
-                  temporalPreviewUrls={temporalPreviewUrls}
-                  crossModalImages={crossModalImages}
-                  crossModalPreviewUrls={crossModalPreviewUrls}
-                  attachmentNotice={attachmentNotice}
-                  fileInputRef={fileInputRef}
-                  onImageSelected={selectImage}
-                  onClearImage={clearSelectedImage}
-                  onRemoveTemporalImage={removeTemporalImage}
-                  onReplaceTemporalImage={replaceTemporalImage}
-                  onSwapTemporalImages={swapTemporalImages}
-                  onRemoveCrossModalImage={removeCrossModalImage}
-                  onReplaceCrossModalImage={replaceCrossModalImage}
-                  onRetryChangeAnalysis={retryChangeAnalysis}
-                  onOpenReport={setActiveReport}
-                  onOpenSatelliteExplorer={openSatelliteExplorer}
-                  messages={messages}
-                  isWorkspaceMode={isWorkspaceMode}
-                  language={language}
-                  t={t}
-                  experienceMode={experienceMode}
-                />
+                {activeSection === "search" && !isCompareWorkflow ? (
+                  <div className="orbivue-phase-stack">
+                    <OrbivueHero t={t} onSearchArchive={openSearchArchive} onAnalyzeChange={openCompareWorkflow} />
+                    <SearchArchiveWorkspace t={t} experienceMode={experienceMode} />
+                  </div>
+                ) : activeSection === "similar" && !isCompareWorkflow ? (
+                  <SimilarSitesWorkspace t={t} />
+                ) : activeSection === "review" && !isCompareWorkflow ? (
+                  <ReviewQueueWorkspace t={t} experienceMode={experienceMode} />
+                ) : (
+                  <>
+                    {activeSection === "ask" && !isWorkspaceMode && (
+                      <OrbivueHero t={t} onSearchArchive={openSearchArchive} onAnalyzeChange={openCompareWorkflow} />
+                    )}
+                    <ChatWorkspace
+                      query={query}
+                      onQueryChange={updateQuery}
+                      onSubmit={submitQuery}
+                      isLoading={isBusy}
+                      isChangeLoading={isChangeLoading}
+                      error={error}
+                      selectedImage={selectedImage}
+                      selectedImageMetadata={selectedImageMetadata}
+                      imagePreviewUrl={imagePreviewUrl}
+                      compareMode={compareMode}
+                      isCompareWorkflow={isCompareWorkflow}
+                      onCompareModeChange={changeCompareMode}
+                      temporalImages={temporalImages}
+                      temporalImageMetadata={temporalImageMetadata}
+                      temporalPreviewUrls={temporalPreviewUrls}
+                      crossModalImages={crossModalImages}
+                      crossModalPreviewUrls={crossModalPreviewUrls}
+                      attachmentNotice={attachmentNotice}
+                      fileInputRef={fileInputRef}
+                      onImageSelected={selectImage}
+                      onClearImage={clearSelectedImage}
+                      onRemoveTemporalImage={removeTemporalImage}
+                      onReplaceTemporalImage={replaceTemporalImage}
+                      onSwapTemporalImages={swapTemporalImages}
+                      onRemoveCrossModalImage={removeCrossModalImage}
+                      onReplaceCrossModalImage={replaceCrossModalImage}
+                      onRetryChangeAnalysis={retryChangeAnalysis}
+                      onOpenReport={setActiveReport}
+                      onOpenSatelliteExplorer={openSatelliteExplorer}
+                      messages={messages}
+                      isWorkspaceMode={isWorkspaceMode}
+                      language={language}
+                      t={t}
+                      experienceMode={experienceMode}
+                    />
+                  </>
+                )}
               </>
             )}
           </section>
